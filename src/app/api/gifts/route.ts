@@ -129,9 +129,10 @@ export async function POST(req: NextRequest) {
     // Persist reveal in DB
     await db
       .from("gift_reveals")
-      .insert({ visitor_id: visitor, gift_id: gift.id })
-      .onConflict("visitor_id,gift_id" as any)
-      .ignore();
+      .upsert(
+        { visitor_id: visitor, gift_id: gift.id },
+        { onConflict: "visitor_id,gift_id", ignoreDuplicates: true }
+      );
 
     return NextResponse.json(
       {
