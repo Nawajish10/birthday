@@ -14,7 +14,8 @@ export async function GET(){
     ]);
     for(const r of [cards,posts,stories,games]) if(r.error) throw r.error;
     const postsWithUrls=await Promise.all((posts.data??[]).map(async p=>({ ...p, url:(await db.storage.from("birthday-public").createSignedUrl(p.media_path,3600)).data?.signedUrl??"" })));
-    const storiesWithUrls=await Promise.all((stories.data??[]).map(async p=>({ ...p, url:(await db.storage.from("birthday-public").createSignedUrl(p.media_path,3600)).data?.signedUrl??"" })));
-    return NextResponse.json({cards:cards.data??[],posts:postsWithUrls,stories:storiesWithUrls,games:games.data??[]},{headers:{"Cache-Control":"private, no-store"}});
+    const { getReleaseState } = await import("@/lib/release");
+    const release = getReleaseState();
+    return NextResponse.json({cards:cards.data??[],posts:postsWithUrls,stories:storiesWithUrls,games:games.data??[],release},{headers:{"Cache-Control":"private, no-store"}});
   } catch { return NextResponse.json({error:"Content service is not configured."},{status:503}); }
 }
