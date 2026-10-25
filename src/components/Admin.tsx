@@ -8,6 +8,7 @@ const kinds=[
  {id:"music_tracks",label:"Songs",fields:["title","artist","media_path","duration_seconds","sort_order","is_published"]},
  {id:"story_items",label:"Stories",fields:["media_path","media_kind","caption","alt_text","sort_order","is_published"]},
  {id:"eternalus_assets",label:"Eternalus gallery",fields:["media_path","caption","alt_text","sort_order","is_published"]},
+ {id:"birthday_gifts",label:"25 Gifts",fields:["slot_number","title","hint","reward_type","reward_content","is_published"]},
  {id:"games",label:"Gift games",fields:["title","instructions","reward_text","sort_order","is_published"]},
  {id:"noah_knowledge",label:"Noah knowledge",fields:["topic","approved_text","is_enabled"]},
  {id:"messages",label:"Creator inbox",fields:[]},
