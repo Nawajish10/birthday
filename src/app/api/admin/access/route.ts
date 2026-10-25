@@ -1,0 +1,6 @@
+import {NextRequest,NextResponse} from "next/server";
+import {getSupabaseServer} from "@/lib/supabase/server";
+import {getAdminClient} from "@/lib/supabase/admin";
+async function allowed(){const sb=await getSupabaseServer();const {data:{user}}=await sb.auth.getUser();if(!user)return false;const {data}=await sb.from("admin_users").select("role").eq("user_id",user.id).maybeSingle();return Boolean(data);}
+export async function GET(){if(!await allowed())return NextResponse.json({error:"Admin sign-in required."},{status:401});const {data,error}=await getAdminClient().from("access_secrets").select("scope,method,updated_at");if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json({configured:data??[]});}
+export async function POST(req:NextRequest){if(!await allowed())return NextResponse.json({error:"Admin sign-in required."},{status:401});const {scope,code}=await req.json().catch(()=>({}));if(!["birthday","eternalus"].includes(scope)||typeof code!=="string"||code.length<8||code.length>128)return NextResponse.json({error:"Codes must be 8-128 characters."},{status:400});const {error}=await getAdminClient().rpc("admin_set_access_code",{p_scope:scope,p_code:code});if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json({ok:true});}
