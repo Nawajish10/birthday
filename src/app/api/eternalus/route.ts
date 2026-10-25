@@ -2,10 +2,25 @@ import {NextRequest,NextResponse} from "next/server";
 import {readScope} from "@/lib/session";
 import {getAdminClient} from "@/lib/supabase/admin";
 
+import { getSupabaseServer } from "@/lib/supabase/server";
+
 const privateHeaders={"Cache-Control":"private, no-store, max-age=0","X-Content-Type-Options":"nosniff"};
 
+async function isAuthorized() {
+  if (await readScope("eternalus")) return true;
+  const sb = await getSupabaseServer();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return false;
+  const db = getAdminClient();
+  const [memberRes, adminRes] = await Promise.all([
+    db.from("eternalus_members").select("person").eq("user_id", user.id).maybeSingle(),
+    db.from("admin_users").select("role").eq("user_id", user.id).maybeSingle(),
+  ]);
+  return Boolean(memberRes.data || adminRes.data);
+}
+
 export async function GET(req:NextRequest){
- if(!await readScope("eternalus"))return NextResponse.json({error:"Private access required."},{status:401,headers:privateHeaders});
+ if(!await isAuthorized())return NextResponse.json({error:"Private access required. Please sign in with your verified Eternal Us account."},{status:401,headers:privateHeaders});
  const db=getAdminClient();const id=req.nextUrl.searchParams.get("id");
  try{
   if(id){
