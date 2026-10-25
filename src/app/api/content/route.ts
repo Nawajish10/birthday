@@ -12,8 +12,9 @@ export async function GET(){
       db.from("story_items").select("id,media_path,media_kind,caption,sort_order,is_published").eq("is_published",true).order("sort_order"),
       db.from("games").select("id,title,instructions,reward_text,sort_order,is_published").eq("is_published",true).order("sort_order")
     ]);
-    for(const r of [cards,posts,stories,games]) if(r.error) throw r.error;
-    const postsWithUrls=await Promise.all((posts.data??[]).map(async p=>({ ...p, url:(await db.storage.from("birthday-public").createSignedUrl(p.media_path,3600)).data?.signedUrl??"" })));
+    for (const r of [cards, posts, stories, games]) if (r.error) throw r.error;
+    const postsWithUrls = await Promise.all((posts.data ?? []).map(async p => ({ ...p, url: (await db.storage.from("birthday-public").createSignedUrl(p.media_path, 3600)).data?.signedUrl ?? "" })));
+    const storiesWithUrls = await Promise.all((stories.data ?? []).map(async p => ({ ...p, url: (await db.storage.from("birthday-public").createSignedUrl(p.media_path, 3600)).data?.signedUrl ?? "" })));
     const { getReleaseState } = await import("@/lib/release");
     const release = getReleaseState();
     return NextResponse.json({cards:cards.data??[],posts:postsWithUrls,stories:storiesWithUrls,games:games.data??[],release},{headers:{"Cache-Control":"private, no-store"}});
