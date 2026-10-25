@@ -6,7 +6,7 @@
  */
 
 export const BIRTHDAY_TARGET_ISO = "2026-10-30T00:00:00+05:30";
-export const BIRTHDAY_TARGET_TIMESTAMP = 1793301000000; // Exact millisecond representation
+export const BIRTHDAY_TARGET_TIMESTAMP = Date.parse(BIRTHDAY_TARGET_ISO); // Exactly 1793298600000 (2026-10-29T18:30:00.000Z)
 
 export interface ReleaseState {
   isReleased: boolean;

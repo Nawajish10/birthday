@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 interface EternalusVaultProps {
   onSelectPhoto: (item: { url: string; caption: string }) => void;
@@ -22,18 +22,7 @@ export function EternalusVault({ onSelectPhoto }: EternalusVaultProps) {
   const [photos, setPhotos] = useState<Array<{ id: string; url: string; caption: string; alt_text: string }>>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
-  const checkStatus = async () => {
-    try {
-      const res = await fetch("/api/eternalus/auth");
-      const d = await res.json();
-      if (res.ok && d.authenticated) {
-        setAuthStatus(d);
-        loadPhotos();
-      }
-    } catch {}
-  };
-
-  const loadPhotos = async () => {
+  const loadPhotos = useCallback(async () => {
     setLoadingMedia(true);
     try {
       const res = await fetch("/api/eternalus");
@@ -45,10 +34,28 @@ export function EternalusVault({ onSelectPhoto }: EternalusVaultProps) {
     finally {
       setLoadingMedia(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    checkStatus();
+    let ignore = false;
+    const runCheck = async () => {
+      try {
+        const res = await fetch("/api/eternalus/auth");
+        const d = await res.json();
+        if (!ignore && res.ok && d.authenticated) {
+          setAuthStatus(d);
+          const photoRes = await fetch("/api/eternalus");
+          const photoData = await photoRes.json();
+          if (!ignore && photoRes.ok && Array.isArray(photoData.items)) {
+            setPhotos(photoData.items);
+          }
+        }
+      } catch {}
+    };
+    void runCheck();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleAccountLogin = async (e: React.FormEvent) => {

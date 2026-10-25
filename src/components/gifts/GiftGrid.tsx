@@ -21,35 +21,44 @@ export function GiftGrid() {
   const [revealingId, setRevealingId] = useState<string | null>(null);
   const [errorNotice, setErrorNotice] = useState<string>("");
 
-  const loadGifts = async () => {
-    try {
-      const res = await fetch("/api/gifts");
-      const d = await res.json();
-      if (res.ok && Array.isArray(d.gifts)) {
-        setGifts(d.gifts);
-      } else {
-        // Fallback default 25 slots if migration not applied yet
-        const fallbacks: GiftItem[] = Array.from({ length: 25 }, (_, i) => ({
-          id: `gift-${i + 1}`,
-          slot_number: i + 1,
-          title: `Gift ${String(i + 1).padStart(2, "0")}`,
-          hint: "A birthday surprise",
-          reward_type: "note",
-          reward_content: "Ordinary days feel golden because you are in them. Happy birthday, Meerah!",
-          is_available: true,
-          is_revealed: false,
-        }));
-        setGifts(fallbacks);
-      }
-    } catch {
-      setErrorNotice("Could not load gift surprises. Check your connection.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadGifts();
+    let ignore = false;
+    const fetchGifts = async () => {
+      try {
+        const res = await fetch("/api/gifts");
+        const d = await res.json();
+        if (!ignore) {
+          if (res.ok && Array.isArray(d.gifts)) {
+            setGifts(d.gifts);
+          } else {
+            // Fallback default 25 slots if migration not applied yet
+            const fallbacks: GiftItem[] = Array.from({ length: 25 }, (_, i) => ({
+              id: `gift-${i + 1}`,
+              slot_number: i + 1,
+              title: `Gift ${String(i + 1).padStart(2, "0")}`,
+              hint: "A birthday surprise",
+              reward_type: "note",
+              reward_content: "Ordinary days feel golden because you are in them. Happy birthday, Meerah!",
+              is_available: true,
+              is_revealed: false,
+            }));
+            setGifts(fallbacks);
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setErrorNotice("Could not load gift surprises. Check your connection.");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+    void fetchGifts();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleGiftClick = async (gift: GiftItem) => {
@@ -276,7 +285,7 @@ export function GiftGrid() {
 
             {selectedGift.hint && (
               <p style={{ fontStyle: "italic", fontSize: "13px", color: "#9c8270", margin: "0 0 16px" }}>
-                "{selectedGift.hint}"
+                {selectedGift.hint}
               </p>
             )}
 

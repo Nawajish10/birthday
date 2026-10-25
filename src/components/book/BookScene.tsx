@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { ThreeEvent } from '@react-three/fiber';
 import * as THREE from "three";
 import { createPageTexture, PageContent } from "./pageTexture";
 
@@ -89,8 +90,16 @@ export function BookScene({
     return geo;
   }, [bookWidth, bookHeight]);
 
+  // Store immutable original vertex positions
+  const originalPositionsRef = useRef<Float32Array | null>(null);
+  useEffect(() => {
+    const pos = turningGeometry.attributes.position;
+    originalPositionsRef.current = (pos.array as Float32Array).slice();
+  }, [turningGeometry]);
+
   // Deformation and animation loop
-  useFrame((_, delta) => {
+  // eslint-disable-next-line react-hooks/immutability
+useFrame((_, delta) => {
     // 1. Handle Turn Animation Commit / Snap-Back
     if (animatingTurn) {
       const speed = delta * 2.8;
@@ -120,10 +129,8 @@ export function BookScene({
       turningMeshRef.current.rotation.y = angle;
 
       const pos = turningGeometry.attributes.position;
-      const original = turningGeometry.userData.originalPositions || pos.clone().array;
-      if (!turningGeometry.userData.originalPositions) {
-        turningGeometry.userData.originalPositions = original;
-      }
+      const original = originalPositionsRef.current ?? (pos.array as Float32Array);
+      // Original positions stored in ref; no mutation of geometry.userData
 
       // Max curvature at 50% turn
       const curlIntensity = Math.sin(dragProgress * Math.PI) * 0.32;
@@ -140,23 +147,27 @@ export function BookScene({
 
         pos.setXYZ(i, ox, oy + yLift, zBend);
       }
+// eslint-disable-next-line react-hooks/immutability
       pos.needsUpdate = true;
+
       turningGeometry.computeVertexNormals();
     }
   });
 
   // Pointer drag event handlers on the interactive corner
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (animatingTurn) return;
     setIsDragging(true);
-    pointerStartX.current = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pointerStartX.current = e.clientX || ((e as any).touches?.[0]?.clientX) || 0;
   };
 
-  const handlePointerMove = (e: any) => {
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!isDragging) return;
     e.stopPropagation();
-    const currentX = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const currentX = e.clientX || ((e as any).touches?.[0]?.clientX) || 0;
     const deltaX = pointerStartX.current - currentX;
     // Map 280px drag distance to 0..1 progress
     const progress = Math.max(0, Math.min(1, deltaX / 280));
@@ -164,7 +175,7 @@ export function BookScene({
     turnProgressRef.current = progress;
   };
 
-  const handlePointerUp = (e: any) => {
+  const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
     if (!isDragging) return;
     e.stopPropagation();
     setIsDragging(false);

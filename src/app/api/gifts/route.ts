@@ -72,8 +72,9 @@ export async function GET() {
       { gifts: sanitizedGifts, release },
       { headers: { "Cache-Control": "private, no-store" } }
     );
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to load gifts." }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : typeof err === "object" && err !== null && "message" in err ? String((err as { message: unknown }).message) : "Failed to load gifts.";
+    return NextResponse.json({ error: message || "Failed to load gifts." }, { status: 500 });
   }
 }
 
@@ -150,7 +151,8 @@ export async function POST(req: NextRequest) {
       },
       { headers: { "Cache-Control": "private, no-store" } }
     );
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to reveal gift." }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : typeof err === "object" && err !== null && "message" in err ? String((err as { message: unknown }).message) : "Failed to reveal gift.";
+    return NextResponse.json({ error: message || "Failed to reveal gift." }, { status: 500 });
   }
 }

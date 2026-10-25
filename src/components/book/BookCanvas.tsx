@@ -32,6 +32,7 @@ export function BookCanvas({
         canvas.getContext("webgl2") ||
         canvas.getContext("webgl") ||
         canvas.getContext("experimental-webgl");
+// eslint-disable-next-line react-hooks/set-state-in-effect
       setHasWebGL(Boolean(gl));
     } catch {
       setHasWebGL(false);
