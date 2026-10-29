@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { calculateAge, calculateNextBirthdayCountdown } from "../../lib/birthday-dates.ts";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { calculateAge, calculateNextBirthdayCountdown, formatEffectiveDate } from "../../lib/birthday-dates.ts";
 import {
   loadProfile,
   saveProfile,
@@ -9,21 +9,31 @@ import {
   createHighlight,
   deleteHighlight,
   loadPhotos,
+  toCompactDerivativeUrl,
+  photoAssetToProfilePostItem,
 } from "../../lib/media-service.ts";
-import type { BirthdayCountdownResult, ProfileData, HighlightCollection } from "../../types/media-contracts.ts";
+import type { BirthdayCountdownResult, ProfileData, HighlightCollection, PhotoAsset } from "../../types/media-contracts.ts";
 import "./profile.css";
+
+export { toCompactDerivativeUrl, photoAssetToProfilePostItem };
 
 export type ProfileMode = "posts" | "reels" | "favorites";
 
 export interface ProfilePostItem {
   id: string;
   url: string;
+  fullDisplayUrl?: string;
+  thumbnailUrl?: string;
+  thumbnail_url?: string;
+  thumbnailPath?: string;
   media_path?: string;
   media_kind: "image" | "video";
   caption?: string;
   alt_text?: string;
   sort_order?: number;
   is_published?: boolean;
+  effectiveCaptureDate?: string;
+  hasKnownCaptureDate?: boolean;
 }
 
 export interface ProfileHighlight {
@@ -34,9 +44,12 @@ export interface ProfileHighlight {
 }
 
 export interface ProfilePanelProps {
-  posts: ProfilePostItem[];
+  posts?: ProfilePostItem[];
+  photos?: PhotoAsset[];
   loading?: boolean;
   isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   favorites: string[];
   onToggleFavorite: (id: string) => void;
   onSelectMedia?: (item: { url: string; caption: string; kind?: "image" | "video" }) => void;
@@ -48,6 +61,9 @@ export interface ProfilePanelProps {
   highlights?: ProfileHighlight[];
   profileMode?: ProfileMode;
   onModeChange?: (mode: ProfileMode) => void;
+  externalAudioRef?: React.RefObject<HTMLAudioElement | null>;
+  onPauseBackgroundMusic?: () => void;
+  onResumeBackgroundMusic?: () => void;
 }
 
 /**
@@ -185,9 +201,12 @@ export function saveFavoritesToStorage(nextFavorites: string[], storage?: Storag
 }
 
 export function ProfilePanel({
-  posts = [],
+  posts,
+  photos,
   loading,
   isLoading,
+  error,
+  onRetry,
   favorites = [],
   onToggleFavorite,
   onSelectMedia,
@@ -199,9 +218,14 @@ export function ProfilePanel({
   highlights: propHighlights,
   profileMode,
   onModeChange,
+  externalAudioRef,
+  onPauseBackgroundMusic,
+  onResumeBackgroundMusic,
 }: ProfilePanelProps) {
   const [internalMode, setInternalMode] = useState<ProfileMode>("posts");
   const mode = profileMode ?? internalMode;
+
+  const wasPlayingBeforeDetailVideoRef = useRef(false);
 
   const handleModeChange = (newMode: ProfileMode) => {
     setInternalMode(newMode);
@@ -211,6 +235,19 @@ export function ProfilePanel({
   };
 
   const isActuallyLoading = loading ?? isLoading ?? false;
+
+  // Authoritative shared photo integration: resolve posts prop, photos prop, or loadPhotos()
+  const effectivePosts: ProfilePostItem[] = useMemo(() => {
+    if (posts && posts.length > 0) {
+      return posts.map((p) => ({
+        ...p,
+        fullDisplayUrl: p.fullDisplayUrl || p.url,
+        thumbnailUrl: p.thumbnailUrl || p.thumbnail_url || p.thumbnailPath || p.url,
+      }));
+    }
+    const assetList = photos && photos.length > 0 ? photos : loadPhotos();
+    return assetList.map((photo) => photoAssetToProfilePostItem(photo));
+  }, [posts, photos]);
 
   // 1. Profile State & Persistence
   const [profile, setProfile] = useState<ProfileData>(() => {
@@ -252,18 +289,39 @@ export function ProfilePanel({
       return highlightsList.map((hl) => ({
         id: hl.id,
         title: hl.title,
-        coverUrl: hl.coverPhotoUrl || (hl.coverPhotoId ? posts.find(p => p.id === hl.coverPhotoId)?.url : undefined),
+        coverUrl: hl.coverPhotoUrl || (hl.coverPhotoId ? effectivePosts.find(p => p.id === hl.coverPhotoId)?.url : undefined),
         photoIds: hl.photoIds,
       }));
     }
     return resolveHighlights(propHighlights);
-  }, [highlightsList, propHighlights, posts]);
+  }, [highlightsList, propHighlights, effectivePosts]);
 
-  // 4. Modal States
+  // 4. Modal States & Lightbox Viewer
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateHighlightOpen, setIsCreateHighlightOpen] = useState(false);
   const [activeHighlight, setActiveHighlight] = useState<ProfileHighlight | null>(null);
   const [detailItem, setDetailItem] = useState<ProfilePostItem | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [shareToast, setShareToast] = useState<string | null>(null);
+
+  // Audio coordination: if detail item is a video, pause background music and resume on close
+  useEffect(() => {
+    if (detailItem?.media_kind === "video") {
+      if (onPauseBackgroundMusic) {
+        onPauseBackgroundMusic();
+      } else if (externalAudioRef?.current && !externalAudioRef.current.paused) {
+        wasPlayingBeforeDetailVideoRef.current = true;
+        externalAudioRef.current.pause();
+      }
+    } else {
+      if (onResumeBackgroundMusic) {
+        onResumeBackgroundMusic();
+      } else if (externalAudioRef?.current && wasPlayingBeforeDetailVideoRef.current) {
+        wasPlayingBeforeDetailVideoRef.current = false;
+        externalAudioRef.current.play().catch(() => {});
+      }
+    }
+  }, [detailItem, onPauseBackgroundMusic, onResumeBackgroundMusic, externalAudioRef]);
 
   // Edit Profile Form State
   const [editName, setEditName] = useState(profile.displayName);
@@ -280,30 +338,8 @@ export function ProfilePanel({
 
   // Pool of all photos for highlight creation
   const availablePhotosForHighlight = useMemo(() => {
-    if (posts && posts.length > 0) return posts;
-    const stored = loadPhotos();
-    return stored.map((p) => ({
-      id: p.id,
-      url: p.url,
-      media_kind: p.mediaKind,
-      caption: p.caption,
-      alt_text: p.altText,
-    }));
-  }, [posts]);
-
-  // Handle escape key to close modals
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsEditModalOpen(false);
-        setIsCreateHighlightOpen(false);
-        setActiveHighlight(null);
-        setDetailItem(null);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+    return effectivePosts;
+  }, [effectivePosts]);
 
   // Instagram sanitization
   const rawIgUrl = instagramUrl || externalInstagramUrl || profile.externalInstagramUrl || undefined;
@@ -311,19 +347,108 @@ export function ProfilePanel({
 
   // Filtered media for the active tab
   const visiblePosts = useMemo(
-    () => filterProfileMedia(posts, mode, favorites),
-    [posts, mode, favorites]
+    () => filterProfileMedia(effectivePosts, mode, favorites),
+    [effectivePosts, mode, favorites]
   );
 
   const postsCount = useMemo(
-    () => posts.filter((p) => p.media_kind !== "video").length,
-    [posts]
+    () => effectivePosts.filter((p) => p.media_kind !== "video").length,
+    [effectivePosts]
   );
 
   const reelsCount = useMemo(
-    () => posts.filter((p) => p.media_kind === "video").length,
-    [posts]
+    () => effectivePosts.filter((p) => p.media_kind === "video").length,
+    [effectivePosts]
   );
+
+  // Active Lightbox Item resolution
+  const activeMediaItem = useMemo(() => {
+    if (lightboxIndex !== null && visiblePosts[lightboxIndex]) {
+      return visiblePosts[lightboxIndex];
+    }
+    return detailItem;
+  }, [lightboxIndex, visiblePosts, detailItem]);
+
+  const handleNextMedia = useCallback(() => {
+    if (visiblePosts.length === 0) return;
+    setLightboxIndex((prev) => {
+      const cur = prev !== null ? prev : (detailItem ? visiblePosts.findIndex((p) => p.id === detailItem.id) : 0);
+      const next = (cur + 1) % visiblePosts.length;
+      setDetailItem(visiblePosts[next]);
+      return next;
+    });
+  }, [visiblePosts, detailItem]);
+
+  const handlePrevMedia = useCallback(() => {
+    if (visiblePosts.length === 0) return;
+    setLightboxIndex((prev) => {
+      const cur = prev !== null ? prev : (detailItem ? visiblePosts.findIndex((p) => p.id === detailItem.id) : 0);
+      const next = (cur - 1 + visiblePosts.length) % visiblePosts.length;
+      setDetailItem(visiblePosts[next]);
+      return next;
+    });
+  }, [visiblePosts, detailItem]);
+
+  const handleOpenLightbox = (item: ProfilePostItem, index: number) => {
+    setDetailItem(item);
+    setLightboxIndex(index);
+    if (onSelectMedia) {
+      onSelectMedia({
+        url: item.url,
+        caption: item.caption || item.alt_text || "A birthday memory",
+        kind: item.media_kind,
+      });
+    }
+  };
+
+  const handleCloseLightbox = () => {
+    setDetailItem(null);
+    setLightboxIndex(null);
+  };
+
+  // Keyboard navigation (ArrowLeft, ArrowRight, Escape)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsEditModalOpen(false);
+        setIsCreateHighlightOpen(false);
+        setActiveHighlight(null);
+        handleCloseLightbox();
+      } else if (e.key === "ArrowRight") {
+        if (detailItem || lightboxIndex !== null) {
+          e.preventDefault();
+          handleNextMedia();
+        }
+      } else if (e.key === "ArrowLeft") {
+        if (detailItem || lightboxIndex !== null) {
+          e.preventDefault();
+          handlePrevMedia();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [detailItem, lightboxIndex, handleNextMedia, handlePrevMedia]);
+
+  const handleShareMedia = async (item: ProfilePostItem) => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: item.caption || "Birthday Memory",
+          text: item.caption || "A cherished birthday memory of Meerah ✿",
+          url: item.fullDisplayUrl || item.url,
+        });
+        return;
+      } catch {}
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(item.fullDisplayUrl || item.url);
+        setShareToast("Link copied to clipboard! ✿");
+        setTimeout(() => setShareToast(null), 2500);
+      } catch {}
+    }
+  };
 
   // Edit Profile Handlers
   const handleOpenEditModal = () => {
@@ -480,6 +605,8 @@ export function ProfilePanel({
                   src={profile.avatarUrl}
                   alt={`${profile.displayName}'s avatar`}
                   className="profileAvatarImg"
+                  loading="lazy"
+                  decoding="async"
                 />
               ) : (
                 <span className="profileAvatarFlower" aria-hidden="true">
@@ -566,7 +693,7 @@ export function ProfilePanel({
       {/* Stats Counter Row */}
       <section className="profileCounts" aria-label="Profile statistics">
         <div className="profileCountItem">
-          <b>{posts.length}</b>
+          <b>{posts?.length ?? 0}</b>
           <span>little moments</span>
         </div>
         <div className="profileCountDivider" aria-hidden="true" />
@@ -625,6 +752,8 @@ export function ProfilePanel({
                       src={hl.coverUrl}
                       alt={hl.title}
                       className="profileHighlightImg"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <span className="profileHighlightGlyph" aria-hidden="true">
@@ -724,26 +853,18 @@ export function ProfilePanel({
 
         {!isActuallyLoading && visiblePosts.length > 0 && (
           <div className="profileGalleryGrid">
-            {visiblePosts.map((p) => {
+            {visiblePosts.map((p, idx) => {
               const isFav = favorites.includes(p.id);
               const caption = p.caption || p.alt_text || "A birthday memory";
+              const thumbSrc = p.thumbnailUrl || p.thumbnail_url || p.thumbnailPath || toCompactDerivativeUrl(p.url);
 
               return (
                 <div key={p.id} className="profileMediaTile">
-                  {/* Media Open Button (Opens Detail Modal) */}
+                  {/* Media Open Button (Opens Detail Modal / Lightbox) */}
                   <button
                     type="button"
                     className="profilePhotoTile"
-                    onClick={() => {
-                      setDetailItem(p);
-                      if (onSelectMedia) {
-                        onSelectMedia({
-                          url: p.url,
-                          caption,
-                          kind: p.media_kind,
-                        });
-                      }
-                    }}
+                    onClick={() => handleOpenLightbox(p, idx)}
                     aria-label={`View ${caption}`}
                   >
                     {p.media_kind === "video" ? (
@@ -763,9 +884,10 @@ export function ProfilePanel({
                       </div>
                     ) : (
                       <img
-                        src={p.url}
+                        src={thumbSrc}
                         alt={p.alt_text || p.caption || "Birthday memory"}
                         loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <span className="profileTileOverlay">
@@ -800,7 +922,25 @@ export function ProfilePanel({
           </div>
         )}
 
-        {!isActuallyLoading && visiblePosts.length === 0 && (
+        {error && visiblePosts.length === 0 && (
+          <div className="profileErrorState" role="alert">
+            <span className="profileErrorIcon" aria-hidden="true">⚠️</span>
+            <h4 className="profileErrorTitle">Unable to load moments</h4>
+            <p className="profileErrorMessage">{error}</p>
+            {onRetry && (
+              <button
+                type="button"
+                className="profileRetryBtn"
+                onClick={onRetry}
+                aria-label="Retry loading photos"
+              >
+                Try Again
+              </button>
+            )}
+          </div>
+        )}
+
+        {!isActuallyLoading && !error && visiblePosts.length === 0 && (
           <div className="profileEmptyState" role="status">
             <div className="profileEmptyIcon" aria-hidden="true">
               {mode === "favorites" ? "♡" : mode === "reels" ? "▶" : "✿"}
@@ -1050,9 +1190,11 @@ export function ProfilePanel({
                         }}
                       >
                         <img
-                          src={photo.url}
+                          src={toCompactDerivativeUrl(photo.url)}
                           alt={photo.caption || "Photo option"}
                           className="profilePickerImg"
+                          loading="lazy"
+                          decoding="async"
                         />
                         {isSelected && (
                           <span className="profilePickerCheck" aria-hidden="true">
@@ -1134,6 +1276,8 @@ export function ProfilePanel({
                     src={activeHighlight.coverUrl}
                     alt={activeHighlight.title}
                     className="profileHighlightCoverBig"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               ) : (
@@ -1168,31 +1312,45 @@ export function ProfilePanel({
       )}
 
       {/* D. Media Detail Modal (with Caption, Alt Text, and Favorite Toggle) */}
-      {detailItem && (
+      {/* D. Interactive Lightbox Viewer */}
+      {activeMediaItem && (
         <div
           className="profileModalBackdrop"
           role="dialog"
           aria-modal="true"
           aria-labelledby="media-detail-caption"
-          onClick={() => setDetailItem(null)}
+          onClick={handleCloseLightbox}
         >
           <div
             className="profileDetailModalCard"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close Button */}
             <button
               type="button"
               className="profileModalClose profileDetailCloseBtn"
-              onClick={() => setDetailItem(null)}
-              aria-label="Close detail view"
+              onClick={handleCloseLightbox}
+              aria-label="Close photo viewer"
             >
               ✕
             </button>
 
+            {/* Media Container with Previous / Next navigation and counter */}
             <div className="profileDetailMediaContainer">
-              {detailItem.media_kind === "video" ? (
+              {visiblePosts.length > 1 && (
+                <button
+                  type="button"
+                  className="profileLightboxNavBtn profileLightboxNavPrev"
+                  onClick={handlePrevMedia}
+                  aria-label="Previous photo"
+                >
+                  ‹
+                </button>
+              )}
+
+              {activeMediaItem.media_kind === "video" ? (
                 <video
-                  src={detailItem.url}
+                  src={activeMediaItem.url}
                   controls
                   autoPlay
                   playsInline
@@ -1200,44 +1358,88 @@ export function ProfilePanel({
                 />
               ) : (
                 <img
-                  src={detailItem.url}
-                  alt={detailItem.alt_text || detailItem.caption || "Birthday media detail"}
+                  src={activeMediaItem.fullDisplayUrl || activeMediaItem.url}
+                  alt={activeMediaItem.alt_text || activeMediaItem.caption || "Birthday media detail"}
                   className="profileDetailImage"
+                  decoding="async"
                 />
+              )}
+
+              {visiblePosts.length > 1 && (
+                <button
+                  type="button"
+                  className="profileLightboxNavBtn profileLightboxNavNext"
+                  onClick={handleNextMedia}
+                  aria-label="Next photo"
+                >
+                  ›
+                </button>
+              )}
+
+              {visiblePosts.length > 1 && (
+                <span className="profileLightboxCounter">
+                  {(lightboxIndex !== null ? lightboxIndex : visiblePosts.findIndex((p) => p.id === activeMediaItem.id)) + 1} / {visiblePosts.length}
+                </span>
               )}
             </div>
 
             <div className="profileDetailInfo">
               <div className="profileDetailTopRow">
-                <h4 id="media-detail-caption" className="profileDetailCaption">
-                  {detailItem.caption || "A cherished birthday memory"}
-                </h4>
-                <button
-                  type="button"
-                  className={`profileDetailFavBtn ${
-                    favorites.includes(detailItem.id) ? "isFavorite" : ""
-                  }`}
-                  aria-label={
-                    favorites.includes(detailItem.id)
-                      ? "Remove from favorites"
-                      : "Add to favorites"
-                  }
-                  aria-pressed={favorites.includes(detailItem.id)}
-                  onClick={() => onToggleFavorite(detailItem.id)}
-                >
-                  <span className="profileFavoriteIcon" aria-hidden="true">
-                    {favorites.includes(detailItem.id) ? "♥" : "♡"}
-                  </span>
-                  <span>
-                    {favorites.includes(detailItem.id) ? "Favorited" : "Favorite"}
-                  </span>
-                </button>
+                <div className="profileDetailHeaderInfo">
+                  <h4 id="media-detail-caption" className="profileDetailCaption">
+                    {activeMediaItem.caption || "A cherished birthday memory"}
+                  </h4>
+                  {activeMediaItem.hasKnownCaptureDate && activeMediaItem.effectiveCaptureDate && (
+                    <span className="profileDetailDate" aria-label="Capture date">
+                      🗓 {formatEffectiveDate(activeMediaItem.effectiveCaptureDate, true)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="profileLightboxActions">
+                  <button
+                    type="button"
+                    className="profileDetailShareBtn"
+                    onClick={() => handleShareMedia(activeMediaItem)}
+                    aria-label="Share photo"
+                  >
+                    <span aria-hidden="true">↗</span>
+                    <span>Share</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`profileDetailFavBtn ${
+                      favorites.includes(activeMediaItem.id) ? "isFavorite" : ""
+                    }`}
+                    aria-label={
+                      favorites.includes(activeMediaItem.id)
+                        ? "Remove from favorites"
+                        : "Add to favorites"
+                    }
+                    aria-pressed={favorites.includes(activeMediaItem.id)}
+                    onClick={() => onToggleFavorite(activeMediaItem.id)}
+                  >
+                    <span className="profileFavoriteIcon" aria-hidden="true">
+                      {favorites.includes(activeMediaItem.id) ? "♥" : "♡"}
+                    </span>
+                    <span>
+                      {favorites.includes(activeMediaItem.id) ? "Favorited" : "Favorite"}
+                    </span>
+                  </button>
+                </div>
               </div>
 
-              {detailItem.alt_text && (
+              {shareToast && (
+                <div className="profileShareToast" role="status">
+                  {shareToast}
+                </div>
+              )}
+
+              {activeMediaItem.alt_text && (
                 <p className="profileDetailAltText">
                   <span className="profileDetailAltLabel">Description:</span>{" "}
-                  {detailItem.alt_text}
+                  {activeMediaItem.alt_text}
                 </p>
               )}
             </div>

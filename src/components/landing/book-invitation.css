@@ -1,0 +1,418 @@
+/**
+ * Birthday Book Invitation Section Styles (Section 5)
+ * Scrapbook theme tokens, realistic book spine, layered deckled edges, antique gold foil stamp.
+ */
+
+@import "./landing-tokens.css";
+
+.book-invitation-section {
+  position: relative;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 48px 24px max(48px, env(safe-area-inset-bottom)) 24px;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.book-invitation-header {
+  text-align: center;
+  margin-bottom: 36px;
+  max-width: 640px;
+}
+
+.book-invitation-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--scrapbook-plum);
+  background: var(--scrapbook-sage);
+  padding: 4px 14px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(55, 110, 88, 0.2);
+}
+
+.book-invitation-heading {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  line-height: 1.25;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.book-invitation-supporting {
+  font-size: clamp(14px, 2vw, 16px);
+  color: var(--scrapbook-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 3D Showcase Stage */
+.book-invitation-stage {
+  perspective: 1200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 24px 0 32px;
+}
+
+/* Interactive Book Container */
+.book-invitation-3d-wrapper {
+  position: relative;
+  width: 290px;
+  height: 390px;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.book-invitation-3d-wrapper:hover,
+.book-invitation-3d-wrapper:focus-visible {
+  transform: translateY(-8px) rotateY(-8deg) rotateX(4deg);
+}
+
+.book-invitation-3d-wrapper:focus-visible {
+  outline: 3px solid var(--scrapbook-rose-deep);
+  outline-offset: 8px;
+  border-radius: 12px;
+}
+
+/* Contact Shadow beneath Book */
+.book-invitation-shadow {
+  position: absolute;
+  left: 20px;
+  right: 10px;
+  bottom: -22px;
+  height: 36px;
+  background: radial-gradient(ellipse at center, rgba(61, 43, 51, 0.35) 0%, rgba(61, 43, 51, 0.12) 50%, transparent 75%);
+  border-radius: 50%;
+  filter: blur(8px);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.book-invitation-3d-wrapper:hover .book-invitation-shadow {
+  transform: scale(1.08) translateY(6px);
+  opacity: 0.85;
+}
+
+/* Book Cover Structure */
+.book-invitation-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(145deg, #4A2E3B 0%, #2D1A23 100%);
+  border-radius: 6px 14px 14px 6px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset -3px 0 6px rgba(0, 0, 0, 0.4),
+    8px 12px 28px rgba(61, 43, 51, 0.35);
+  display: flex;
+  overflow: visible;
+}
+
+/* Realistic Book Spine */
+.book-invitation-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  background: linear-gradient(90deg, #1F1017 0%, #3B212E 40%, #543343 70%, #2C1621 100%);
+  border-radius: 6px 0 0 6px;
+  box-shadow: inset 1px 0 2px rgba(255, 255, 255, 0.1), inset -2px 0 4px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 4;
+}
+
+.book-invitation-spine-crease {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 3px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.5));
+}
+
+.book-invitation-spine-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: #D4AF37;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* Front Cover Face */
+.book-invitation-face {
+  position: relative;
+  margin-left: 32px;
+  flex: 1;
+  height: 100%;
+  padding: 28px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+  border-radius: 0 12px 12px 0;
+}
+
+/* Inner Gold Filigree Frame */
+.book-invitation-border-frame {
+  position: absolute;
+  top: 14px;
+  left: 10px;
+  right: 14px;
+  bottom: 14px;
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.book-invitation-border-frame::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 1px dashed rgba(212, 175, 55, 0.25);
+  border-radius: 2px;
+}
+
+/* Antique Gold Foil Stamp */
+.book-invitation-foil-stamp {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.book-invitation-foil-icon {
+  font-size: 28px;
+  color: #F1C75B;
+  text-shadow: 0 0 12px rgba(241, 199, 91, 0.5);
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: bookFoilShimmer 4s ease-in-out infinite;
+}
+
+.book-invitation-foil-title {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #FFF1BF 0%, #E2BA4B 40%, #D4AF37 70%, #99741E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7));
+  letter-spacing: 0.02em;
+}
+
+.book-invitation-foil-urdu {
+  font-size: 20px;
+  margin: 0 0 16px 0;
+  color: #E2BA4B;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  font-weight: 600;
+}
+
+.book-invitation-foil-subtitle {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(241, 199, 91, 0.75);
+  border-top: 1px solid rgba(212, 175, 55, 0.3);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+/* Ornate Corner Accents */
+.book-invitation-corner {
+  position: absolute;
+  color: #D4AF37;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.book-invitation-corner.top-left { top: 18px; left: 14px; }
+.book-invitation-corner.top-right { top: 18px; right: 18px; }
+.book-invitation-corner.bottom-left { bottom: 18px; left: 14px; }
+.book-invitation-corner.bottom-right { bottom: 18px; right: 18px; }
+
+/* Multi-layered Deckled Page Edges */
+.book-invitation-page-edges {
+  position: absolute;
+  right: -10px;
+  top: 10px;
+  bottom: 10px;
+  width: 12px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #FBF4E6 0px,
+    #FBF4E6 2px,
+    #EEDBCE 2px,
+    #EEDBCE 4px
+  );
+  border-radius: 0 4px 4px 0;
+  box-shadow:
+    inset -1px 0 2px rgba(0, 0, 0, 0.15),
+    4px 0 8px rgba(61, 43, 51, 0.2);
+  z-index: 1;
+}
+
+.book-invitation-edge-layer {
+  position: absolute;
+  right: -4px;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  background: #FFF9EF;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Hanging Silk Bookmark Ribbon */
+.book-invitation-ribbon {
+  position: absolute;
+  bottom: -28px;
+  left: 2px;
+  width: 14px;
+  height: 38px;
+  background: linear-gradient(180deg, #D4798D 0%, #A6475D 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  clip-path: polygon(0% 0%, 100% 0%, 100% 85%, 50% 100%, 0% 85%);
+  z-index: 5;
+}
+
+/* Page Count Badge */
+.book-invitation-pages-badge {
+  position: absolute;
+  top: -12px;
+  right: -16px;
+  background: var(--scrapbook-sunflower);
+  color: var(--scrapbook-plum-dark);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(98, 71, 82, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transform: rotate(4deg);
+  z-index: 6;
+}
+
+/* Actions Section */
+.book-invitation-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.book-invitation-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #D4798D 0%, #B9536B 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(212, 121, 141, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.book-invitation-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(212, 121, 141, 0.45);
+  background: linear-gradient(135deg, #DF869A 0%, #C45E76 100%);
+}
+
+.book-invitation-cta-btn:focus-visible {
+  outline: 3px solid var(--scrapbook-plum);
+  outline-offset: 3px;
+}
+
+.book-invitation-btn-icon {
+  font-size: 18px;
+}
+
+.book-invitation-btn-arrow {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.book-invitation-cta-btn:hover .book-invitation-btn-arrow {
+  transform: translateX(4px);
+}
+
+@keyframes bookFoilShimmer {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@media (max-width: 640px) {
+  .book-invitation-section {
+    padding: 32px 16px;
+  }
+  .book-invitation-3d-wrapper {
+    width: 250px;
+    height: 340px;
+  }
+  .book-invitation-face {
+    padding: 20px 14px;
+  }
+  .book-invitation-foil-title {
+    font-size: 20px;
+  }
+  .book-invitation-foil-urdu {
+    font-size: 18px;
+  }
+  .book-invitation-cta-btn {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-invitation-3d-wrapper,
+  .book-invitation-shadow,
+  .book-invitation-foil-icon,
+  .book-invitation-cta-btn,
+  .book-invitation-btn-arrow {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}

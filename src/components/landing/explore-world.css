@@ -1,0 +1,234 @@
+/**
+ * Explore Your World Section Styles (Section 8)
+ * Visual navigation cards for all destinations, washi tape, keyboard accessible, >=44px touch targets.
+ */
+
+@import "./landing-tokens.css";
+
+.explore-world-section {
+  position: relative;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 24px max(48px, env(safe-area-inset-bottom)) 24px;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.explore-world-header {
+  text-align: center;
+  margin-bottom: 36px;
+  max-width: 640px;
+}
+
+.explore-world-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--scrapbook-plum);
+  background: var(--scrapbook-sage);
+  padding: 4px 14px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(55, 110, 88, 0.25);
+}
+
+.explore-world-heading {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  line-height: 1.25;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.explore-world-supporting {
+  font-size: clamp(14px, 2vw, 16px);
+  color: var(--scrapbook-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Destinations Grid */
+.explore-world-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Interactive Card (Button) */
+.explore-world-card {
+  position: relative;
+  min-height: 140px;
+  min-width: 44px; /* Touch target >= 44px */
+  background: var(--scrapbook-ivory);
+  border: 1px solid var(--scrapbook-border);
+  border-radius: 16px;
+  padding: 24px 20px 20px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(98, 71, 82, 0.08);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  font-family: inherit;
+  color: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.explore-world-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 32px rgba(98, 71, 82, 0.16);
+  border-color: var(--scrapbook-rose-deep);
+}
+
+.explore-world-card:focus-visible {
+  outline: 3px solid var(--scrapbook-rose-deep);
+  outline-offset: 4px;
+  border-radius: 16px;
+}
+
+/* Decorative Washi Tape on Cards */
+.explore-world-card .washi-tape {
+  top: -9px;
+  right: 24px;
+  height: 18px;
+  width: 70px;
+  transform: rotate(3deg);
+}
+
+.explore-world-card:nth-child(even) .washi-tape {
+  right: auto;
+  left: 24px;
+  transform: rotate(-3deg);
+}
+
+/* Card Top Row */
+.explore-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* Badge pill */
+.explore-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  background: #FFFFFF;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(234, 219, 206, 0.9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.explore-card-icon-glyph {
+  font-size: 15px;
+}
+
+/* Chip colors */
+.explore-card-badge.chip-gold {
+  background: #FFF9E6;
+  border-color: rgba(241, 199, 91, 0.4);
+}
+
+.explore-card-badge.chip-pink {
+  background: #FDF2F5;
+  border-color: rgba(212, 121, 141, 0.35);
+}
+
+.explore-card-badge.chip-sage {
+  background: #F0F6EE;
+  border-color: rgba(55, 110, 88, 0.3);
+}
+
+/* Stamp or number */
+.explore-card-stamp {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--scrapbook-muted);
+}
+
+/* Card Content */
+.explore-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.explore-card-title {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.explore-card-desc {
+  font-size: 13px;
+  color: var(--scrapbook-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Arrow action row */
+.explore-card-arrow-row {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(234, 219, 206, 0.8);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--scrapbook-plum);
+}
+
+.explore-card-arrow {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.explore-world-card:hover .explore-card-arrow {
+  transform: translateX(4px);
+  color: var(--scrapbook-rose-deep);
+}
+
+@media (max-width: 640px) {
+  .explore-world-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .explore-world-card {
+    min-height: 120px;
+    padding: 20px 16px 16px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explore-world-card,
+  .explore-card-arrow {
+    transition: none !important;
+    transform: none !important;
+  }
+}

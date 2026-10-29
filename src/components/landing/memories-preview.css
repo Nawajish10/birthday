@@ -1,0 +1,326 @@
+/**
+ * Memories Preview Section Styles (Section 7)
+ * Polaroid frames, washi tapes, subtle tilts, empty states, and responsive layout.
+ */
+
+@import "./landing-tokens.css";
+
+.memories-preview-section {
+  position: relative;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 24px max(48px, env(safe-area-inset-bottom)) 24px;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.memories-preview-header {
+  text-align: center;
+  margin-bottom: 36px;
+  max-width: 640px;
+}
+
+.memories-preview-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--scrapbook-plum);
+  background: var(--scrapbook-sunflower);
+  padding: 4px 14px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(198, 147, 37, 0.3);
+}
+
+.memories-preview-heading {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  line-height: 1.25;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.memories-preview-supporting {
+  font-size: clamp(14px, 2vw, 16px);
+  color: var(--scrapbook-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Polaroid Grid Showcase */
+.memories-polaroid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px;
+  width: 100%;
+  padding: 12px 8px;
+  box-sizing: border-box;
+  justify-items: center;
+}
+
+/* Individual Polaroid Card Button */
+.memories-polaroid-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  padding: 12px 12px 28px 12px;
+  border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(98, 71, 82, 0.12);
+  border: 1px solid rgba(234, 219, 206, 0.6);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+  width: 100%;
+  max-width: 260px;
+  box-sizing: border-box;
+  text-align: center;
+  outline: none;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.memories-polaroid-card:hover {
+  transform: translateY(-8px) scale(1.02) !important;
+  box-shadow: 0 16px 36px rgba(98, 71, 82, 0.2);
+  z-index: 5;
+}
+
+.memories-polaroid-card:focus-visible {
+  outline: 3px solid var(--scrapbook-rose-deep);
+  outline-offset: 4px;
+  z-index: 6;
+}
+
+/* Specific Tilts */
+.memories-polaroid-card.tilt-0 { transform: rotate(-2deg); }
+.memories-polaroid-card.tilt-1 { transform: rotate(1.8deg); }
+.memories-polaroid-card.tilt-2 { transform: rotate(-1.2deg); }
+.memories-polaroid-card.tilt-3 { transform: rotate(2.2deg); }
+
+/* Washi Tape Placements */
+.memories-polaroid-card .washi-tape {
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 20px;
+  width: 80px;
+}
+
+/* Photo Thumbnail Container */
+.memories-photo-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--scrapbook-paper);
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.08);
+}
+
+.memories-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.memories-polaroid-card:hover .memories-photo-img {
+  transform: scale(1.04);
+}
+
+/* Video Badge */
+.memories-video-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(45, 26, 35, 0.75);
+  color: #FFFFFF;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(2px);
+}
+
+/* Handwritten Style Caption */
+.memories-caption-text {
+  font-family: Georgia, 'Caveat', cursive, serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--scrapbook-plum-dark);
+  margin-top: 14px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+/* Empty State Card */
+.memories-empty-card {
+  width: 100%;
+  max-width: 600px;
+  background: var(--scrapbook-ivory);
+  border: 2px dashed rgba(212, 121, 141, 0.35);
+  border-radius: 16px;
+  padding: 44px 28px;
+  text-align: center;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.memories-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--scrapbook-rose);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 4px 12px rgba(212, 121, 141, 0.2);
+}
+
+.memories-empty-title {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  margin: 0;
+}
+
+.memories-empty-text {
+  font-size: 14px;
+  color: var(--scrapbook-muted);
+  max-width: 440px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Loading State Shimmer */
+.memories-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+.memories-skeleton-polaroid {
+  background: #FFFFFF;
+  padding: 12px 12px 28px 12px;
+  border-radius: 4px;
+  box-shadow: 0 8px 20px rgba(98, 71, 82, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.memories-skeleton-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(90deg, #F5EFEB 25%, #EFE8E2 50%, #F5EFEB 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 2px;
+}
+
+.memories-skeleton-line {
+  height: 14px;
+  width: 70%;
+  margin: 0 auto;
+  background: #F0E8E3;
+  border-radius: 4px;
+}
+
+/* Section Bottom CTA */
+.memories-preview-actions {
+  margin-top: 36px;
+  display: flex;
+  justify-content: center;
+}
+
+.memories-preview-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 30px;
+  background: var(--scrapbook-plum);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(98, 71, 82, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.memories-preview-cta-btn:hover {
+  transform: translateY(-2px);
+  background: var(--scrapbook-plum-dark);
+  box-shadow: 0 10px 24px rgba(98, 71, 82, 0.35);
+}
+
+.memories-preview-cta-btn:focus-visible {
+  outline: 3px solid var(--scrapbook-rose-deep);
+  outline-offset: 3px;
+}
+
+.memories-preview-btn-arrow {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.memories-preview-cta-btn:hover .memories-preview-btn-arrow {
+  transform: translateX(4px);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 640px) {
+  .memories-polaroid-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  .memories-polaroid-card {
+    padding: 8px 8px 20px 8px;
+  }
+  .memories-caption-text {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memories-polaroid-card,
+  .memories-photo-img,
+  .memories-preview-cta-btn,
+  .memories-preview-btn-arrow {
+    transition: none !important;
+    transform: none !important;
+  }
+}

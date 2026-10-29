@@ -127,3 +127,91 @@ To eliminate merge conflicts and accidental regression of shared application sta
    - No YouTube ripping or DRM circumvention is permitted. Local audio plays without streaming provider dependencies.
 
 
+
+
+---
+
+## 6. Landing Page Contracts & Operational Rules (Wave 2 / 9-Section Architecture)
+
+1. **9-Section Modular Component Ownership:**
+   - All landing sections must reside under `src/components/landing/` and be re-exported from `src/components/landing/index.ts`:
+     * Section 1: `MidnightBirthdayReveal.tsx` (`midnight-reveal.css`)
+     * Section 2: `HeroSection.tsx` (`hero-section.css`)
+     * Section 3: `SwipeablePhotoCards.tsx` (`swipeable-photo-cards.css`)
+     * Section 4: `PersonalMessagesSection.tsx` (`personal-messages.css`)
+     * Section 5: `BirthdayBookInvitation.tsx` (`book-invitation.css`)
+     * Section 6: `OurSoundtrackSection.tsx` (`our-soundtrack.css`)
+     * Section 7: `MemoriesPreviewSection.tsx` (`memories-preview.css`)
+     * Section 8: `ExploreWorldSection.tsx` (`explore-world.css` & `ScrapbookCardWall.tsx`)
+     * Section 9: `ClosingMessageSection.tsx` (`closing-message.css`)
+   - Pure domain models, constants, and helper functions must be maintained in `landing-helpers.ts` or co-located pure functions to enable fast unit testability without browser overhead.
+
+2. **Single Audio Controller Invariant on Landing Page:**
+   - Section 6 (`OurSoundtrackSection`) must strictly delegate playback commands to the parent audio controller via `onTogglePlay` and `onPlayTrack` props.
+   - Under no circumstances may landing components instantiate standalone `<audio>` tags or manipulate HTML5 audio directly, preventing audio collisions and memory leaks.
+
+3. **Timezone-Aware Midnight Gating Rules:**
+   - The reveal modal must determine date activation using the recipient's timezone (`Asia/Kolkata` default) via `getTimezoneDateParts`.
+   - Never use local server time or unadjusted UTC timestamps for midnight gating.
+   - Persistence must use deterministic keys formatted as `birthday-reveal-completed-YYYY-10-30`.
+   - In automated test suites, `forcePreview={true}` must be supported to allow deterministic testing regardless of calendar date.
+
+4. **Autoplay Policy & Web Audio Chime Synthesis:**
+   - Audio playback attempts must catch promise rejections cleanly. If autoplay is rejected by the browser, set `autoplayBlocked = true` and display a prominent "Tap to celebrate ♫" button requiring explicit user gesture.
+   - Acoustic music-box fallback must use the Web Audio API (`AudioContext`) with graceful no-op handling in server-side or unsupported environments.
+
+5. **Motion Sensitivity & Accessibility Invariants:**
+   - Every landing component stylesheet must implement `@media (prefers-reduced-motion: reduce)`.
+   - When reduced motion is preferred, transitions and transforms must be set to `none` or `0.01ms`, vinyl spinning animations must be disabled, and modal pop-in animations must be replaced with instant opacity fades.
+   - All interactive controls must define `:focus-visible` outlines with high-contrast offsets.
+   - Modal overlays must provide `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, and keyboard escape listeners.
+
+6. **Hydration & SSR Safety:**
+   - All landing components must include the `"use client"` directive.
+   - Direct access to browser globals (`window`, `document`, `localStorage`, `AudioContext`) must be guarded with `typeof window !== "undefined"` checks or wrapped in `useEffect` hooks.
+   - `setState` calls must never be executed synchronously within the body of an effect to prevent cascading render loops and comply with React 19 rules.
+
+
+---
+
+## 7. Google Photos Asset Pipeline, Configuration Contracts & Mobile Layout Rules (Wave 3)
+
+1. **Google Photos Ingestion & Operational Contracts:**
+   - All Google Photos operations must route through `/api/photos/google` or `src/lib/google-photos/google-photos-service.ts`.
+   - Never query un-whitelisted external photo URLs directly from client components. Allowlisted domains are strictly:
+     * `photos.app.goo.gl`
+     * `photos.google.com`
+     * `*.googleusercontent.com`
+   - Every ingested photo must be transformed into the canonical `PhotoAsset` interface (`src/types/media-contracts.ts`).
+   - Photos must specify responsive derivative suffixes:
+     * Thumbnail / square crop: `=w400-h400-c`
+     * High-res preview: `=w1920-h1080`
+     * Max bounding dimension: `=s{dimension}`
+
+2. **Configuration Variables & Fallback Hierarchy:**
+   - Primary album URL configuration: `process.env.GOOGLE_PHOTOS_ALBUM_URL` (or `NEXT_PUBLIC_GOOGLE_PHOTOS_ALBUM_URL`).
+   - Manifest fallback: If external network access is blocked, offline, or returns 404/429, the pipeline must seamlessly fall back to `src/data/google-photos-manifest.json`. Zero image rendering errors or broken image icons are permitted.
+   - Cache control: Server route responses must specify `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
+   - Sensitive parameter handling: Any query parameters containing `key`, `auth`, `token`, or `secret` must be redacted via `redactSensitiveUrlParams()` before logging to console or telemetry.
+
+3. **Single Authoritative BottomNav Architecture & Mobile Rules:**
+   - `BottomNav.tsx` must be rendered exclusively in `src/components/Experience.tsx`.
+   - Under no circumstances should individual panels (`ProfilePanel`, `MemoriesPanel`, `MusicRoom`, etc.) render their own duplicate bottom navigation bars.
+   - Fixed positioning rules: `position: fixed`, `bottom: 0`, `left: 0`, `right: 0`, `z-index: 999`.
+   - Mobile clearance: Shell content containers must include bottom padding equal to `max(64px, calc(56px + env(safe-area-inset-bottom)))` to prevent active content from being obscured behind the navigation bar.
+   - Ambient shell headers: Never wrap shared sub-tabs in duplicate ambient headings ("Today is all yours"). All ambient headers were permanently decommissioned in favor of view-specific headers.
+
+4. **Capture Date Integrity Invariant:**
+   - Never fabricate synthetic or fake capture dates for photographs without known EXIF metadata.
+   - When `hasKnownCaptureDate` is false, the photo must be routed to the curated "Cherished Moments ✿" section in chronological views, and omitted from the "On This Day" anniversary calculation.
+
+5. **Security & Path Traversal Guards:**
+   - Any path or filename accepted from external input or manifests must be passed through `sanitizeAssetPath()`.
+   - Reject or sanitize any input containing `../`, `..\\`, null bytes (`\0`), leading slashes, or Windows drive prefixes.
+   - Never modify or commit secrets into `.env` or `.env.local`. Ensure `.gitignore` continuously protects all environment configuration files.
+
+6. **Accessibility & Focus Trapping Invariants:**
+   - All lightboxes, photo viewers, and modal dialogs must trap keyboard focus (`handleLightboxFocusTrap()`).
+   - `Escape` key must immediately dismiss open lightboxes and return focus to the trigger element without resetting page scroll position (`scrollPositionRef`).
+   - Modals must supply `role="dialog"`, `aria-modal="true"`, and accessible labels (`aria-label` or `aria-labelledby`).
+   - All photographic images must define non-empty, meaningful `alt` text.

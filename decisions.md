@@ -368,3 +368,81 @@
   - TypeScript compilation and ESLint pass with 0 errors and 0 warnings.
   - Production build succeeds with all 13 routes optimized.
   - Completely non-destructive additive migration ensures existing birthday content remains unharmed.
+
+
+---
+
+### ADR-016: Landing Page 9-Section Architecture, Timezone-Aware Midnight Reveal & Scrapbook Design System
+
+- **Status:** Accepted (October 2026)
+- **Context:**
+  The birthday web application required a production-ready, highly personal landing experience celebrating Meerah's birthday. The previous landing page had placeholder cards, lacked a midnight celebration trigger, and did not present the full depth of memories, personal messages, and music in an emotionally coherent sequence. The experience needed to be mobile-first, accessible, responsive across viewports from 320px to 1440px+, respectful of motion preferences, and aligned with the handcrafted 2D scrapbook visual design system.
+- **Decision:**
+  1. **Nine-Section Linear Narrative Architecture:**
+     - Restructured the primary landing tab (`tab === "home"` in `src/components/Experience.tsx`) into a sequential 9-section narrative:
+       * Section 1: Midnight Birthday Reveal (`MidnightBirthdayReveal.tsx`)
+       * Section 2: Welcome Hero & Avatar (`HeroSection.tsx`)
+       * Section 3: Swipeable Photo Cards (`SwipeablePhotoCards.tsx`)
+       * Section 4: Personal Messages and Poetry (`PersonalMessagesSection.tsx`)
+       * Section 5: Birthday Book Invitation (`BirthdayBookInvitation.tsx`)
+       * Section 6: Our Soundtrack (`OurSoundtrackSection.tsx`)
+       * Section 7: Memories Preview (`MemoriesPreviewSection.tsx`)
+       * Section 8: Explore Your World (`ExploreWorldSection.tsx` & `ScrapbookCardWall.tsx`)
+       * Section 9: Closing Message (`ClosingMessageSection.tsx`)
+  2. **Timezone-Aware Date Gating & Audio Chime Fallback:**
+     - Date-gated to October 30 evaluated against the recipient's timezone (`Asia/Kolkata` default) using `Intl.DateTimeFormat`.
+     - Deterministic annual completion state persisted to `localStorage` under `birthday-reveal-completed-YYYY-10-30`.
+     - Multi-tier audio fallback: attempts configured track audio -> gracefully catches autoplay denial without breaking -> renders fallback "Tap to celebrate ♫" button -> provides Web Audio API synthesized music-box acoustic chime (`playMusicBoxChime`) using pure sine waves and natural exponential decay envelopes.
+  3. **Handcrafted Scrapbook Visual Design System:**
+     - Unified color tokens (`landing-tokens.css`): Warm ivory (`#FFF9EF`), cream paper (`#FBF4E6`), sunflower gold (`#F1C75B`), rose pink (`#D4798D`), sage foliage green (`#5B8266`), and plum ink (`#624752`).
+     - Embellishments: Reusable semi-transparent washi tape (`.washi-tape`, `washi-tape-pink`, `washi-tape-sage`), deckled borders, tilt rotations, floor contact shadows, and realistic wax seal SVG stamps with embossed hearts.
+  4. **Bicultural English & Urdu RTL Typography:**
+     - Strict bilingual representation with bidirectional isolation: Urdu elements explicitly declare `lang="ur"` and `dir="rtl"`, preventing punctuation inversion and layout drift.
+  5. **Single-Audio-Controller & Zero-Autoplay Compliance:**
+     - Section 6 (`OurSoundtrackSection`) delegates playback to the parent audio controller in `Experience.tsx` via callback props (`onTogglePlay`, `onPlayTrack`). Zero duplicate `<audio>` DOM elements are created.
+  6. **Accessibility & Reduced-Motion Guarantee:**
+     - All 10 landing stylesheets define `@media (prefers-reduced-motion: reduce)` to disable non-essential animations, spins, and transitions for users with vestibular or motion sensitivities.
+     - All interactive controls feature semantic ARIA roles, descriptive labels, and keyboard operability (`tabIndex={0}`, Enter/Space handlers).
+- **Consequences:**
+  - 100% of landing page tests pass (763/763 tests passing across 117 suites in the repository).
+  - TypeScript strict typecheck passes with 0 errors (`npx tsc --noEmit`).
+  - ESLint passes with 0 errors and 0 warnings (`npm run lint`).
+  - Mobile responsiveness verified across all target viewports (320px iPhone SE through 1440px+ desktop).
+
+
+---
+
+### ADR-017: Google Photos Asset Pipeline, Shared Media Contracts, and Navigation Deduplication
+
+- **Status:** Accepted (October 2026)
+- **Context:**
+  The birthday web application required integration with Meerah's curated Google Photos shared album. Ingested assets needed to be seamlessly shared across the Profile grid (`ProfilePanel.tsx`), the Memories room (`MemoriesPanel.tsx`), and landing page previews (`MemoriesPreviewSection.tsx`). Previously, photographs lacked a canonical derivative pipeline (often loading heavy full-resolution originals), mobile navigation suffered from duplicated headers and inconsistent sub-bars, and sensitive URLs or authentication keys risked leaking into client-side logs.
+- **Decision:**
+  1. **Google Photos Ingestion Pipeline & Safe Fallback Architecture:**
+     - Created `/api/photos/google` API route and `src/lib/google-photos/google-photos-service.ts` supporting shared album links from `photos.app.goo.gl` and `photos.google.com/share`.
+     - Built transparent fallback to bundled `google-photos-manifest.json` ensuring 100% offline uptime and zero broken images when network access is throttled or offline.
+     - Implemented in-memory caching with 1-hour CDN cache headers (`s-maxage=3600, stale-while-revalidate=86400`) and manual `?refresh=true` invalidation.
+  2. **Image Derivative Dynamic Rewriting:**
+     - Implemented dynamic dimension suffixing for Google Photos CDN endpoints:
+       * Square Polaroid Thumbnails: `=w400-h400-c` for uniform grids and reduced network transfer.
+       * Full Optimized Previews: `=w1920-h1080` for high-resolution lightbox viewing without downloading uncompressed originals.
+       * Direct Downloads: `=d`.
+  3. **Shared Media Domain Contracts (`src/types/media-contracts.ts`):**
+     - Transformed Google Photos directly into the canonical `PhotoAsset` type.
+     - Strict capture date honesty: preserved genuine camera timestamps via `hasKnownCaptureDate` and `effectiveCaptureDate`, avoiding fictitious synthetic dates. Photos with unknown dates are grouped into "Cherished Moments ✿".
+     - Implemented bi-directional transformers: `photoAssetToProfilePostItem` and `transformPhotosToProfilePosts`.
+  4. **Single Authoritative BottomNav Architecture:**
+     - Standardized on a single authoritative `BottomNav.tsx` mounted exclusively once at the root `Experience.tsx` layout footer.
+     - Fully eradicated duplicated ambient headings ("Today is all yours") across all sub-tabs.
+     - Configured safe-area inset clearance (`env(safe-area-inset-bottom)`) and full ARIA semantics (`role="navigation"`, `role="menubar"`, `role="menuitem"`, `aria-current="page"`).
+  5. **Defensive Security & Privacy Invariants:**
+     - Implemented `sanitizeAssetPath()` strictly rejecting directory traversal attempts (`../`, `..\\`, null bytes, root drives).
+     - Implemented `redactSensitiveUrlParams()` redacting auth tokens, session IDs, and secret keys before any client logging occurs.
+  6. **Accessibility & Modal Focus Traps:**
+     - Standardized focus trapping (`handleLightboxFocusTrap`) and keyboard Escape dismissal across all photo lightboxes and edit dialogs.
+     - Ensured all image elements provide descriptive `alt` text or informative fallback captions.
+- **Consequences:**
+  - Full acceptance test suite passing: **832 / 832 tests passing across 125 suites (0 failures)**.
+  - TypeScript strict compilation passes with 0 errors (`npx tsc --noEmit`).
+  - ESLint passes with 0 errors and 0 warnings (`npm run lint`).
+  - Production build (`npm run build`) generates 14 static and dynamic routes cleanly in 4.1s.

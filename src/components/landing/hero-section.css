@@ -9,11 +9,12 @@
 .hero-section {
   position: relative;
   width: 100%;
+  max-width: 100%;
   min-height: 90vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px 60px 20px;
+  padding: 40px 20px max(40px, env(safe-area-inset-bottom)) 20px;
   background-color: var(--scrapbook-ivory, #FFF9EF);
   background-image: 
     radial-gradient(#EADBCE 0.75px, transparent 0.75px),
@@ -22,6 +23,7 @@
   background-position: 0 0, 12px 12px;
   box-sizing: border-box;
   overflow: hidden;
+  overflow-x: hidden;
   color: var(--scrapbook-plum, #624752);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -33,6 +35,8 @@
   pointer-events: none;
   z-index: 1;
   overflow: hidden;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 .hero-floating-petal,
@@ -80,7 +84,7 @@
 .sparkle-pos-2 { top: 28%; right: 26%; font-size: 18px; animation-delay: 2s; }
 .sparkle-pos-3 { bottom: 25%; left: 30%; font-size: 14px; animation-delay: 1.2s; }
 
-/* Main Scrapbook Paper Card */
+/* Main Scrapbook Paper Card with Layered Depth & Contact Shadow */
 .hero-card {
   position: relative;
   z-index: 2;
@@ -91,10 +95,13 @@
   border-radius: 12px;
   padding: 48px 40px 36px 40px;
   box-shadow: 
-    0 4px 6px -1px rgba(98, 71, 82, 0.05),
-    0 16px 36px rgba(98, 71, 82, 0.09),
+    0 2px 4px rgba(98, 71, 82, 0.04),
+    0 12px 28px -4px rgba(98, 71, 82, 0.1),
+    0 24px 48px -8px rgba(98, 71, 82, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
     inset 0 0 40px rgba(255, 249, 239, 0.5);
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Washi Tape Placements */
@@ -141,6 +148,8 @@
   border-radius: 999px;
   margin: 0;
   box-shadow: 0 2px 6px rgba(212, 121, 141, 0.15);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .hero-kicker-mark {
@@ -163,6 +172,8 @@
   grid-template-columns: 300px 1fr;
   gap: 44px;
   align-items: center;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 /* Avatar Cameo Column */
@@ -171,15 +182,19 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
 }
 
 .hero-avatar-cameo-wrapper {
   position: relative;
   width: 260px;
   height: 260px;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  filter: drop-shadow(0 10px 22px rgba(98, 71, 82, 0.14));
 }
 
 .hero-cameo-center {
@@ -192,7 +207,9 @@
   align-items: center;
   justify-content: center;
   background-color: var(--scrapbook-ivory, #FFF9EF);
-  box-shadow: inset 0 2px 8px rgba(98, 71, 82, 0.12);
+  box-shadow: 
+    inset 0 2px 8px rgba(98, 71, 82, 0.12),
+    0 4px 12px rgba(98, 71, 82, 0.08);
   z-index: 2;
 }
 
@@ -201,6 +218,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+  display: block;
 }
 
 .hero-symbolic-silhouette {
@@ -215,6 +233,7 @@
   left: -10px;
   width: 280px;
   height: 280px;
+  max-width: calc(100% + 20px);
   z-index: 3;
   pointer-events: none;
   filter: drop-shadow(0 3px 6px rgba(98, 71, 82, 0.08));
@@ -234,6 +253,9 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 /* Expressive Serif Heading */
@@ -243,14 +265,25 @@
   flex-direction: column;
   gap: 8px;
   line-height: 1.18;
+  max-width: 100%;
+}
+
+.hero-heading-lead {
+  font-family: "Playfair Display", Georgia, Cambria, "Times New Roman", Times, serif;
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--scrapbook-rose-deep, #D4798D);
+  letter-spacing: 0.02em;
 }
 
 .hero-heading-main {
   font-family: "Playfair Display", Georgia, Cambria, "Times New Roman", Times, serif;
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-size: clamp(1.85rem, 4vw, 2.75rem);
   font-weight: 700;
   color: var(--scrapbook-plum-dark, #3D2B33);
   letter-spacing: -0.015em;
+  overflow-wrap: break-word;
 }
 
 .hero-heading-main em {
@@ -261,7 +294,7 @@
 
 .hero-heading-sub {
   font-family: Georgia, Cambria, "Times New Roman", serif;
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-size: clamp(1rem, 2vw, 1.35rem);
   font-weight: 400;
   font-style: italic;
   color: var(--scrapbook-muted, #846F77);
@@ -270,10 +303,11 @@
 /* English Copy */
 .hero-english-copy {
   margin: 0;
-  font-size: 15.5px;
+  font-size: clamp(0.92rem, 1.8vw, 1rem);
   line-height: 1.65;
   color: var(--scrapbook-plum, #624752);
   max-width: 540px;
+  overflow-wrap: break-word;
 }
 
 /* Urdu Blessing Card */
@@ -287,23 +321,26 @@
   border-radius: 8px;
   padding: 14px 18px;
   box-sizing: border-box;
+  max-width: 100%;
 }
 
 .hero-urdu-flower {
   font-size: 16px;
   color: var(--scrapbook-rose-deep, #D4798D);
   user-select: none;
+  flex-shrink: 0;
 }
 
 .hero-urdu-blessing {
   margin: 0;
   font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", "Arabic Typesetting", serif;
-  font-size: 20px;
+  font-size: clamp(16px, 3.8vw, 20px);
   line-height: 2.1;
   color: var(--scrapbook-plum-dark, #3D2B33);
   text-align: right;
   direction: rtl;
   font-weight: 500;
+  overflow-wrap: break-word;
 }
 
 /* CTA Button */
@@ -313,6 +350,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .hero-cta-button {
@@ -328,6 +367,7 @@
   letter-spacing: 0.02em;
   padding: 14px 30px;
   min-height: 48px;
+  min-width: 44px;
   border-radius: 999px;
   border: 1.5px solid var(--scrapbook-sunflower-dark, #C69325);
   box-shadow: 
@@ -336,6 +376,7 @@
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .hero-cta-button:hover {
@@ -458,12 +499,14 @@
 
 @media (max-width: 480px) {
   .hero-section {
-    padding: 24px 12px 40px 12px;
+    padding: 24px 12px max(32px, env(safe-area-inset-bottom)) 12px;
+    overflow-x: hidden;
   }
 
   .hero-card {
     padding: 28px 16px 20px 16px;
     border-radius: 8px;
+    max-width: 100%;
   }
 
   .washi-top-left,
@@ -473,38 +516,78 @@
   }
 
   .hero-avatar-cameo-wrapper {
-    width: 220px;
-    height: 220px;
+    width: 210px;
+    height: 210px;
   }
 
   .hero-cameo-center {
-    width: 130px;
-    height: 130px;
+    width: 124px;
+    height: 124px;
   }
 
   .hero-wreath-svg {
-    width: 240px;
-    height: 240px;
+    width: 230px;
+    height: 230px;
     top: -10px;
     left: -10px;
   }
 
   .hero-heading-main {
-    font-size: 1.85rem;
+    font-size: clamp(1.6rem, 6.5vw, 1.85rem);
   }
 
   .hero-heading-sub {
-    font-size: 1.05rem;
+    font-size: clamp(0.95rem, 3.5vw, 1.05rem);
   }
 
   .hero-urdu-blessing {
-    font-size: 17px;
+    font-size: clamp(15px, 4.2vw, 17px);
     line-height: 2;
   }
 
   .hero-cta-button {
     width: 100%;
+    min-height: 48px;
     padding: 14px 20px;
+  }
+}
+
+/* Narrow mobile viewports: 320px, 360px */
+@media (max-width: 360px) {
+  .hero-section {
+    padding: 18px 8px max(24px, env(safe-area-inset-bottom)) 8px;
+  }
+
+  .hero-card {
+    padding: 22px 10px 16px 10px;
+  }
+
+  .hero-avatar-cameo-wrapper {
+    width: 180px;
+    height: 180px;
+  }
+
+  .hero-cameo-center {
+    width: 105px;
+    height: 105px;
+  }
+
+  .hero-wreath-svg {
+    width: 195px;
+    height: 195px;
+    top: -8px;
+    left: -8px;
+  }
+
+  .hero-kicker {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .hero-cta-button {
+    font-size: 14.5px;
+    padding: 12px 16px;
+    min-height: 44px;
   }
 }
 

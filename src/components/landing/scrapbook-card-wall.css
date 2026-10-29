@@ -10,9 +10,10 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px 60px;
+  padding: 40px 20px max(40px, env(safe-area-inset-bottom)) 20px;
   color: var(--scrapbook-plum, #624752);
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Background paper warmth */
@@ -21,6 +22,7 @@
   max-width: 720px;
   margin: 0 auto 36px;
   position: relative;
+  box-sizing: border-box;
 }
 
 .scrapbook-wall-kicker {
@@ -36,15 +38,18 @@
   padding: 6px 14px;
   border-radius: 999px;
   margin-bottom: 12px;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .scrapbook-wall-title {
   font-family: "Playfair Display", Georgia, serif;
-  font-size: clamp(28px, 4.5vw, 42px);
+  font-size: clamp(24px, 4.5vw, 42px);
   font-weight: 600;
   line-height: 1.15;
   color: var(--scrapbook-plum-dark, #3D2B33);
   margin: 0 0 10px;
+  overflow-wrap: break-word;
 }
 
 .scrapbook-wall-title em {
@@ -53,10 +58,11 @@
 }
 
 .scrapbook-wall-subtitle {
-  font-size: clamp(14px, 2vw, 16px);
+  font-size: clamp(13.5px, 2vw, 16px);
   line-height: 1.6;
   color: var(--scrapbook-muted, #846F77);
   margin: 0 auto;
+  overflow-wrap: break-word;
 }
 
 /* Inline Notification Banner for Wave 2 / announcements */
@@ -73,6 +79,7 @@
   border-radius: 14px;
   box-shadow: 0 6px 18px rgba(98, 71, 82, 0.08);
   animation: scrapbookFadeIn 0.3s ease-out;
+  box-sizing: border-box;
 }
 
 .scrapbook-notification-content {
@@ -92,16 +99,19 @@
 .scrapbook-notification-close {
   background: transparent;
   border: none;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
   color: var(--scrapbook-muted, #846F77);
-  padding: 6px;
+  padding: 10px;
+  min-width: 44px;
+  min-height: 44px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.15s ease, background-color 0.15s ease;
+  box-sizing: border-box;
 }
 
 .scrapbook-notification-close:hover {
@@ -115,6 +125,8 @@
   grid-template-columns: 1fr;
   gap: 28px 24px;
   padding: 10px 0;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 /* Tablet: 2 columns */
@@ -154,6 +166,8 @@
   text-align: left;
   font: inherit;
   width: 100%;
+  min-height: 44px;
+  min-width: 44px;
   box-sizing: border-box;
   transform: rotate(var(--card-tilt, 0deg));
   transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -354,22 +368,24 @@
 /* Card Title */
 .scrapbook-card-title {
   font-family: "Playfair Display", Georgia, serif;
-  font-size: 18px;
+  font-size: clamp(16px, 3.5vw, 18px);
   font-weight: 600;
   line-height: 1.25;
   color: var(--scrapbook-plum-dark, #3D2B33);
   margin: 0 0 4px;
+  overflow-wrap: break-word;
 }
 
 /* Handwritten Style Caption */
 .scrapbook-card-caption {
   font-family: "Playfair Display", "Caveat", "Brush Script MT", Georgia, cursive, serif;
   font-style: italic;
-  font-size: 13.5px;
+  font-size: clamp(12.5px, 2.5vw, 13.5px);
   line-height: 1.45;
   color: var(--scrapbook-plum, #624752);
   margin: 0 0 12px;
   flex: 1;
+  overflow-wrap: break-word;
 }
 
 /* Action Footer */
@@ -401,6 +417,63 @@
 
 .scrapbook-card-button:hover .scrapbook-action-arrow {
   transform: translateX(3px);
+}
+
+/* Mobile responsive layout & tilt containment */
+@media (max-width: 480px) {
+  .scrapbook-wall-section {
+    padding: 24px 12px max(32px, env(safe-area-inset-bottom)) 12px;
+    overflow-x: hidden;
+  }
+
+  .scrapbook-wall-header {
+    margin-bottom: 24px;
+  }
+
+  .scrapbook-grid {
+    gap: 20px;
+  }
+
+  /* Prevent horizontal overflow on narrow mobile screens by neutralizing tilt */
+  .scrapbook-card-button {
+    transform: none !important;
+    padding: 10px 10px 16px 10px;
+    border-radius: 8px;
+  }
+
+  .scrapbook-washi {
+    height: 18px;
+    width: 68px;
+    top: -9px;
+  }
+
+  .scrapbook-card-media {
+    min-height: 140px;
+  }
+
+  .scrapbook-card-svg {
+    width: 58px;
+    height: 58px;
+  }
+}
+
+/* Narrow mobile viewports: 320px - 360px */
+@media (max-width: 360px) {
+  .scrapbook-wall-section {
+    padding: 18px 8px max(24px, env(safe-area-inset-bottom)) 8px;
+  }
+
+  .scrapbook-card-body {
+    padding: 10px 2px 2px;
+  }
+
+  .scrapbook-card-title {
+    font-size: 15.5px;
+  }
+
+  .scrapbook-card-caption {
+    font-size: 12px;
+  }
 }
 
 /* Reduced Motion Override */

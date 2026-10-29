@@ -336,6 +336,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               }
               className="storySlideImage"
               draggable={false}
+              decoding="async"
             />
           )}
 
@@ -362,7 +363,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             {currentPhoto?.caption && (
               <p className="storyCaptionText">{currentPhoto.caption}</p>
             )}
-            {currentPhoto?.effectiveCaptureDate && (
+            {currentPhoto?.hasKnownCaptureDate && currentPhoto?.effectiveCaptureDate && (
               <p className="storyCaptureDate">
                 <span aria-hidden="true">🗓</span>
                 <span>

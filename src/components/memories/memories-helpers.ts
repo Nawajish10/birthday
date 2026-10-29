@@ -4,8 +4,9 @@ import {
   parseDateSafe,
   formatEffectiveDate,
 } from "../../lib/birthday-dates.ts";
+import { toCompactDerivativeUrl } from "../../lib/media-service.ts";
 
-export { formatEffectiveDate };
+export { formatEffectiveDate, toCompactDerivativeUrl };
 
 export type MemoriesTab = "camera" | "photos" | "all-photos" | "on-this-day" | "albums" | "stories";
 
@@ -40,11 +41,22 @@ export function getOnThisDayLabel(yearsAgo: number): string {
   return `${yearsAgo} Years Ago Today ✿`;
 }
 
+export const CHERISHED_MOMENTS_TITLE = "Cherished Moments ✿";
+export const SPECIAL_MEMORIES_TITLE = "Special Memories";
+
+export interface GroupChronologicalOptions {
+  unknownGroupTitle?: string;
+}
+
 /**
  * Groups photos chronologically by Year & Month in descending order.
- * Photos without known capture dates are placed in an "Unknown Date" group at the end.
+ * Photos without reliable capture dates are grouped under a curated collection
+ * ("Cherished Moments ✿" or "Special Memories") without fabricating fake dates!
  */
-export function groupPhotosChronologically(photos: PhotoAsset[]): TimelineMonthGroup[] {
+export function groupPhotosChronologically(
+  photos: PhotoAsset[],
+  options?: GroupChronologicalOptions
+): TimelineMonthGroup[] {
   if (!photos || photos.length === 0) return [];
 
   const knownMap = new Map<string, { year: number; month: number; title: string; photos: PhotoAsset[] }>();
@@ -83,17 +95,18 @@ export function groupPhotosChronologically(photos: PhotoAsset[]): TimelineMonthG
     result.push(group);
   }
 
-  // Group unknown capture dates at the end
+  // Group unknown capture dates at the end under curated collection
   if (unknownPhotos.length > 0) {
     unknownPhotos.sort((a, b) => {
       const timeA = new Date(a.uploadTimestamp).getTime() || 0;
       const timeB = new Date(b.uploadTimestamp).getTime() || 0;
       return timeB - timeA;
     });
+    const fallbackTitle = options?.unknownGroupTitle || CHERISHED_MOMENTS_TITLE;
     result.push({
       year: 0,
       month: -1,
-      title: "Unknown Date",
+      title: fallbackTitle,
       photos: unknownPhotos,
     });
   }

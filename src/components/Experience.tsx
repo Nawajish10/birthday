@@ -6,10 +6,18 @@ import type { Card, Post, Story, Game } from "@/lib/types";
 import { EternalusVault } from "./eternalus/EternalusVault";
 import { ProfilePanel } from "./profile/ProfilePanel";
 import { MemoriesPanel } from "./memories/MemoriesPanel";
-import { HeroSection } from "./landing/HeroSection";
-import { ScrapbookCardWall, type ScrapbookDestination } from "./landing/ScrapbookCardWall";
-import { LandingMusicCard } from "./landing/LandingMusicCard";
-import { StoryDestinationCards } from "./landing/StoryDestinationCards";
+import {
+  MidnightBirthdayReveal,
+  HeroSection,
+  SwipeablePhotoCards,
+  PersonalMessagesSection,
+  BirthdayBookInvitation,
+  OurSoundtrackSection,
+  MemoriesPreviewSection,
+  ExploreWorldSection,
+  ClosingMessageSection,
+  DEFAULT_PERSONAL_MESSAGES,
+} from "./landing";
 import { StudyPanel } from "./study/StudyPanel";
 import { GamesPanel } from "./games/GamesPanel";
 import { VideoPanel } from "./video/VideoPanel";
@@ -105,9 +113,43 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
   const [showVideoModal, setShowVideoModal] = useState(false);
 
   const playerRef = useRef<HTMLAudioElement | null>(null);
+  const wasPlayingBeforeVideoRef = useRef(false);
   const [musicData, setMusicData] = useState<{ tracks: MusicTrack[]; playlists: MusicPlaylist[] }>({ tracks: [], playlists: [] });
   const [activeTrack, setActiveTrack] = useState<MusicTrack | null>(null);
   const [musicPlaying, setMusicPlaying] = useState(false);
+
+  function pauseMusicForVideo() {
+    const audio = playerRef.current;
+    if (audio && !audio.paused) {
+      wasPlayingBeforeVideoRef.current = true;
+      audio.pause();
+      setMusicPlaying(false);
+    }
+  }
+
+  function resumeMusicAfterVideo() {
+    const audio = playerRef.current;
+    if (audio && wasPlayingBeforeVideoRef.current) {
+      wasPlayingBeforeVideoRef.current = false;
+      audio.play().then(() => setMusicPlaying(true)).catch(() => {});
+    }
+  }
+
+  useEffect(() => {
+    if (selected?.kind === "video") {
+      pauseMusicForVideo();
+    } else if (!selected && !showVideoModal) {
+      resumeMusicAfterVideo();
+    }
+  }, [selected, showVideoModal]);
+
+  useEffect(() => {
+    if (showVideoModal) {
+      pauseMusicForVideo();
+    } else if (!showVideoModal && selected?.kind !== "video") {
+      resumeMusicAfterVideo();
+    }
+  }, [showVideoModal, selected?.kind]);
 
   useEffect(() => {
     if (open && (tab === "songs" || tab === "home")) {
@@ -291,12 +333,6 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
         <div className="headernote">a little world for you</div>
       </header>
 
-      <nav className="tabs" aria-label="Birthday sections">
-        {([["home", "⌂", "Home"], ["stories", "◎", "Memories"], ["profile", "▦", "Profile"], ["songs", "♫", "Songs"], ["study", "📖", "Study"], ["games", "🎮", "Games"], ["chat", "☏", "Chat"]] as [Tab, string, string][]).map(([id, icon, label]) => (
-          <button key={id} className={tab === id ? "selected" : ""} onClick={() => setTab(id)}><b>{icon}</b>{label}</button>
-        ))}
-      </nav>
-
       <section className="content shell-content-with-bottom-nav">
         {tab === "home" && (
           showFullBook ? (
@@ -334,46 +370,70 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
             </>
           ) : (
             <>
-              {/* Section 1: Welcome Hero */}
+              {/* Section 1 — Midnight Birthday Reveal (October 30, timezone-aware, audio fallback) */}
+              <MidnightBirthdayReveal
+                recipientName="Meerah"
+                recipientTimezone="Asia/Kolkata"
+              />
+
+              {/* Section 2 — Welcome Hero and Personalized Avatar */}
               <HeroSection
                 recipientName="Meerah"
                 birthdayDate="October 30"
+                avatarUrl={data.posts.find(p => p.media_kind === "image")?.url}
                 onOpenWorld={() => {
-                  const el = document.getElementById("scrapbook-card-wall");
+                  const el = document.getElementById("section-photo-cards") || document.getElementById("scrapbook-card-wall");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
               />
 
-              {/* Section 2: Interactive Scrapbook Card Wall */}
-              <div style={{ marginTop: "32px" }}>
-                <ScrapbookCardWall
-                  onSelectDestination={(dest: ScrapbookDestination) => {
-                    if (dest === "birthday-book") {
-                      setShowFullBook(true);
-                    } else if (dest === "letter") {
-                      const idx = bookPages.findIndex(p => p.id === "letter");
-                      setBookPage(idx >= 0 ? idx : 0);
-                      setShowFullBook(true);
-                    } else if (dest === "songs") {
-                      setTab("songs");
-                    } else if (dest === "our-memories" || dest === "camera") {
-                      setTab("stories");
-                    } else if (dest === "study") {
-                      setTab("study");
-                    } else if (dest === "games") {
-                      setTab("games");
-                    } else if (dest === "video") {
-                      setShowVideoModal(true);
-                    }
-                  }}
-                  unlockedSurprisesCount={data.games.length}
-                  favoriteSongsCount={favorites.length}
+              {/* Section 3 — Swipeable Photo Cards */}
+              <div id="section-photo-cards" style={{ marginTop: "32px" }}>
+                <SwipeablePhotoCards
+                  photos={
+                    data.posts.length > 0
+                      ? data.posts.map(p => ({
+                          id: p.id,
+                          url: p.url,
+                          caption: p.caption || p.alt_text || "A sweet birthday memory",
+                          date: "October 2026",
+                          alt: p.alt_text || p.caption || "Birthday memory",
+                        }))
+                      : undefined
+                  }
+                  onSelectPhoto={(photo) => setSelected({ url: photo.url, caption: photo.caption || "Birthday memory" })}
+                  loading={loading}
                 />
               </div>
 
-              {/* Section 3: Prominent Music Card */}
+              {/* Section 4 — Personal Messages and Poetry */}
               <div style={{ marginTop: "36px" }}>
-                <LandingMusicCard
+                <PersonalMessagesSection
+                  cards={
+                    data.cards.length > 0
+                      ? data.cards.map(c => ({
+                          id: "card-" + c.id,
+                          title: c.title || "A little wish",
+                          body_en: c.body_en || "A birthday wish, made just for you.",
+                          body_ur: c.body_ur || "تمہاری سالگرہ کا ہر لمحہ خوشیوں سے مہکتا رہے۔",
+                          category: "BIRTHDAY LETTER · سالگرہ کی دعا",
+                        }))
+                      : [...DEFAULT_PERSONAL_MESSAGES]
+                  }
+                />
+              </div>
+
+              {/* Section 5 — Birthday Book Invitation */}
+              <div style={{ marginTop: "36px" }}>
+                <BirthdayBookInvitation
+                  onOpenBook={() => setShowFullBook(true)}
+                  totalPagesCount={bookPages.length}
+                />
+              </div>
+
+              {/* Section 6 — Our Soundtrack */}
+              <div style={{ marginTop: "36px" }}>
+                <OurSoundtrackSection
                   tracks={musicData.tracks.map(t => ({ id: t.id, title: t.title, artist: t.artist, url: t.url }))}
                   activeTrack={activeTrack ? { id: activeTrack.id, title: activeTrack.title, artist: activeTrack.artist, url: activeTrack.url } : null}
                   isPlaying={musicPlaying}
@@ -387,12 +447,9 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
                 />
               </div>
 
-              {/* Section 4 & 5: Story Destination Cards (Book Entry & Memories Preview) */}
+              {/* Section 7 — Memories Preview */}
               <div style={{ marginTop: "36px" }}>
-                <StoryDestinationCards
-                  onOpenBook={() => setShowFullBook(true)}
-                  onOpenMemories={() => setTab("stories")}
-                  onSelectPhoto={(photo) => setSelected(photo)}
+                <MemoriesPreviewSection
                   memories={data.posts.map(p => ({
                     id: p.id,
                     url: p.url,
@@ -400,8 +457,43 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
                     alt_text: p.alt_text,
                     media_kind: p.media_kind,
                   }))}
-                  totalPagesCount={bookPages.length}
+                  onOpenMemories={() => setTab("stories")}
+                  onSelectPhoto={(photo) => setSelected({ url: photo.url, caption: photo.caption || photo.alt_text || "Birthday memory", kind: photo.media_kind })}
                   loading={loading}
+                />
+              </div>
+
+              {/* Section 8 — Explore Your World */}
+              <div id="scrapbook-card-wall" style={{ marginTop: "36px" }}>
+                <ExploreWorldSection
+                  onNavigate={(destId) => {
+                    if (destId === "birthday-book") {
+                      setShowFullBook(true);
+                    } else if (destId === "profile") {
+                      setTab("profile");
+                    } else if (destId === "games") {
+                      setTab("games");
+                    } else if (destId === "study") {
+                      setTab("study");
+                    } else if (destId === "songs") {
+                      setTab("songs");
+                    } else if (destId === "stories") {
+                      setTab("stories");
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Section 9 — Closing Message */}
+              <div style={{ marginTop: "36px" }}>
+                <ClosingMessageSection
+                  onReturnToBeginning={() => {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  onExploreMore={() => {
+                    const el = document.getElementById("scrapbook-card-wall");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
                 />
               </div>
             </>
@@ -416,6 +508,9 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
             onSelectMedia={setSelected}
             onOpenEternalus={() => setTab("eternalus")}
             recipientName="Meerah"
+            externalAudioRef={playerRef}
+            onPauseBackgroundMusic={pauseMusicForVideo}
+            onResumeBackgroundMusic={resumeMusicAfterVideo}
           />
         )}
         {tab === "songs" && (
