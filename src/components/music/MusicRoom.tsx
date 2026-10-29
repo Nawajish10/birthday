@@ -15,6 +15,31 @@ import {
   createLocalTrack,
   revokeLocalTrackUrls,
 } from "./music-catalogue";
+import { useMusicStore, getMusicAudioRef } from "@/lib/music/use-music-store";
+import {
+  recordHistoryEvent,
+  fetchHistory,
+  fetchPlaylist,
+  reorderPlaylistTracks,
+  removeTrackFromPlaylist,
+} from "@/lib/music/api-client";
+import type { DbTrack, DbPlaylist, ListeningHistoryEntry } from "@/lib/music/types";
+import {
+  CreatePlaylistModal,
+  EditPlaylistModal,
+  AddToPlaylistModal,
+} from "./PlaylistManagerModal";
+import { LyricsPanel } from "./LyricsPanel";
+import {
+  ListeningHistoryList,
+} from "./ListeningHistoryModal";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type CatalogueMode = "loading" | "loaded" | "fallback";
+type RepeatMode = "off" | "all" | "one";
 
 export interface MusicRoomProps {
   externalAudioRef?: React.RefObject<HTMLAudioElement | null>;
@@ -22,79 +47,357 @@ export interface MusicRoomProps {
   initialTrackId?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Helper: convert a DbTrack to MusicTrackItem shape
+// ---------------------------------------------------------------------------
+
+function dbTrackToItem(track: DbTrack, likedIds: Set<string>): MusicTrackItem {
+  return {
+    id: track.id,
+    title: track.title,
+    artist: track.artist,
+    duration: track.duration_seconds
+      ? formatDuration(track.duration_seconds)
+      : "--:--",
+    durationSeconds: track.duration_seconds ?? 0,
+    isFavorite: likedIds.has(track.id),
+    url: track.audio_url ?? "",
+    playlist: undefined,
+    isLocal: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export function MusicRoom({
   externalAudioRef,
   onTrackSelected,
   initialTrackId,
 }: MusicRoomProps): React.JSX.Element {
-  // 1. Core State
-  const [tracks, setTracks] = useState<MusicTrackItem[]>(() => [...SEED_MUSIC_CATALOGUE]);
+  // ------------------------------------------------------------------
+  // Shared store
+  // ------------------------------------------------------------------
+  const store = useMusicStore();
+
+  // ------------------------------------------------------------------
+  // Catalogue mode
+  // ------------------------------------------------------------------
+  const [catalogueMode, setCatalogueMode] = useState<CatalogueMode>("loading");
+
+  // ------------------------------------------------------------------
+  // Local UI state (never promoted to store)
+  // ------------------------------------------------------------------
   const [cardSize, setCardSize] = useState<PlayerCardSize>("standard");
   const [activeFilter, setActiveFilter] = useState<MusicFilterType>("all");
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-
-  // Determine initial active track
-  const [currentTrackId, setCurrentTrackId] = useState<string>(() => {
-    if (initialTrackId) {
-      const match = SEED_MUSIC_CATALOGUE.find((t) => t.id === initialTrackId);
-      if (match) return match.id;
-    }
-    return SEED_MUSIC_CATALOGUE[0]?.id ?? "";
-  });
-
-  // Playback State
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(() => {
-    const initial = SEED_MUSIC_CATALOGUE.find((t) => t.id === (initialTrackId || SEED_MUSIC_CATALOGUE[0]?.id));
-    return initial ? initial.durationSeconds : 0;
-  });
-  const [isShuffle, setIsShuffle] = useState<boolean>(false);
-  const [isRepeat, setIsRepeat] = useState<boolean>(false);
-  const [volume, setVolume] = useState<number>(0.85);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-
-  // Unavailable Asset Toast (for honest handling of demo tracks without audio files)
   const [unavailableToast, setUnavailableToast] = useState<string | null>(null);
+  const [showQueue, setShowQueue] = useState<boolean>(false);
+  const [showLyrics, setShowLyrics] = useState<boolean>(false);
 
-  // Internal Audio Element Ref fallback
-  const internalAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Modals state
+  const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState<boolean>(false);
+  const [editingPlaylist, setEditingPlaylist] = useState<DbPlaylist | null>(null);
+  const [trackForPlaylist, setTrackForPlaylist] = useState<MusicTrackItem | null>(null);
+  const [isAddToPlaylistOpen, setIsAddToPlaylistOpen] = useState<boolean>(false);
+
+  // Recently played / listening history state
+  const [historyEntries, setHistoryEntries] = useState<ListeningHistoryEntry[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  // Custom playlist tracks state (when viewing a specific user playlist)
+  const [customPlaylistTracks, setCustomPlaylistTracks] = useState<MusicTrackItem[] | null>(null);
+  const [isCustomPlaylistLoading, setIsCustomPlaylistLoading] = useState<boolean>(false);
+
+  // ------------------------------------------------------------------
+  // Seed/demo-mode local tracks (kept separate from store)
+  // ------------------------------------------------------------------
+  const [seedTracks, setSeedTracks] = useState<MusicTrackItem[]>(() => [
+    ...SEED_MUSIC_CATALOGUE,
+  ]);
+
+  // Local file upload state — ephemeral, not in store
+  const [localTracks, setLocalTracks] = useState<MusicTrackItem[]>([]);
   const localTracksRef = useRef<MusicTrackItem[]>([]);
 
-  // Active track derived object
-  const currentTrack = useMemo(
-    () => tracks.find((t) => t.id === currentTrackId) || tracks[0] || null,
-    [tracks, currentTrackId]
+  // ------------------------------------------------------------------
+  // Playback state — bridge from store (with local fallbacks for demo mode)
+  // ------------------------------------------------------------------
+  const [localCurrentTrackId, setLocalCurrentTrackId] = useState<string>(
+    () => {
+      if (initialTrackId) {
+        const match = SEED_MUSIC_CATALOGUE.find((t) => t.id === initialTrackId);
+        if (match) return match.id;
+      }
+      return SEED_MUSIC_CATALOGUE[0]?.id ?? "";
+    }
   );
+  const [localIsPlaying, setLocalIsPlaying] = useState<boolean>(false);
+  const [localCurrentTime, setLocalCurrentTime] = useState<number>(0);
+  const [localDuration, setLocalDuration] = useState<number>(() => {
+    const initial = SEED_MUSIC_CATALOGUE.find(
+      (t) =>
+        t.id === (initialTrackId || SEED_MUSIC_CATALOGUE[0]?.id)
+    );
+    return initial ? initial.durationSeconds : 0;
+  });
+  const [localIsShuffle, setLocalIsShuffle] = useState<boolean>(false);
+  // 3-way repeat local (fallback when in demo mode)
+  const [localRepeatMode, setLocalRepeatMode] = useState<RepeatMode>("off");
+  const [localVolume, setLocalVolume] = useState<number>(0.85);
+  const [localIsMuted, setLocalIsMuted] = useState<boolean>(false);
 
-  // Filtered tracks derived list
-  const filteredTracks = useMemo(
-    () => searchAndFilterTracks(tracks, searchQuery, activeFilter, selectedPlaylist),
-    [tracks, searchQuery, activeFilter, selectedPlaylist]
-  );
+  // Use store values when loaded; local state in fallback/loading
+  const isStoreMode = catalogueMode === "loaded";
 
-  // Counts for filter chips
-  const totalCount = tracks.length;
-  const favCount = useMemo(() => tracks.filter((t) => t.isFavorite).length, [tracks]);
+  const currentTrackId: string | null = isStoreMode
+    ? store.currentTrackId
+    : localCurrentTrackId;
+  const isPlaying: boolean = isStoreMode ? store.isPlaying : localIsPlaying;
+  const currentTime: number = isStoreMode ? store.currentTime : localCurrentTime;
+  const duration: number = isStoreMode ? store.duration : localDuration;
+  const isShuffle: boolean = isStoreMode ? store.isShuffle : localIsShuffle;
+  const repeatMode: RepeatMode = isStoreMode
+    ? (store.repeatMode as RepeatMode)
+    : localRepeatMode;
+  const volume: number = isStoreMode ? store.volume : localVolume;
+  const isMuted: boolean = isStoreMode ? store.isMuted : localIsMuted;
 
-  // Audio element resolver
+  // ------------------------------------------------------------------
+  // Audio element ref resolution
+  // ------------------------------------------------------------------
+  const internalAudioRef = useRef<HTMLAudioElement | null>(null);
+
   const getAudioEl = useCallback((): HTMLAudioElement | null => {
     if (externalAudioRef && externalAudioRef.current) {
       return externalAudioRef.current;
     }
+    // When store is active, use shared audio ref
+    const sharedRef = getMusicAudioRef();
+    if (isStoreMode && sharedRef.current) {
+      return sharedRef.current;
+    }
     return internalAudioRef.current;
-  }, [externalAudioRef]);
+  }, [externalAudioRef, isStoreMode]);
 
-  // Clean up any local blob URLs on unmount
+  // ------------------------------------------------------------------
+  // Tracks: merge DB tracks (store) + local uploads + seed (fallback)
+  // ------------------------------------------------------------------
+  const tracks: MusicTrackItem[] = useMemo(() => {
+    if (catalogueMode === "loaded") {
+      // Map DB tracks; overlay liked state from store
+      const dbItems = store.tracks.map((t) =>
+        dbTrackToItem(t, store.likedTrackIds)
+      );
+      return [...localTracks, ...dbItems];
+    }
+    // fallback / loading: use seed tracks with local overrides
+    return [...localTracks, ...seedTracks];
+  }, [catalogueMode, store.tracks, store.likedTrackIds, localTracks, seedTracks]);
+
+  const currentTrack = useMemo(
+    () => tracks.find((t) => t.id === (currentTrackId ?? "")) || tracks[0] || null,
+    [tracks, currentTrackId]
+  );
+
+  // Filtered tracks for all / favorites / static playlists
+  const standardFilteredTracks = useMemo(
+    () =>
+      searchAndFilterTracks(tracks, searchQuery, activeFilter, selectedPlaylist),
+    [tracks, searchQuery, activeFilter, selectedPlaylist]
+  );
+
+  // Active custom playlist resolution
+  const isCustomPlaylistSelected =
+    activeFilter === "playlists" && selectedPlaylist.startsWith("custom:");
+  const customPlaylistId = isCustomPlaylistSelected
+    ? selectedPlaylist.replace("custom:", "")
+    : null;
+  const currentCustomPlaylist = useMemo(
+    () =>
+      customPlaylistId
+        ? store.playlists.find((p) => p.id === customPlaylistId) ?? null
+        : null,
+    [customPlaylistId, store.playlists]
+  );
+
+  // The active list of tracks to render in the table
+  const displayedTracks = useMemo(() => {
+    if (isCustomPlaylistSelected) {
+      if (!customPlaylistTracks) return [];
+      if (!searchQuery.trim()) return customPlaylistTracks;
+      const q = searchQuery.toLowerCase().trim();
+      return customPlaylistTracks.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q)
+      );
+    }
+    return standardFilteredTracks;
+  }, [isCustomPlaylistSelected, customPlaylistTracks, searchQuery, standardFilteredTracks]);
+
+  const totalCount = tracks.length;
+  const favCount = useMemo(() => tracks.filter((t) => t.isFavorite).length, [tracks]);
+
+  // ------------------------------------------------------------------
+  // Load custom playlist tracks when custom playlist is chosen
+  // ------------------------------------------------------------------
+  const loadCustomPlaylist = useCallback(
+    async (playlistId: string) => {
+      try {
+        setIsCustomPlaylistLoading(true);
+        const pl = await fetchPlaylist(playlistId);
+        if (pl.tracks) {
+          const items = pl.tracks.map((t) =>
+            dbTrackToItem(t, store.likedTrackIds)
+          );
+          setCustomPlaylistTracks(items);
+        } else {
+          setCustomPlaylistTracks([]);
+        }
+      } catch {
+        setCustomPlaylistTracks([]);
+      } finally {
+        setIsCustomPlaylistLoading(false);
+      }
+    },
+    [store.likedTrackIds]
+  );
+
   useEffect(() => {
-    const currentTracks = localTracksRef.current;
+    if (!isCustomPlaylistSelected || !customPlaylistId) return;
+    let isMounted = true;
+    fetchPlaylist(customPlaylistId)
+      .then((pl) => {
+        if (!isMounted) return;
+        const items = (pl.tracks ?? []).map((t) => dbTrackToItem(t, store.likedTrackIds));
+        setCustomPlaylistTracks(items);
+        setIsCustomPlaylistLoading(false);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setCustomPlaylistTracks([]);
+          setIsCustomPlaylistLoading(false);
+        }
+      });
     return () => {
-      revokeLocalTrackUrls(currentTracks);
+      isMounted = false;
     };
+  }, [isCustomPlaylistSelected, customPlaylistId, store.likedTrackIds]);
+
+  useEffect(() => {
+    if (activeFilter !== "recently-played") return;
+    let isMounted = true;
+    fetchHistory(30)
+      .then((data) => {
+        if (!isMounted) return;
+        setHistoryEntries(data);
+        setIsHistoryLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setHistoryError(err instanceof Error ? err.message : "Failed to load history.");
+        setIsHistoryLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [activeFilter]);
+
+  // ------------------------------------------------------------------
+  // On mount: try to load catalogue, likes, and playlists from store
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      try {
+        await store.loadCatalogue();
+        if (cancelled) return;
+
+        // Also load likes for isFavorite state
+        await store.loadLikes();
+        if (cancelled) return;
+
+        // Load custom playlists
+        await store.loadPlaylists();
+        if (cancelled) return;
+
+        setCatalogueMode("loaded");
+
+        // Restore persisted playback state (don't auto-play)
+        try {
+          await store.restorePlaybackState();
+        } catch {
+          // non-critical
+        }
+
+        // If initialTrackId requested and not yet active, honor it
+        if (
+          initialTrackId &&
+          store.currentTrackId !== initialTrackId
+        ) {
+          store.setCurrentTrack(initialTrackId);
+        }
+      } catch {
+        if (!cancelled) {
+          setCatalogueMode("fallback");
+        }
+      }
+    }
+
+    init();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync volume with active audio element
+  // ------------------------------------------------------------------
+  // History recording
+  // ------------------------------------------------------------------
+  const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHistoryTrackRef = useRef<string | null>(null);
+
+  const clearHistoryTimer = useCallback(() => {
+    if (historyTimerRef.current !== null) {
+      clearTimeout(historyTimerRef.current);
+      historyTimerRef.current = null;
+    }
+  }, []);
+
+  // When a DB track starts playing, schedule 30-second history record
+  const scheduleHistoryRecord = useCallback(
+    (trackId: string) => {
+      if (lastHistoryTrackRef.current === trackId) return; // already scheduled
+      clearHistoryTimer();
+      lastHistoryTrackRef.current = trackId;
+      historyTimerRef.current = setTimeout(() => {
+        recordHistoryEvent(trackId, { completed: false, progressSeconds: 30 }).catch(
+          () => undefined
+        );
+      }, 30_000);
+    },
+    [clearHistoryTimer]
+  );
+
+  // ------------------------------------------------------------------
+  // Clean up local blob URLs on unmount
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const ref = localTracksRef.current;
+    return () => {
+      revokeLocalTrackUrls(ref);
+      clearHistoryTimer();
+    };
+  }, [clearHistoryTimer]);
+
+  // ------------------------------------------------------------------
+  // Sync volume with audio element
+  // ------------------------------------------------------------------
   useEffect(() => {
     const audio = getAudioEl();
     if (audio) {
@@ -102,14 +405,63 @@ export function MusicRoom({
     }
   }, [volume, isMuted, getAudioEl]);
 
-  // Handle Playback State Change
+  // ------------------------------------------------------------------
+  // Playback helpers (local mode)
+  // ------------------------------------------------------------------
+
+  const setCurrentTrackId = useCallback(
+    (id: string) => {
+      if (isStoreMode) {
+        store.setCurrentTrack(id);
+      } else {
+        setLocalCurrentTrackId(id);
+      }
+    },
+    [isStoreMode, store]
+  );
+
+  const setIsPlayingState = useCallback(
+    (playing: boolean) => {
+      if (isStoreMode) {
+        store.setIsPlaying(playing);
+      } else {
+        setLocalIsPlaying(playing);
+      }
+    },
+    [isStoreMode, store]
+  );
+
+  const setCurrentTimeState = useCallback(
+    (t: number) => {
+      if (isStoreMode) {
+        store.setCurrentTime(t);
+      } else {
+        setLocalCurrentTime(t);
+      }
+    },
+    [isStoreMode, store]
+  );
+
+  const setDurationState = useCallback(
+    (d: number) => {
+      if (isStoreMode) {
+        store.setDuration(d);
+      } else {
+        setLocalDuration(d);
+      }
+    },
+    [isStoreMode, store]
+  );
+
+  // ------------------------------------------------------------------
+  // startPlayback
+  // ------------------------------------------------------------------
   const startPlayback = useCallback(
     (track: MusicTrackItem) => {
       const audio = getAudioEl();
 
       if (!track.url) {
-        // Honest state: No simulated fake audio playback!
-        setIsPlaying(false);
+        setIsPlayingState(false);
         setUnavailableToast(
           `Demo Track: "${track.title}" does not have an audio file attached yet. Upload a local song or add an MP3 in the creator studio.`
         );
@@ -129,23 +481,33 @@ export function MusicRoom({
         audio
           .play()
           .then(() => {
-            setIsPlaying(true);
+            setIsPlayingState(true);
+            // Schedule history only for DB-backed tracks (non-local, has url, not seed)
+            if (!track.isLocal && catalogueMode === "loaded") {
+              scheduleHistoryRecord(track.id);
+            }
           })
           .catch(() => {
-            setIsPlaying(false);
-            setUnavailableToast(`Could not play "${track.title}". Check audio format compatibility.`);
+            setIsPlayingState(false);
+            setUnavailableToast(
+              `Could not play "${track.title}". Check audio format compatibility.`
+            );
           });
       }
     },
-    [getAudioEl]
+    [getAudioEl, setIsPlayingState, catalogueMode, scheduleHistoryRecord]
   );
 
-  // Track selection handler
+  // ------------------------------------------------------------------
+  // handleSelectTrack
+  // ------------------------------------------------------------------
   const handleSelectTrack = useCallback(
     (track: MusicTrackItem, autoPlay = true) => {
       setCurrentTrackId(track.id);
-      setCurrentTime(0);
-      setDuration(track.durationSeconds || 0);
+      setCurrentTimeState(0);
+      setDurationState(track.durationSeconds || 0);
+      clearHistoryTimer();
+      lastHistoryTrackRef.current = null;
 
       if (onTrackSelected) {
         onTrackSelected(track);
@@ -158,13 +520,24 @@ export function MusicRoom({
         if (audio && track.url && audio.src !== track.url) {
           audio.src = track.url;
         }
-        setIsPlaying(false);
+        setIsPlayingState(false);
       }
     },
-    [onTrackSelected, startPlayback, getAudioEl]
+    [
+      onTrackSelected,
+      startPlayback,
+      getAudioEl,
+      setCurrentTrackId,
+      setCurrentTimeState,
+      setDurationState,
+      setIsPlayingState,
+      clearHistoryTimer,
+    ]
   );
 
-  // Play / Pause Toggle
+  // ------------------------------------------------------------------
+  // Toggle play / pause
+  // ------------------------------------------------------------------
   const handleTogglePlay = useCallback(() => {
     if (!currentTrack) return;
 
@@ -173,64 +546,142 @@ export function MusicRoom({
       if (audio) {
         audio.pause();
       }
-      setIsPlaying(false);
+      setIsPlayingState(false);
     } else {
       startPlayback(currentTrack);
     }
-  }, [currentTrack, isPlaying, getAudioEl, startPlayback]);
+  }, [currentTrack, isPlaying, getAudioEl, startPlayback, setIsPlayingState]);
 
-  // Next Track
-  const handleNextTrack = useCallback(() => {
-    if (filteredTracks.length === 0) return;
-    const currentIndex = filteredTracks.findIndex((t) => t.id === currentTrackId);
-    const nextIdx = getNextTrackIndex(currentIndex, filteredTracks.length, isShuffle, isRepeat);
-
-    if (nextIdx !== -1 && filteredTracks[nextIdx]) {
-      handleSelectTrack(filteredTracks[nextIdx], isPlaying);
+  // ------------------------------------------------------------------
+  // Repeat cycle (3-way)
+  // ------------------------------------------------------------------
+  const cycleRepeatMode = useCallback(() => {
+    const next: RepeatMode =
+      repeatMode === "off" ? "all" : repeatMode === "all" ? "one" : "off";
+    if (isStoreMode) {
+      store.setRepeatMode(next);
     } else {
-      // Reached the end of queue without repeat
-      setIsPlaying(false);
-      setCurrentTime(0);
-      const audio = getAudioEl();
-      if (audio) audio.pause();
+      setLocalRepeatMode(next);
     }
-  }, [filteredTracks, currentTrackId, isShuffle, isRepeat, isPlaying, handleSelectTrack, getAudioEl]);
+  }, [repeatMode, isStoreMode, store]);
 
-  // Previous Track
+  // ------------------------------------------------------------------
+  // Next track
+  // ------------------------------------------------------------------
+  const handleNextTrack = useCallback(() => {
+    const activeList = displayedTracks.length > 0 ? displayedTracks : tracks;
+    if (activeList.length === 0) return;
+
+    if (isStoreMode) {
+      const isRepeatAll = repeatMode === "all";
+      const isRepeatOne = repeatMode === "one";
+
+      if (isRepeatOne) {
+        const audio = getAudioEl();
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch(() => undefined);
+        }
+        return;
+      }
+
+      const currentIndex = activeList.findIndex((t) => t.id === currentTrackId);
+      const nextIdx = getNextTrackIndex(
+        currentIndex,
+        activeList.length,
+        isShuffle,
+        isRepeatAll
+      );
+
+      if (nextIdx !== -1 && activeList[nextIdx]) {
+        handleSelectTrack(activeList[nextIdx], isPlaying);
+      } else {
+        setIsPlayingState(false);
+        setCurrentTimeState(0);
+        const audio = getAudioEl();
+        if (audio) audio.pause();
+      }
+    } else {
+      const currentIndex = activeList.findIndex((t) => t.id === currentTrackId);
+      const isRepeatBool = repeatMode === "all";
+      const nextIdx = getNextTrackIndex(
+        currentIndex,
+        activeList.length,
+        isShuffle,
+        isRepeatBool
+      );
+
+      if (nextIdx !== -1 && activeList[nextIdx]) {
+        handleSelectTrack(activeList[nextIdx], isPlaying);
+      } else {
+        setIsPlayingState(false);
+        setCurrentTimeState(0);
+        const audio = getAudioEl();
+        if (audio) audio.pause();
+      }
+    }
+  }, [
+    displayedTracks,
+    tracks,
+    isStoreMode,
+    repeatMode,
+    currentTrackId,
+    isShuffle,
+    isPlaying,
+    handleSelectTrack,
+    getAudioEl,
+    setIsPlayingState,
+    setCurrentTimeState,
+  ]);
+
+  // ------------------------------------------------------------------
+  // Previous track
+  // ------------------------------------------------------------------
   const handlePreviousTrack = useCallback(() => {
-    if (filteredTracks.length === 0) return;
-    const currentIndex = filteredTracks.findIndex((t) => t.id === currentTrackId);
-    const prevIdx = getPreviousTrackIndex(currentIndex, filteredTracks.length);
+    const activeList = displayedTracks.length > 0 ? displayedTracks : tracks;
+    if (activeList.length === 0) return;
+    const currentIndex = activeList.findIndex((t) => t.id === currentTrackId);
+    const prevIdx = getPreviousTrackIndex(currentIndex, activeList.length);
 
-    if (prevIdx !== -1 && filteredTracks[prevIdx]) {
-      handleSelectTrack(filteredTracks[prevIdx], isPlaying);
+    if (prevIdx !== -1 && activeList[prevIdx]) {
+      handleSelectTrack(activeList[prevIdx], isPlaying);
     }
-  }, [filteredTracks, currentTrackId, isPlaying, handleSelectTrack]);
+  }, [displayedTracks, tracks, currentTrackId, isPlaying, handleSelectTrack]);
 
-  // Audio Event Listeners
+  // ------------------------------------------------------------------
+  // Audio event listeners
+  // ------------------------------------------------------------------
   useEffect(() => {
     const audio = getAudioEl();
     if (!audio) return;
 
     const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
+      setCurrentTimeState(audio.currentTime);
       if (audio.duration && !isNaN(audio.duration)) {
-        setDuration(Math.floor(audio.duration));
+        setDurationState(Math.floor(audio.duration));
       }
     };
 
     const onLoadedMetadata = () => {
       if (audio.duration && !isNaN(audio.duration)) {
-        setDuration(Math.floor(audio.duration));
+        setDurationState(Math.floor(audio.duration));
       }
     };
 
     const onEnded = () => {
+      // Record history completion for DB tracks
+      if (currentTrack && !currentTrack.isLocal && catalogueMode === "loaded") {
+        recordHistoryEvent(currentTrack.id, { completed: true }).catch(
+          () => undefined
+        );
+        clearHistoryTimer();
+        lastHistoryTrackRef.current = null;
+      }
       handleNextTrack();
     };
 
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    const onPlay = () => setIsPlayingState(true);
+    const onPause = () => setIsPlayingState(false);
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
@@ -245,27 +696,134 @@ export function MusicRoom({
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
     };
-  }, [getAudioEl, handleNextTrack]);
+  }, [
+    getAudioEl,
+    handleNextTrack,
+    setCurrentTimeState,
+    setDurationState,
+    setIsPlayingState,
+    currentTrack,
+    catalogueMode,
+    clearHistoryTimer,
+  ]);
 
-  // Seek / Progress Scrubbing
+  // ------------------------------------------------------------------
+  // Seek / progress scrubbing
+  // ------------------------------------------------------------------
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = Number(e.target.value);
-    setCurrentTime(newTime);
+    setCurrentTimeState(newTime);
     const audio = getAudioEl();
     if (audio) {
       audio.currentTime = newTime;
     }
   };
 
-  // Toggle Favorite
-  const handleToggleFavorite = (trackId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setTracks((prev) =>
-      prev.map((t) => (t.id === trackId ? { ...t, isFavorite: !t.isFavorite } : t))
-    );
-  };
+  // ------------------------------------------------------------------
+  // Shuffle
+  // ------------------------------------------------------------------
+  const handleToggleShuffle = useCallback(() => {
+    if (isStoreMode) {
+      store.toggleShuffle();
+    } else {
+      setLocalIsShuffle((prev) => !prev);
+    }
+  }, [isStoreMode, store]);
 
+  // ------------------------------------------------------------------
+  // Volume
+  // ------------------------------------------------------------------
+  const handleVolumeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = Number(e.target.value);
+      if (isStoreMode) {
+        store.setVolume(v);
+        if (isMuted) store.setMuted(false);
+      } else {
+        setLocalVolume(v);
+        if (isMuted) setLocalIsMuted(false);
+      }
+    },
+    [isStoreMode, store, isMuted]
+  );
+
+  const handleToggleMute = useCallback(() => {
+    if (isStoreMode) {
+      store.setMuted(!isMuted);
+    } else {
+      setLocalIsMuted((prev) => !prev);
+    }
+  }, [isStoreMode, store, isMuted]);
+
+  // ------------------------------------------------------------------
+  // Toggle Favorite
+  // ------------------------------------------------------------------
+  const handleToggleFavorite = useCallback(
+    (trackId: string, e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+
+      const track = tracks.find((t) => t.id === trackId);
+      if (!track) return;
+
+      if (!track.isLocal && catalogueMode === "loaded") {
+        store.toggleLike(trackId).catch(() => undefined);
+      } else {
+        setSeedTracks((prev) =>
+          prev.map((t) =>
+            t.id === trackId ? { ...t, isFavorite: !t.isFavorite } : t
+          )
+        );
+      }
+    },
+    [tracks, catalogueMode, store]
+  );
+
+  // ------------------------------------------------------------------
+  // Reorder and remove in custom playlists
+  // ------------------------------------------------------------------
+  const handleReorderPlaylistTrack = useCallback(
+    async (idx: number, direction: -1 | 1) => {
+      if (!customPlaylistTracks || !customPlaylistId) return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= customPlaylistTracks.length) return;
+
+      const updated = [...customPlaylistTracks];
+      const [item] = updated.splice(idx, 1);
+      updated.splice(targetIdx, 0, item);
+      setCustomPlaylistTracks(updated);
+
+      try {
+        await reorderPlaylistTracks(
+          customPlaylistId,
+          updated.map((t) => t.id)
+        );
+      } catch {
+        loadCustomPlaylist(customPlaylistId);
+      }
+    },
+    [customPlaylistTracks, customPlaylistId, loadCustomPlaylist]
+  );
+
+  const handleRemoveTrackFromCustomPlaylist = useCallback(
+    async (trackId: string) => {
+      if (!customPlaylistId) return;
+      setCustomPlaylistTracks((prev) =>
+        prev ? prev.filter((t) => t.id !== trackId) : null
+      );
+
+      try {
+        await removeTrackFromPlaylist(customPlaylistId, trackId);
+        store.loadPlaylists();
+      } catch {
+        loadCustomPlaylist(customPlaylistId);
+      }
+    },
+    [customPlaylistId, store, loadCustomPlaylist]
+  );
+
+  // ------------------------------------------------------------------
   // Local File Upload
+  // ------------------------------------------------------------------
   const handleAddLocalFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -273,7 +831,11 @@ export function MusicRoom({
     const newLocalTracks: MusicTrackItem[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (typeof window !== "undefined" && window.URL && window.URL.createObjectURL) {
+      if (
+        typeof window !== "undefined" &&
+        window.URL &&
+        window.URL.createObjectURL
+      ) {
         const objectUrl = window.URL.createObjectURL(file);
         const item = createLocalTrack(file, objectUrl);
         newLocalTracks.push(item);
@@ -282,20 +844,56 @@ export function MusicRoom({
     }
 
     if (newLocalTracks.length > 0) {
-      setTracks((prev) => [...newLocalTracks, ...prev]);
-      // Immediately select and start the first uploaded track
+      setLocalTracks((prev) => [...newLocalTracks, ...prev]);
       handleSelectTrack(newLocalTracks[0], true);
       setActiveFilter("all");
     }
 
-    // Reset input value so same files can be re-selected if desired
     e.target.value = "";
   };
 
+  // ------------------------------------------------------------------
+  // Queue items (resolved to MusicTrackItem from store queue)
+  // ------------------------------------------------------------------
+  const queueItems = useMemo((): MusicTrackItem[] => {
+    if (!isStoreMode || store.queue.length === 0) return [];
+    return store.queue
+      .map((id) => tracks.find((t) => t.id === id))
+      .filter((t): t is MusicTrackItem => t !== undefined);
+  }, [isStoreMode, store.queue, tracks]);
+
+  // ------------------------------------------------------------------
+  // Repeat button label / class
+  // ------------------------------------------------------------------
+  const repeatLabel =
+    repeatMode === "off"
+      ? "Enable repeat-all (↻)"
+      : repeatMode === "all"
+      ? "Enable repeat-one (①↻)"
+      : "Disable repeat (↻)";
+
+  const repeatDisplay =
+    repeatMode === "off" ? "↻" : repeatMode === "all" ? "↻" : "①↻";
+
+  const repeatBtnClass = [
+    "music-btn-control",
+    repeatMode !== "off" ? "is-active" : "",
+    repeatMode === "one" ? "is-repeat-one" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // ------------------------------------------------------------------
+  // Render
+  // ------------------------------------------------------------------
   return (
     <div className="music-room-container" data-theme="love">
-      {/* Fallback Internal Audio element if external is not provided */}
-      {!externalAudioRef && <audio ref={internalAudioRef} preload="metadata" />}
+      {/* Audio element: external → store's ref → internal */}
+      {!externalAudioRef && (
+        isStoreMode
+          ? <audio ref={getMusicAudioRef()} preload="metadata" />
+          : <audio ref={internalAudioRef} preload="metadata" />
+      )}
 
       {/* Header */}
       <header className="music-room-header">
@@ -306,10 +904,25 @@ export function MusicRoom({
           Music Room <span className="heart-glyph">♡</span>
         </h1>
         <p className="music-room-subtitle">
-          Every melody carries a moment, and every song brings us back to each other.
-          Listen to our shared catalogue or upload your own favorites.
+          Every melody carries a moment, and every song brings us back to each
+          other. Listen to our shared catalogue or upload your own favorites.
         </p>
       </header>
+
+      {/* Loading state */}
+      {catalogueMode === "loading" && (
+        <div className="music-loading-state" role="status" aria-live="polite">
+          <span>♫</span> Loading music catalogue…
+        </div>
+      )}
+
+      {/* Demo mode notice */}
+      {catalogueMode === "fallback" && (
+        <div className="music-demo-notice" role="alert">
+          <span>🎵</span> Running in demo mode — audio files are unavailable.
+          Sign in to stream the full catalogue.
+        </div>
+      )}
 
       {/* Toolbar: Search, Filters, Add Local Songs */}
       <section className="music-toolbar" aria-label="Music library controls">
@@ -368,6 +981,15 @@ export function MusicRoom({
             >
               Playlists ♫
             </button>
+            <button
+              type="button"
+              className={`music-chip ${activeFilter === "recently-played" ? "is-active" : ""}`}
+              onClick={() => setActiveFilter("recently-played")}
+              role="radio"
+              aria-checked={activeFilter === "recently-played"}
+            >
+              Recently Played ↺
+            </button>
           </div>
 
           {/* Add Local Songs Button */}
@@ -407,12 +1029,30 @@ export function MusicRoom({
                 {name}
               </button>
             ))}
+            {store.playlists.map((pl) => (
+              <button
+                key={pl.id}
+                type="button"
+                className={`music-playlist-pill ${selectedPlaylist === `custom:${pl.id}` ? "is-active" : ""}`}
+                onClick={() => setSelectedPlaylist(`custom:${pl.id}`)}
+              >
+                {pl.name} {pl.track_count !== undefined ? `(${pl.track_count})` : ""}
+              </button>
+            ))}
             <button
               type="button"
               className={`music-playlist-pill ${selectedPlaylist === "Local Uploads" ? "is-active" : ""}`}
               onClick={() => setSelectedPlaylist("Local Uploads")}
             >
               Local Uploads
+            </button>
+            <button
+              type="button"
+              className="music-new-playlist-btn"
+              onClick={() => setIsCreatePlaylistOpen(true)}
+              aria-label="Create new playlist"
+            >
+              ＋ New Playlist
             </button>
           </div>
         )}
@@ -583,7 +1223,7 @@ export function MusicRoom({
                 <button
                   type="button"
                   className={`music-btn-control ${isShuffle ? "is-active" : ""}`}
-                  onClick={() => setIsShuffle((prev) => !prev)}
+                  onClick={handleToggleShuffle}
                   aria-pressed={isShuffle}
                   aria-label={isShuffle ? "Disable shuffle" : "Enable shuffle"}
                   title="Shuffle (⤨)"
@@ -624,16 +1264,28 @@ export function MusicRoom({
                   ▶|
                 </button>
 
-                {/* Repeat */}
+                {/* Repeat — 3-way cycle: off → all → one → off */}
                 <button
                   type="button"
-                  className={`music-btn-control ${isRepeat ? "is-active" : ""}`}
-                  onClick={() => setIsRepeat((prev) => !prev)}
-                  aria-pressed={isRepeat}
-                  aria-label={isRepeat ? "Disable repeat" : "Enable repeat"}
-                  title="Repeat (↻)"
+                  className={repeatBtnClass}
+                  onClick={cycleRepeatMode}
+                  aria-pressed={repeatMode !== "off"}
+                  aria-label={repeatLabel}
+                  title={repeatLabel}
                 >
-                  ↻
+                  {repeatDisplay}
+                </button>
+
+                {/* Synchronized Lyrics Toggle */}
+                <button
+                  type="button"
+                  className={`music-btn-control music-lyrics-toggle-btn ${showLyrics ? "is-active" : ""}`}
+                  onClick={() => setShowLyrics((v) => !v)}
+                  aria-pressed={showLyrics}
+                  aria-label={showLyrics ? "Hide synchronized lyrics" : "Show synchronized lyrics"}
+                  title="Toggle lyrics (💬)"
+                >
+                  💬
                 </button>
               </div>
 
@@ -642,7 +1294,7 @@ export function MusicRoom({
                 <button
                   type="button"
                   className="music-volume-icon-btn"
-                  onClick={() => setIsMuted((prev) => !prev)}
+                  onClick={handleToggleMute}
                   aria-label={isMuted ? "Unmute audio" : "Mute audio"}
                 >
                   {isMuted || volume === 0 ? "🔇" : "🔉"}
@@ -654,10 +1306,7 @@ export function MusicRoom({
                   max={1}
                   step={0.01}
                   value={isMuted ? 0 : volume}
-                  onChange={(e) => {
-                    setVolume(Number(e.target.value));
-                    if (isMuted) setIsMuted(false);
-                  }}
+                  onChange={handleVolumeChange}
                   aria-label="Volume slider"
                 />
                 <span className="music-volume-icon-btn" aria-hidden="true">
@@ -682,100 +1331,324 @@ export function MusicRoom({
             </button>
           </div>
         )}
-      </section>
 
-      {/* Library Table / Grid */}
-      <section className="music-library-section" aria-label="Song catalogue library">
-        <div className="music-library-header">
-          <h2 className="music-library-title">Song Library</h2>
-          <span className="music-library-count">
-            {filteredTracks.length} {filteredTracks.length === 1 ? "track" : "tracks"}
-          </span>
-        </div>
+        {/* Lyrics Panel Expansion */}
+        <LyricsPanel
+          trackId={currentTrack?.id ?? null}
+          trackTitle={currentTrack?.title}
+          trackArtist={currentTrack?.artist}
+          currentTime={currentTime}
+          isOpen={showLyrics}
+          onClose={() => setShowLyrics(false)}
+          onSeek={(seekSec) => {
+            setCurrentTimeState(seekSec);
+            const audio = getAudioEl();
+            if (audio) {
+              audio.currentTime = seekSec;
+            }
+          }}
+        />
 
-        {filteredTracks.length > 0 ? (
-          <div className="music-table-wrapper">
-            <table className="music-table">
-              <thead>
-                <tr>
-                  <th className="music-col-index">#</th>
-                  <th className="music-col-cover"></th>
-                  <th className="music-col-info">Title & Artist</th>
-                  <th className="music-col-playlist">Playlist</th>
-                  <th className="music-col-duration">Duration</th>
-                  <th className="music-col-actions">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTracks.map((track, idx) => {
-                  const isActive = track.id === currentTrackId;
+        {/* Queue Panel */}
+        {isStoreMode && queueItems.length > 0 && (
+          <div className="music-queue-panel">
+            <button
+              type="button"
+              className="music-queue-toggle"
+              onClick={() => setShowQueue((v) => !v)}
+              aria-expanded={showQueue}
+              aria-controls="music-queue-list"
+            >
+              {showQueue ? "▾" : "▸"} Queue ({queueItems.length})
+            </button>
+            {showQueue && (
+              <ol
+                id="music-queue-list"
+                className="music-queue-list"
+                aria-label="Upcoming queue"
+              >
+                {queueItems.map((item, idx) => {
+                  const isCurrent = item.id === currentTrackId;
                   return (
-                    <tr
-                      key={track.id}
-                      className={`music-track-row ${isActive ? "is-active-row" : ""}`}
-                      onClick={() => handleSelectTrack(track, true)}
+                    <li
+                      key={item.id}
+                      className={`music-queue-item${isCurrent ? " is-current" : ""}`}
+                      onClick={() => handleSelectTrack(item, true)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectTrack(item, true);
+                        }
+                      }}
+                      aria-label={`${isCurrent ? "Now playing: " : ""}${item.title} by ${item.artist}`}
                     >
-                      <td className="music-col-index">
-                        {isActive && isPlaying ? "♫" : String(idx + 1).padStart(2, "0")}
-                      </td>
-                      <td className="music-col-cover">
-                        <div className="music-mini-cover" aria-hidden="true">
-                          <span>✿</span>
-                        </div>
-                      </td>
-                      <td className="music-col-info">
-                        <div className="music-row-title">{track.title}</div>
-                        <div className="music-row-artist">{track.artist}</div>
-                      </td>
-                      <td className="music-col-playlist">{track.playlist || "—"}</td>
-                      <td className="music-col-duration">{track.duration}</td>
-                      <td className="music-col-actions" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className={`music-table-action-btn ${track.isFavorite ? "is-fav" : ""}`}
-                          onClick={(e) => handleToggleFavorite(track.id, e)}
-                          aria-label={
-                            track.isFavorite
-                              ? `Remove ${track.title} from favourites`
-                              : `Add ${track.title} to favourites`
-                          }
-                        >
-                          {track.isFavorite ? "♥" : "♡"}
-                        </button>
-                      </td>
-                    </tr>
+                      <span className="music-queue-item-index">
+                        {isCurrent ? "♫" : String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <span className="music-queue-item-info">
+                        <span className="music-queue-item-title">{item.title}</span>
+                        <span className="music-queue-item-artist">{item.artist}</span>
+                      </span>
+                    </li>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="music-empty-state">
-            <span className="music-empty-icon" aria-hidden="true">
-              🌸
-            </span>
-            <h3 className="music-empty-title">
-              {searchQuery ? "No matching songs found" : "No songs in this list"}
-            </h3>
-            <p className="music-empty-desc">
-              {searchQuery
-                ? `We couldn't find anything matching "${searchQuery}". Try another artist or song title.`
-                : activeFilter === "favorites"
-                ? "You haven't marked any favorites yet. Click the heart icon ♡ on any song to save it here!"
-                : "No songs found for this playlist."}
-            </p>
-            {searchQuery && (
-              <button
-                type="button"
-                className="music-empty-action"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear search
-              </button>
+              </ol>
             )}
           </div>
         )}
       </section>
+
+      {/* Library Table / Grid / Recently Played Section */}
+      {activeFilter === "recently-played" ? (
+        <section className="music-library-section" aria-label="Recently played tracks">
+          <div className="music-library-header">
+            <h2 className="music-library-title">Recently Played Melodies</h2>
+            <span className="music-library-count">
+              {historyEntries.length} {historyEntries.length === 1 ? "track" : "tracks"}
+            </span>
+          </div>
+
+          <ListeningHistoryList
+            entries={historyEntries}
+            isLoading={isHistoryLoading}
+            error={historyError}
+            onSelectTrack={(track) => handleSelectTrack(track, true)}
+            knownTracks={tracks}
+          />
+        </section>
+      ) : (
+        <section className="music-library-section" aria-label="Song catalogue library">
+          <div className="music-library-header">
+            <h2 className="music-library-title">Song Library</h2>
+            <span className="music-library-count">
+              {displayedTracks.length} {displayedTracks.length === 1 ? "track" : "tracks"}
+            </span>
+          </div>
+
+          {/* Custom Playlist Header (When viewing a user-created playlist) */}
+          {isCustomPlaylistSelected && currentCustomPlaylist && (
+            <div className="music-custom-playlist-header">
+              <div className="music-custom-playlist-meta">
+                <h3 className="music-custom-playlist-name">{currentCustomPlaylist.name}</h3>
+                {currentCustomPlaylist.description && (
+                  <p className="music-custom-playlist-desc">{currentCustomPlaylist.description}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="music-custom-playlist-edit-btn"
+                onClick={() => setEditingPlaylist(currentCustomPlaylist)}
+              >
+                ⚙ Edit Playlist
+              </button>
+            </div>
+          )}
+
+          {isCustomPlaylistLoading ? (
+            <div className="music-loading-state" role="status" aria-live="polite">
+              <span>♫</span> Loading playlist tracks…
+            </div>
+          ) : displayedTracks.length > 0 ? (
+            <div className="music-table-wrapper">
+              <table className="music-table">
+                <thead>
+                  <tr>
+                    <th className="music-col-index">#</th>
+                    <th className="music-col-cover"></th>
+                    <th className="music-col-info">Title &amp; Artist</th>
+                    <th className="music-col-playlist">Playlist</th>
+                    <th className="music-col-duration">Duration</th>
+                    <th className="music-col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedTracks.map((track, idx) => {
+                    const isActive = track.id === currentTrackId;
+                    return (
+                      <tr
+                        key={track.id}
+                        className={`music-track-row ${isActive ? "is-active-row" : ""}`}
+                        onClick={() => handleSelectTrack(track, true)}
+                      >
+                        <td className="music-col-index">
+                          {isActive && isPlaying ? "♫" : String(idx + 1).padStart(2, "0")}
+                        </td>
+                        <td className="music-col-cover">
+                          <div className="music-mini-cover" aria-hidden="true">
+                            <span>✿</span>
+                          </div>
+                        </td>
+                        <td className="music-col-info">
+                          <div className="music-row-title">{track.title}</div>
+                          <div className="music-row-artist">{track.artist}</div>
+                        </td>
+                        <td className="music-col-playlist">
+                          {isCustomPlaylistSelected
+                            ? currentCustomPlaylist?.name
+                            : track.playlist || "—"}
+                        </td>
+                        <td className="music-col-duration">{track.duration}</td>
+                        <td
+                          className="music-col-actions"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="music-track-actions-cell">
+                            {/* Reorder and remove buttons when viewing custom playlist */}
+                            {isCustomPlaylistSelected && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="music-track-reorder-btn"
+                                  onClick={() => handleReorderPlaylistTrack(idx, -1)}
+                                  disabled={idx === 0}
+                                  aria-label={`Move ${track.title} up`}
+                                  title="Move up (▲)"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  className="music-track-reorder-btn"
+                                  onClick={() => handleReorderPlaylistTrack(idx, 1)}
+                                  disabled={idx === displayedTracks.length - 1}
+                                  aria-label={`Move ${track.title} down`}
+                                  title="Move down (▼)"
+                                >
+                                  ▼
+                                </button>
+                                <button
+                                  type="button"
+                                  className="music-track-remove-btn"
+                                  onClick={() => handleRemoveTrackFromCustomPlaylist(track.id)}
+                                  aria-label={`Remove ${track.title} from playlist`}
+                                  title="Remove from playlist (×)"
+                                >
+                                  ×
+                                </button>
+                              </>
+                            )}
+
+                            {/* Add to Playlist button */}
+                            <button
+                              type="button"
+                              className="music-table-action-btn music-add-to-playlist-btn"
+                              onClick={() => {
+                                setTrackForPlaylist(track);
+                                setIsAddToPlaylistOpen(true);
+                              }}
+                              aria-label={`Add ${track.title} to playlist`}
+                              title="Add to playlist (＋)"
+                            >
+                              ＋
+                            </button>
+
+                            {/* Heart favorite button */}
+                            <button
+                              type="button"
+                              className={`music-table-action-btn ${track.isFavorite ? "is-fav" : ""}`}
+                              onClick={(e) => handleToggleFavorite(track.id, e)}
+                              aria-label={
+                                track.isFavorite
+                                  ? `Remove ${track.title} from favourites`
+                                  : `Add ${track.title} to favourites`
+                              }
+                            >
+                              {track.isFavorite ? "♥" : "♡"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="music-empty-state">
+              <span className="music-empty-icon" aria-hidden="true">
+                🌸
+              </span>
+              <h3 className="music-empty-title">
+                {searchQuery ? "No matching songs found" : "No songs in this list"}
+              </h3>
+              <p className="music-empty-desc">
+                {searchQuery
+                  ? `We couldn't find anything matching "${searchQuery}". Try another artist or song title.`
+                  : activeFilter === "favorites"
+                  ? "You haven't marked any favorites yet. Click the heart icon ♡ on any song to save it here!"
+                  : isCustomPlaylistSelected
+                  ? "This playlist has no songs yet. Browse the catalogue and click ＋ to add your favorites!"
+                  : "No songs found for this playlist."}
+              </p>
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="music-empty-action"
+                  onClick={() => setSearchQuery("")}
+                >
+                  Clear search
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ------------------------------------------------------------------
+          Playlist Management Modals
+          ------------------------------------------------------------------ */}
+
+      {/* Create Playlist Modal */}
+      <CreatePlaylistModal
+        isOpen={isCreatePlaylistOpen}
+        onClose={() => setIsCreatePlaylistOpen(false)}
+        onCreated={(newPlaylist) => {
+          store.loadPlaylists();
+          setActiveFilter("playlists");
+          setSelectedPlaylist(`custom:${newPlaylist.id}`);
+        }}
+      />
+
+      {/* Edit Playlist Modal */}
+      <EditPlaylistModal
+        isOpen={editingPlaylist !== null}
+        playlist={editingPlaylist}
+        onClose={() => setEditingPlaylist(null)}
+        onUpdated={(updated) => {
+          store.loadPlaylists();
+          if (customPlaylistId === updated.id) {
+            loadCustomPlaylist(updated.id);
+          }
+        }}
+        onDeleted={(deletedId) => {
+          store.loadPlaylists();
+          if (customPlaylistId === deletedId) {
+            setSelectedPlaylist("all");
+          }
+        }}
+      />
+
+      {/* Add To Playlist Modal */}
+      <AddToPlaylistModal
+        isOpen={isAddToPlaylistOpen}
+        track={trackForPlaylist}
+        playlists={store.playlists}
+        onClose={() => {
+          setIsAddToPlaylistOpen(false);
+          setTrackForPlaylist(null);
+        }}
+        onTrackAdded={(playlistId) => {
+          store.loadPlaylists();
+          if (customPlaylistId === playlistId) {
+            loadCustomPlaylist(playlistId);
+          }
+        }}
+        onCreateNewPlaylist={() => {
+          setIsCreatePlaylistOpen(true);
+        }}
+      />
     </div>
   );
 }

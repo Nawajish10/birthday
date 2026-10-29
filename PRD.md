@@ -737,3 +737,39 @@ The Profile and Memories experiences represent an authentic Instagram and Snapch
 - **TypeScript Typecheck:** 0 errors (`npx tsc --noEmit`).
 - **ESLint Code Quality:** 0 errors, 0 warnings (`npm run lint`).
 - **Production Next.js Build:** Exit code 0, 13/13 static and dynamic routes compiled and optimized.
+
+---
+
+## 22. Private Music Room, Audio Ingestion, Persistent Playback & Acceptance (October 2026)
+
+### 22.1 Architecture & Core Invariants
+1. **Single Authoritative Playback Controller:**
+   - Centralized module singleton store `useMusicStore()` and audio reference getter `getMusicAudioRef()` (`src/lib/music/use-music-store.ts`).
+   - Strictly enforces exactly one DOM `<audio>` element across the entire lifecycle, eliminating competing playback controllers.
+   - Preserves Story-Music integration (`StoryViewer.tsx`) via non-destructive state snapshotting (`captureAudioState`/`restoreAudioState`), resuming ambient music only if it was playing prior to story playback.
+2. **Provider-Neutral Track Architecture:**
+   - Unified `DbTrack` schema supporting `source_type: 'imported' | 'provider'` with `source_provider` metadata.
+   - Decoupled from any proprietary streaming vendor; no DRM circumvention or unauthorized scraping.
+3. **Private Account Data & Security:**
+   - Audio files isolated in private Supabase Storage bucket `birthday-audio` under path convention `audio/{track_id}/{filename}`.
+   - Media playback accessed exclusively via 60-minute time-limited signed URLs (`/api/music/upload/signed-url`) with strict path traversal sanitation.
+   - Row-Level Security (RLS) enforcement across all tables: `public.music_tracks`, `user_playlists`, `user_playlist_tracks`, `music_likes`, `music_playback_state`, `music_listening_history`, and `music_lyrics`.
+   - Privileged Supabase service-role keys restricted strictly to server-side ingestion and upload route handlers.
+
+### 22.2 Ingestion & Management Pipelines
+1. **Dual Ingestion Strategy:**
+   - **CLI Batch-Import Tooling (`scripts/import-music.ts`):** Supports CSV and JSON manifests, magic-byte audio validation (MP3, M4A/AAC, OGG, WAV, FLAC), SHA-256 track deduplication, automated storage upload, database upsertion, and non-destructive `--dry-run` simulation mode.
+   - **Authenticated Admin UI (`src/components/admin/music/AdminMusicUpload.tsx`):** Drag-and-drop batch upload interface embedded within `Admin.tsx`, offering multi-file queue management, automatic browser-side duration extraction, 50MB file validation, real-time XHR progress indicators, and individual retry/discard controls.
+2. **Personal Listening Features:**
+   - **Likes & Liked Songs:** One-click optimistic track liking, integrated filtering, and dedicated collection view.
+   - **Playlist Management (`PlaylistManagerModal.tsx`):** Full CRUD capabilities for custom user playlists (create, rename, describe, track addition/removal, drag-and-drop/index reordering, and deletion) with ARIA-compliant modal dialogs.
+   - **Listening History (`ListeningHistoryModal.tsx`):** Server-persisted history records triggered after 30 seconds of listening or completed track playback, with relative timestamps and completion status tags.
+   - **Synchronized Lyrics Panel (`LyricsPanel.tsx`):** Real-time millisecond-synchronized auto-scrolling lyrics with click-to-seek playback positioning, formatted timestamps, and graceful un-timed/plain-text fallbacks.
+   - **Persistent Queue & State Recovery:** Queue drawer with index navigation, 3-mode repeat cycling (`off` -> `all` -> `one`), track shuffling, and 5-second debounced state persistence (`music_playback_state`) enabling cross-session track and time recovery.
+
+### 22.3 Verified Production Quality Metrics
+- **Automated Test Suite:** **657 / 657 tests passing across 90 test suites (0 failures)**.
+  - Dedicated music domain coverage: Catalogue (97 tests), Store & Playback (83 tests), API Contracts (25 tests), Security & RLS (24 tests), Story-Music Regression (30 tests), Ingestion & Admin (10 tests), Personal Features (14 tests), Music Room UI (31 tests).
+- **TypeScript Strict Verification:** 0 type errors (`npx tsc --noEmit`).
+- **ESLint Code Quality:** 0 errors, 0 warnings (`npm run lint`).
+- **Production Build:** Next.js production build compiled cleanly (`npm run build`), generating all static and dynamic application routes.

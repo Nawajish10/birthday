@@ -3,6 +3,93 @@
 ## 1. High-Level Navigation Flow
 
 ```
+
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
+```
 [ Visitor enters link ]
          │
          ▼
@@ -44,6 +131,93 @@
    └──► Section 5: Memories and Photographs Preview
            ├── Click Polaroid Photo ──► Opens full-screen media lightbox with caption & dismiss
            └── "Open all memories →" ──► Switches to Memories tab (`tab: "stories"`)
+```
+
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
 ```
 
 ---
@@ -272,6 +446,93 @@
 
 ### 11.1 Snapchat Camera Default Experience Flow
 ```
+
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
+```
 [ User opens Memories Tab (`tab === "stories"`) ]
          │
          ▼
@@ -290,7 +551,181 @@
          └── Retake / Cancel
 ```
 
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
+```
+
 ### 11.2 Read & Study Multi-Template Sanctuary Flow
+```
+
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
 ```
 [ User opens Study Tab (`tab === "study"`) ]
          │
@@ -317,7 +752,181 @@
                      └── Margin Notes Form (Saved per book in local storage)
 ```
 
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
+```
+
 ### 11.3 Real-Time Multiplayer Games Flow
+```
+
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
 ```
 [ User opens Games Tab (`tab === "games"`) ]
          │
@@ -344,8 +953,182 @@
 
 ---
 
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
+```
+
+---
+
 ## 11. Passcode Authentication & Gate Access Flow (DDMMYYYY Authoritative Verification)
 
+```
+
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
 ```
 [ Visitor arrives at babyyy.axcrivo.in / root ]
                │
@@ -391,4 +1174,91 @@
    └── Rate Limited (6+ wrong attempts in DB):
          ├── Returns HTTP 429 `{ error: "Too many attempts..." }`
          └── Client displays cooldown warning
+```
+
+---
+
+## 9. Private Music System & Persistent Audio Engine Execution Flow
+
+```text
+================================================================================
+                    MUSIC SYSTEM END-TO-END EXECUTION FLOW
+================================================================================
+
+1. AUDIO INGESTION & STORAGE PIPELINES
+--------------------------------------------------------------------------------
+A) CLI Batch-Import (`scripts/import-music.ts`):
+   Manifest (CSV/JSON) + Audio Directory
+         │
+         ├──► Validates manifest columns (title, artist, album, audio_filename, playlist)
+         ├──► Checks file existence & binary magic bytes (MP3, WAV, M4A, AAC, OGG, FLAC)
+         ├──► Computes SHA-256 file checksum for duplicate prevention
+         ├──► Deduplication: queries public.music_tracks by checksum / title+artist
+         │      ├── Duplicate found -> Skips upload (idempotent, safe)
+         │      └── New track -> Continues
+         ├──► Ingests file to Supabase Storage: bucket `birthday-audio`, path `audio/{track_id}/{filename}`
+         ├──► Inserts metadata record to `public.music_tracks` with `is_published: true`
+         └──► Associates with playlist in `public.music_playlist_tracks` if specified
+
+B) Authenticated Admin Upload Interface (`src/components/admin/music/AdminMusicUpload.tsx`):
+   Browser Drag-and-Drop / File Picker (max 50MB)
+         │
+         ├──► Extracts duration via browser Audio metadata API
+         ├──► Validates MIME type and file size client-side
+         ├──► `POST /api/music/upload` (Multipart Form, server-verified admin authorization)
+         │      ├── Server sniffs binary magic bytes
+         │      ├── Uploads to private `birthday-audio` bucket via `getAdminClient()`
+         │      └── Inserts row into `music_tracks` table
+         └──► Progress reported via XHR progress events with retry capability
+
+2. PERSISTENT PLAYBACK & SHARED AUDIO LIFECYCLE
+--------------------------------------------------------------------------------
+Single Shared Controller (`src/lib/music/use-music-store.ts`):
+   Component Mounts (MusicRoom / StoryViewer / Ambient)
+         │
+         ├──► Reads state snapshot via `useSyncExternalStore` (zero state divergence)
+         ├──► Accesses single shared `<audio>` ref via `getMusicAudioRef()`
+         ├──► Calls `store.restorePlaybackState()`
+         │      ├── `GET /api/music/playback-state`
+         │      └── Sets trackId, queue, queueIndex, shuffle, and seeks position
+         │          (Respects autoplay restrictions: remains paused until user gesture)
+         │
+   Playback Navigation & Queue Correctness:
+         ├── Next Track (`next()`):
+         │     ├── `repeatMode === 'one'` -> seeks to 0, replays current track
+         │     ├── `isShuffle === true` -> picks random distinct index in queue
+         │     └── `repeatMode === 'all'` -> wraps around to index 0 at queue boundary
+         │
+         ├── Previous Track (`previous()`):
+         │     ├── If `currentTime > 3s` -> restarts current track
+         │     └── Else -> steps back to previous queue track (or wraps)
+         │
+         └── Checkpointing & State Persistence:
+               ├── Track change / pause / transition -> 5-second debounced `persistPlaybackState()`
+               └── Writes to `public.music_playback_state` via `PUT /api/music/playback-state`
+
+3. STORY-MUSIC ISOLATION & REGRESSION PROTECTION
+--------------------------------------------------------------------------------
+StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
+   StoryViewer Mount
+         │
+         ├──► Captures ambient audio state (`captureAudioState`)
+         │      - { src, currentTime, wasPlaying, volume }
+         ├──► Pauses ambient audio cleanly without unmounting audio engine
+         ├──► Plays Story-specific audio track
+         │
+   StoryViewer Closes
+         │
+         └──► `restoreAudioState` restores prior ambient track and exact position
+              (Resumes only if it was playing before story opened; no unwanted autoplay)
+
+4. PERSONAL USER FEATURES (LIKES, PLAYLISTS, HISTORY & LYRICS)
+--------------------------------------------------------------------------------
+- Likes: Instant optimistic toggle in UI -> `POST/DELETE /api/music/likes` (unique per user).
+- Playlists: `CreatePlaylistModal`, `EditPlaylistModal`, `AddToPlaylistModal` -> `public.user_playlists`
+  and `public.user_playlist_tracks` with atomic sorting and ownership checks.
+- History: After 30s playback or track completion -> `POST /api/music/history`.
+  "Recently Played" view renders relative times ("Just now", "5m ago", "Yesterday") with click-to-play.
+- Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
+  calculated from `currentTime * 1000` with click-to-seek interactivity.
 ```

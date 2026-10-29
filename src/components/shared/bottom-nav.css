@@ -125,9 +125,11 @@
   .bottom-nav-container {
     padding: 4px 6px max(6px, env(safe-area-inset-bottom));
   }
+
   .bottom-nav-icon {
     font-size: 17px;
   }
+
   .bottom-nav-label {
     font-size: 9px;
   }
@@ -149,6 +151,7 @@
   .bottom-nav-container {
     display: none !important;
   }
+
   .shell-content-with-bottom-nav {
     padding-bottom: 32px !important;
   }
