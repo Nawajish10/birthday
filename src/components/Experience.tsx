@@ -113,9 +113,43 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
   const [showVideoModal, setShowVideoModal] = useState(false);
 
   const playerRef = useRef<HTMLAudioElement | null>(null);
+  const wasPlayingBeforeVideoRef = useRef(false);
   const [musicData, setMusicData] = useState<{ tracks: MusicTrack[]; playlists: MusicPlaylist[] }>({ tracks: [], playlists: [] });
   const [activeTrack, setActiveTrack] = useState<MusicTrack | null>(null);
   const [musicPlaying, setMusicPlaying] = useState(false);
+
+  function pauseMusicForVideo() {
+    const audio = playerRef.current;
+    if (audio && !audio.paused) {
+      wasPlayingBeforeVideoRef.current = true;
+      audio.pause();
+      setMusicPlaying(false);
+    }
+  }
+
+  function resumeMusicAfterVideo() {
+    const audio = playerRef.current;
+    if (audio && wasPlayingBeforeVideoRef.current) {
+      wasPlayingBeforeVideoRef.current = false;
+      audio.play().then(() => setMusicPlaying(true)).catch(() => {});
+    }
+  }
+
+  useEffect(() => {
+    if (selected?.kind === "video") {
+      pauseMusicForVideo();
+    } else if (!selected && !showVideoModal) {
+      resumeMusicAfterVideo();
+    }
+  }, [selected, showVideoModal]);
+
+  useEffect(() => {
+    if (showVideoModal) {
+      pauseMusicForVideo();
+    } else if (!showVideoModal && selected?.kind !== "video") {
+      resumeMusicAfterVideo();
+    }
+  }, [showVideoModal, selected?.kind]);
 
   useEffect(() => {
     if (open && (tab === "songs" || tab === "home")) {
@@ -299,12 +333,6 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
         <div className="headernote">a little world for you</div>
       </header>
 
-      <nav className="tabs" aria-label="Birthday sections">
-        {([["home", "⌂", "Home"], ["stories", "◎", "Memories"], ["profile", "▦", "Profile"], ["songs", "♫", "Songs"], ["study", "📖", "Study"], ["games", "🎮", "Games"], ["chat", "☏", "Chat"]] as [Tab, string, string][]).map(([id, icon, label]) => (
-          <button key={id} className={tab === id ? "selected" : ""} onClick={() => setTab(id)}><b>{icon}</b>{label}</button>
-        ))}
-      </nav>
-
       <section className="content shell-content-with-bottom-nav">
         {tab === "home" && (
           showFullBook ? (
@@ -480,6 +508,9 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
             onSelectMedia={setSelected}
             onOpenEternalus={() => setTab("eternalus")}
             recipientName="Meerah"
+            externalAudioRef={playerRef}
+            onPauseBackgroundMusic={pauseMusicForVideo}
+            onResumeBackgroundMusic={resumeMusicAfterVideo}
           />
         )}
         {tab === "songs" && (

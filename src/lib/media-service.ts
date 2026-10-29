@@ -4,7 +4,75 @@ import type {
   HighlightCollection,
   AlbumCollection,
   StoryItem,
+  ProfilePostItem,
 } from "../types/media-contracts.ts";
+export { photoAssetToProfilePostItem, profilePostItemToPhotoAsset } from "../types/media-contracts.ts";
+
+/**
+ * Resolves a compact image derivative URL (e.g. '=w400-h400-c' for Google/Cloud CDNs,
+ * or w=400&h=400 for Unsplash) instead of full 4K uncompressed originals.
+ */
+export function toCompactDerivativeUrl(url: string, derivative: string = "=w400-h400-c"): string {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+
+  // If already requesting =w400-h400-c derivative
+  if (trimmed.includes("=w400-h400-c")) {
+    return trimmed;
+  }
+
+  // Google / lh3 / googleusercontent CDN pattern: ends with =s... or =w...-h...
+  if (/=w\d+(-h\d+)?(-c)?$/i.test(trimmed)) {
+    return trimmed.replace(/=w\d+(-h\d+)?(-c)?$/i, derivative);
+  }
+  if (/=s\d+(-c)?$/i.test(trimmed)) {
+    return trimmed.replace(/=s\d+(-c)?$/i, derivative);
+  }
+
+  if (
+    trimmed.includes("googleusercontent.com") ||
+    trimmed.includes("drive.google.com") ||
+    trimmed.includes("ggpht.com") ||
+    trimmed.includes("photos.google.com")
+  ) {
+    return `${trimmed}${derivative}`;
+  }
+
+  // Unsplash images CDN
+  if (trimmed.includes("images.unsplash.com")) {
+    try {
+      const u = new URL(trimmed);
+      u.searchParams.set("w", "400");
+      u.searchParams.set("h", "400");
+      u.searchParams.set("fit", "crop");
+      return u.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+
+  // Supabase storage image transformation or generic query derivative
+  if (trimmed.includes("/render/image/public/")) {
+    try {
+      const u = new URL(trimmed);
+      u.searchParams.set("width", "400");
+      u.searchParams.set("height", "400");
+      u.searchParams.set("resize", "cover");
+      return u.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+
+  // If URL has no query string or file extension like a google CDN or derivative path
+  if (!trimmed.includes("?") && !trimmed.includes("&")) {
+    return `${trimmed}${derivative}`;
+  }
+
+  // If already has query params, append derivative
+  return `${trimmed}${trimmed.includes("?") ? "&" : "?"}derivative=w400-h400-c`;
+}
 
 export const STORAGE_KEYS = {
   PROFILE: "meerah_birthday_profile_v1",
@@ -30,6 +98,9 @@ export const INITIAL_PRELOADED_PHOTOS: PhotoAsset[] = [
     id: "photo-mem-1",
     storagePath: "curated/polaroid-1.jpg",
     url: "/images/sample-meerah-1.jpg",
+    fullDisplayUrl: "/images/sample-meerah-1.jpg",
+    thumbnailUrl: "/images/sample-meerah-1.jpg",
+    thumbnailPath: "curated/polaroid-1-thumb.jpg",
     mediaKind: "image",
     effectiveCaptureDate: "2024-10-29",
     hasKnownCaptureDate: true,
@@ -41,6 +112,9 @@ export const INITIAL_PRELOADED_PHOTOS: PhotoAsset[] = [
     id: "photo-mem-2",
     storagePath: "curated/polaroid-2.jpg",
     url: "/images/sample-meerah-2.jpg",
+    fullDisplayUrl: "/images/sample-meerah-2.jpg",
+    thumbnailUrl: "/images/sample-meerah-2.jpg",
+    thumbnailPath: "curated/polaroid-2-thumb.jpg",
     mediaKind: "image",
     effectiveCaptureDate: "2023-10-29",
     hasKnownCaptureDate: true,
@@ -52,6 +126,9 @@ export const INITIAL_PRELOADED_PHOTOS: PhotoAsset[] = [
     id: "photo-mem-3",
     storagePath: "curated/polaroid-3.jpg",
     url: "/images/sample-meerah-3.jpg",
+    fullDisplayUrl: "/images/sample-meerah-3.jpg",
+    thumbnailUrl: "/images/sample-meerah-3.jpg",
+    thumbnailPath: "curated/polaroid-3-thumb.jpg",
     mediaKind: "image",
     effectiveCaptureDate: "2025-05-14",
     hasKnownCaptureDate: true,
@@ -63,6 +140,9 @@ export const INITIAL_PRELOADED_PHOTOS: PhotoAsset[] = [
     id: "photo-mem-4",
     storagePath: "curated/polaroid-4.jpg",
     url: "/images/sample-meerah-4.jpg",
+    fullDisplayUrl: "/images/sample-meerah-4.jpg",
+    thumbnailUrl: "/images/sample-meerah-4.jpg",
+    thumbnailPath: "curated/polaroid-4-thumb.jpg",
     mediaKind: "image",
     effectiveCaptureDate: "2022-10-29",
     hasKnownCaptureDate: true,
@@ -149,6 +229,45 @@ function getSafeStorage(customStorage?: Storage): Storage | null {
   return null;
 }
 
+export type ProfileMode = "posts" | "reels" | "favorites";
+
+/**
+ * Filter profile media based on the active tab mode.
+ * - "posts": all items where media_kind !== "video"
+ * - "reels": all items where media_kind === "video"
+ * - "favorites": all items whose id is in favorites
+ */
+export function filterProfileMedia(
+  items: ProfilePostItem[],
+  mode: ProfileMode,
+  favorites: string[]
+): ProfilePostItem[] {
+  if (!items || !Array.isArray(items)) return [];
+  if (mode === "reels") {
+    return items.filter((p) => p.media_kind === "video");
+  }
+  if (mode === "favorites") {
+    const favSet = new Set(favorites || []);
+    return items.filter((p) => favSet.has(p.id));
+  }
+  return items.filter((p) => p.media_kind !== "video");
+}
+
+/**
+ * Helper to get user-friendly empty state guidance for each mode.
+ */
+export function getEmptyStateMessage(mode: ProfileMode): string {
+  switch (mode) {
+    case "favorites":
+      return "Tap the heart on a post or reel to save it here.";
+    case "reels":
+      return "No reels yet. Add videos in the creator workspace.";
+    case "posts":
+    default:
+      return "Your birthday photos will appear here once the creator adds them.";
+  }
+}
+
 // ---------------- PROFILE SERVICES ----------------
 
 export function loadProfile(storage?: Storage): ProfileData {
@@ -183,20 +302,121 @@ export function saveProfile(updates: Partial<ProfileData>, storage?: Storage): P
 
 // ---------------- PHOTO SERVICES ----------------
 
-export function loadPhotos(storage?: Storage): PhotoAsset[] {
-  const s = getSafeStorage(storage);
-  if (!s) return [...INITIAL_PRELOADED_PHOTOS];
-  try {
-    const raw = s.getItem(STORAGE_KEYS.PHOTOS);
-    if (!raw) {
-      s.setItem(STORAGE_KEYS.PHOTOS, JSON.stringify(INITIAL_PRELOADED_PHOTOS));
-      return [...INITIAL_PRELOADED_PHOTOS];
+export interface LoadPhotosOptions {
+  includeGooglePhotos?: boolean;
+  googlePhotos?: PhotoAsset[];
+}
+
+/**
+ * Safely reads Google Photos manifest assets from disk when on server/node
+ */
+export function getLocalManifestPhotos(): PhotoAsset[] {
+  if (typeof window === "undefined" && typeof process !== "undefined" && process.versions?.node) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { createRequire } = require("node:module");
+      const req = createRequire(import.meta.url);
+      const fs = req("node:fs");
+      const path = req("node:path");
+      const p = path.resolve(process.cwd(), "src", "data", "google-photos-manifest.json");
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, "utf-8");
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.photos)) {
+          return data.photos;
+        }
+      }
+    } catch {
+      // Fallback gracefully
     }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...INITIAL_PRELOADED_PHOTOS];
-  } catch {
-    return [...INITIAL_PRELOADED_PHOTOS];
   }
+  return [];
+}
+
+/**
+ * Merges curated photos with Google Photos assets, deduplicating by ID and contentHash
+ */
+export function mergePhotoAssets(
+  curated: PhotoAsset[],
+  googlePhotos: PhotoAsset[]
+): PhotoAsset[] {
+  const seenIds = new Set<string>();
+  const seenHashes = new Set<string>();
+  const merged: PhotoAsset[] = [];
+
+  for (const photo of curated) {
+    if (!seenIds.has(photo.id)) {
+      seenIds.add(photo.id);
+      if (photo.contentHash) seenHashes.add(photo.contentHash);
+      merged.push(photo);
+    }
+  }
+
+  for (const photo of googlePhotos) {
+    const isDuplicateId = seenIds.has(photo.id);
+    const isDuplicateHash = photo.contentHash && seenHashes.has(photo.contentHash);
+    if (!isDuplicateId && !isDuplicateHash) {
+      seenIds.add(photo.id);
+      if (photo.contentHash) seenHashes.add(photo.contentHash);
+      merged.push(photo);
+    }
+  }
+
+  return merged;
+}
+
+export function loadPhotos(
+  storage?: Storage,
+  options?: LoadPhotosOptions
+): PhotoAsset[] {
+  const s = getSafeStorage(storage);
+  let basePhotos: PhotoAsset[];
+
+  if (!s) {
+    basePhotos = [...INITIAL_PRELOADED_PHOTOS];
+  } else {
+    try {
+      const raw = s.getItem(STORAGE_KEYS.PHOTOS);
+      if (!raw) {
+        s.setItem(STORAGE_KEYS.PHOTOS, JSON.stringify(INITIAL_PRELOADED_PHOTOS));
+        basePhotos = [...INITIAL_PRELOADED_PHOTOS];
+      } else {
+        const parsed = JSON.parse(raw);
+        basePhotos =
+          Array.isArray(parsed) && parsed.length > 0
+            ? parsed
+            : [...INITIAL_PRELOADED_PHOTOS];
+      }
+    } catch {
+      basePhotos = [...INITIAL_PRELOADED_PHOTOS];
+    }
+  }
+
+  if (options?.googlePhotos && options.googlePhotos.length > 0) {
+    return mergePhotoAssets(basePhotos, options.googlePhotos);
+  }
+
+  if (options?.includeGooglePhotos) {
+    const manifestPhotos = getLocalManifestPhotos();
+    if (manifestPhotos.length > 0) {
+      return mergePhotoAssets(basePhotos, manifestPhotos);
+    }
+  }
+
+  return basePhotos;
+}
+
+/**
+ * Convenience helper to load photos with Google Photos assets merged
+ */
+export function loadPhotosWithGooglePhotos(
+  storage?: Storage,
+  googlePhotosOverride?: PhotoAsset[]
+): PhotoAsset[] {
+  return loadPhotos(storage, {
+    includeGooglePhotos: true,
+    googlePhotos: googlePhotosOverride,
+  });
 }
 
 export function savePhotos(photos: PhotoAsset[], storage?: Storage): boolean {

@@ -61,6 +61,10 @@
   color: var(--profile-ink);
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   box-sizing: border-box;
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
 }
 
 /* --------------------------------------------------------------------------
@@ -742,6 +746,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  aspect-ratio: 1;
   transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
@@ -1109,6 +1114,7 @@
   border: 1px solid var(--profile-border);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
   padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
   box-sizing: border-box;
   color: var(--profile-ink);
   position: relative;
@@ -1529,11 +1535,169 @@
 .profileDetailMediaContainer {
   width: 100%;
   max-height: 60vh;
+  aspect-ratio: 4 / 3;
+  min-height: 260px;
   background: #1e1713;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
+}
+
+.profileLightboxNavBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.2s ease;
+}
+
+.profileLightboxNavBtn:hover,
+.profileLightboxNavBtn:focus-visible {
+  background: var(--profile-rose);
+  color: #fff;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.profileLightboxNavPrev {
+  left: 10px;
+}
+
+.profileLightboxNavNext {
+  right: 10px;
+}
+
+.profileLightboxCounter {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  z-index: 5;
+}
+
+.profileDetailHeaderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.profileDetailDate {
+  font-size: 12px;
+  color: var(--profile-muted);
+  font-weight: 500;
+}
+
+.profileLightboxActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.profileDetailShareBtn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 14px;
+  border-radius: 99px;
+  border: 1px solid var(--profile-border);
+  background: var(--profile-paper);
+  color: var(--profile-ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.profileDetailShareBtn:hover,
+.profileDetailShareBtn:focus-visible {
+  border-color: var(--profile-rose);
+  color: var(--profile-rose);
+  outline: 2px solid var(--profile-rose);
+  outline-offset: 2px;
+}
+
+.profileShareToast {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--profile-rose);
+  padding: 4px 0;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Error State in Profile Gallery */
+.profileErrorState {
+  padding: 32px 20px;
+  text-align: center;
+  background: rgba(182, 83, 95, 0.08);
+  border: 1px solid var(--profile-rose);
+  border-radius: var(--profile-radius-md);
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.profileErrorIcon {
+  font-size: 28px;
+}
+
+.profileErrorTitle {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  color: var(--profile-rose);
+}
+
+.profileErrorMessage {
+  margin: 0;
+  font-size: 13px;
+  color: var(--profile-muted);
+  max-width: 380px;
+}
+
+.profileRetryBtn {
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 8px 20px;
+  border-radius: var(--profile-radius-sm);
+  background: var(--profile-rose);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profileRetryBtn:hover,
+.profileRetryBtn:focus-visible {
+  filter: brightness(1.1);
+  outline: 2px solid var(--profile-rose);
+  outline-offset: 2px;
 }
 
 .profileDetailImage,
@@ -1546,6 +1710,7 @@
 
 .profileDetailInfo {
   padding: 18px 22px;
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1719,5 +1884,43 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. Reduced Motion Preferences
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .profileModalCard,
+  .profileDetailModalCard,
+  .profileHighlightModalCard,
+  .profileModalBackdrop {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .profileHighlightCircle:hover,
+  .profileHighlightCircle:focus-visible,
+  .profileFavoriteToggle:hover,
+  .profileDetailFavBtn:hover,
+  .profileAvatarEditBtn:hover,
+  .profilePhotoTile:hover,
+  .profilePhotoTile img {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .profileSkeletonShimmer {
+    animation: none !important;
   }
 }

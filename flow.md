@@ -1316,3 +1316,124 @@ Visitor lands on Application -> Experience.tsx loads (`tab === "home"`):
    └── 6-destination button grid (Profile, Games, Study, Music Room, Memories, Book)
 [9. Closing Message] 
    └── Handcrafted letter card + crimson wax seal + signoff ("With all my love ♡") + "Return to beginning"
+
+
+================================================================================
+11. PHOTO INGESTION DATA FLOW, IMAGE DERIVATIVE PIPELINE & NAVIGATION DEDUPLICATION
+================================================================================
+
+1. GOOGLE PHOTOS INGESTION & PIPELINE DATA FLOW
+--------------------------------------------------------------------------------
+   [Shared Album URL Input]
+   (photos.app.goo.gl/{id} OR photos.google.com/share/{id}?key={auth})
+                 │
+                 ▼
+   [URL Validation & Host Allowlist] ──(Invalid/Malicious)──> [Reject & Fallback]
+                 │ (Valid)
+                 ▼
+   [Server API Route: /api/photos/google]
+                 │
+      ┌──────────┴──────────┐
+      ▼                     ▼
+   [Live HTML Scraping]   [Offline Fallback]
+   (Extract lh3 URLs &     (Bundle Manifest:
+    metadata)              google-photos-manifest.json)
+      └──────────┬──────────┘
+                 ▼
+   [Deduplication & Stable ID Hashing]
+   (SHA-256 / content hash -> gp-{id})
+                 │
+                 ▼
+   [Image Derivative Pipeline]
+   ┌──────────────────────────────────────────────┐
+   │ Thumbnail: =w400-h400-c (Square Polaroid)    │
+   │ Full Preview: =w1920-h1080 (Optimized HD)   │
+   │ Bounded Max: =s1200                          │
+   │ Direct Download: =d                          │
+   └──────────────────────────────────────────────┘
+                 │
+                 ▼
+   [Canonical PhotoAsset Schema Mapping]
+   (id, url, thumbnailUrl, effectiveCaptureDate,
+    hasKnownCaptureDate, caption, altText, isPrivate)
+                 │
+                 ▼
+   [Unified Media Storage / React State Engine]
+   (localStorage / In-Memory State via media-service.ts)
+                 │
+       ┌─────────┴─────────┐
+       ▼                   ▼
+  [Profile Surface]   [Memories Surface]
+
+2. MULTI-SURFACE RENDERING ARCHITECTURE
+--------------------------------------------------------------------------------
+   A. Profile Page Flow (`ProfilePanel.tsx`):
+      PhotoAsset[] ──> transformPhotosToProfilePosts() ──> ProfilePostItem[]
+                               │
+            ┌──────────────────┼──────────────────┐
+            ▼                  ▼                  ▼
+      [posts Mode]       [reels Mode]       [favorites Mode]
+      (Images only)      (Videos only)      (Heart-saved items)
+            │                  │                  │
+            └──────────────────┴──────────────────┘
+                               │
+                               ▼
+                    [Aspect Ratio Grid]
+                               │
+                               ▼
+               [Photo/Video Lightbox Modal]
+               - Keyboard Escape listener
+               - Focus trap within modal
+               - Zero autoplay compliance
+
+   B. Memories Room Flow (`MemoriesPanel.tsx`):
+      PhotoAsset[]
+            │
+            ├─► [Chronological Timeline] (groupPhotosChronologically())
+            │   ├── Known dates -> Year-Month descending buckets
+            │   └── Unknown dates -> "Cherished Moments ✿" curated group
+            │
+            ├─► [On This Day Retrospective] (groupPhotosOnThisDay())
+            │   └── Matches Oct 29/30 memories across historical years (2022-2025)
+            │
+            └─► [Album Collections] (createAlbumFromIngestedPhotos())
+                └── Themed albums with cover thumbnails and photoId references
+
+3. SINGLE AUTHORITATIVE BOTTOMNAV ARCHITECTURE
+--------------------------------------------------------------------------------
+   Root Application Container (`src/components/Experience.tsx`)
+                 │
+                 ▼
+   [Active Tab State: tab ("home" | "stories" | "profile" | "songs" | "study" | "games" | "chat")]
+                 │
+       ┌─────────┼─────────┬─────────┬─────────┬─────────┬─────────┐
+       ▼         ▼         ▼         ▼         ▼         ▼         ▼
+     [Home]  [Memories] [Profile] [Music]   [Study]   [Games]   [Chat]
+       │         │         │         │         │         │         │
+       └─────────┴─────────┴─────────┴─────────┴─────────┴─────────┘
+                                     │
+                                     ▼
+                 [Single Authoritative BottomNav Instance]
+                 (Rendered exactly once in Experience shell footer)
+                 ┌──────────────────────────────────────────────┐
+                 │ ⌂ Home    ◎ Memories  ▦ Profile  ♫ Music   │
+                 │ 📖 Study  🎮 Games     ☏ Chat               │
+                 └──────────────────────────────────────────────┘
+                 - position: fixed, bottom: 0, z-index: 999
+                 - env(safe-area-inset-bottom) clearance
+                 - role="navigation" + aria-label="Application Navigation"
+                 - role="menubar" + role="menuitem" + aria-current="page"
+                 - Ambient repeated headers completely eliminated from all sub-tabs
+
+4. SECURITY, PRIVACY & DEFENSIVE DATA FLOW
+--------------------------------------------------------------------------------
+   Input Path / Filename ──► [sanitizeAssetPath()]
+                             ├── Strip "../" and "..\\" directory traversal
+                             ├── Strip leading slashes and drive letters
+                             └── Sanitize null bytes (\0)
+                             └── Safe storage path: google-photos/{filename}
+
+   URL / Log Output ──────► [redactSensitiveUrlParams()]
+                             ├── Redact auth keys: ?key=[REDACTED]
+                             ├── Redact tokens: ?token=[REDACTED]
+                             └── Protect private credentials from client logs

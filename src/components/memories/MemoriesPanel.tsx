@@ -15,6 +15,7 @@ import {
   groupPhotosChronologically,
   groupPhotosOnThisDay,
   formatEffectiveDate,
+  toCompactDerivativeUrl,
   type MemoriesTab,
 } from "./memories-helpers.ts";
 import { StoryViewer } from "./StoryViewer.tsx";
@@ -25,6 +26,11 @@ import "./memories.css";
 import "./stories.css";
 
 export interface MemoriesPanelProps {
+  photos?: PhotoAsset[];
+  loading?: boolean;
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   externalAudioRef?: React.RefObject<HTMLAudioElement | null>;
   onClose?: () => void;
   storage?: Storage;
@@ -32,15 +38,35 @@ export interface MemoriesPanelProps {
 }
 
 export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
+  photos: propPhotos,
+  loading,
+  isLoading,
+  error,
+  onRetry,
   externalAudioRef,
   storage,
   onNavigateToProfile,
 }) => {
   const [activeTab, setActiveTab] = useState<MemoriesTab>("camera");
-  const [photos, setPhotos] = useState<PhotoAsset[]>(() => loadPhotos(storage));
+  const [photos, setPhotos] = useState<PhotoAsset[]>(() => {
+    if (propPhotos && propPhotos.length > 0) return propPhotos;
+    return loadPhotos(storage);
+  });
   const [stories, setStories] = useState<StoryItem[]>(() => loadStories(storage));
   const [albums, setAlbums] = useState<AlbumCollection[]>(() => loadAlbums(storage));
   const [favorites, setFavorites] = useState<string[]>(() => loadFavorites(storage));
+  const [shareToast, setShareToast] = useState<string | null>(null);
+
+  // Sync when propPhotos changes
+  const [prevPropPhotos, setPrevPropPhotos] = useState(propPhotos);
+  if (propPhotos !== prevPropPhotos) {
+    setPrevPropPhotos(propPhotos);
+    if (propPhotos) {
+      setPhotos(propPhotos);
+    }
+  }
+
+  const isActuallyLoading = loading ?? isLoading ?? false;
 
   // Modals & Viewers
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
@@ -81,6 +107,7 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
     setSelectedPhoto(photo);
   };
 
+
   const handleCloseLightbox = () => {
     setSelectedPhoto(null);
     if (typeof window !== "undefined") {
@@ -89,6 +116,76 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
       });
     }
   };
+
+  const handleNextPhoto = () => {
+    if (!selectedPhoto || photos.length === 0) return;
+    const curIdx = photos.findIndex((p) => p.id === selectedPhoto.id);
+    const nextIdx = (curIdx + 1) % photos.length;
+    setSelectedPhoto(photos[nextIdx]);
+  };
+
+  const handlePrevPhoto = () => {
+    if (!selectedPhoto || photos.length === 0) return;
+    const curIdx = photos.findIndex((p) => p.id === selectedPhoto.id);
+    const prevIdx = (curIdx - 1 + photos.length) % photos.length;
+    setSelectedPhoto(photos[prevIdx]);
+  };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!selectedPhoto) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedPhoto(null);
+        if (typeof window !== "undefined") {
+          requestAnimationFrame(() => {
+            window.scrollTo(0, scrollPositionRef.current);
+          });
+        }
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setSelectedPhoto((current) => {
+          if (!current || photos.length === 0) return null;
+          const curIdx = photos.findIndex((p) => p.id === current.id);
+          const nextIdx = (curIdx + 1) % photos.length;
+          return photos[nextIdx];
+        });
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setSelectedPhoto((current) => {
+          if (!current || photos.length === 0) return null;
+          const curIdx = photos.findIndex((p) => p.id === current.id);
+          const prevIdx = (curIdx - 1 + photos.length) % photos.length;
+          return photos[prevIdx];
+        });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPhoto, photos]);
+
+  const handleSharePhoto = async (photo: PhotoAsset) => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: photo.caption || "Birthday Memory",
+          text: photo.caption || "A cherished birthday memory ✿",
+          url: photo.fullDisplayUrl || photo.url,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(photo.fullDisplayUrl || photo.url);
+        setShareToast("Link copied to clipboard! ✿");
+        setTimeout(() => setShareToast(null), 2500);
+      } catch {}
+    }
+  };
+
 
   const handleToggleFavorite = (photoId: string) => {
     const updated = toggleFavoriteService(photoId, storage);
@@ -214,6 +311,69 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
         </button>
       </nav>
 
+      {/* Global Error Banner */}
+      {error && (
+        <div
+          role="alert"
+          className="memoriesErrorCard"
+          style={{
+            padding: "16px 20px",
+            background: "rgba(182, 83, 95, 0.12)",
+            border: "1px solid var(--memories-rose)",
+            borderRadius: "12px",
+            textAlign: "center",
+            margin: "0 0 12px 0",
+          }}
+        >
+          <p style={{ margin: "0 0 8px 0", color: "var(--memories-rose)", fontWeight: 600 }}>
+            {error}
+          </p>
+          {onRetry && (
+            <button
+              type="button"
+              className="memoriesTabButton"
+              onClick={onRetry}
+              style={{
+                background: "var(--memories-rose)",
+                color: "#fff",
+                border: "none",
+                fontWeight: 600,
+              }}
+            >
+              Retry Loading Photos
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Global Loading State */}
+      {isActuallyLoading && (
+        <div
+          role="status"
+          aria-label="Loading memories photos"
+          className="memoriesLoadingGrid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "8px",
+            padding: "24px 0",
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              style={{
+                aspectRatio: "1",
+                borderRadius: "8px",
+                background: "var(--memories-pink-soft)",
+                opacity: 0.6,
+                animation: "pulse 1.5s infinite",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* 3. Tab Contents */}
 
       {/* TAB 0: SNAPCHAT CAMERA DEFAULT EXPERIENCE */}
@@ -280,10 +440,11 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                       }}
                     >
                       <img
-                        src={photo.url}
+                        src={photo.thumbnailUrl || toCompactDerivativeUrl(photo.url)}
                         alt={photo.altText || photo.caption || "Birthday memory"}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", aspectRatio: "1" }}
                         loading="lazy"
+                        decoding="async"
                       />
                       {favorites.includes(photo.id) && (
                         <span
@@ -357,10 +518,11 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                       }}
                     >
                       <img
-                        src={photo.url}
+                        src={photo.thumbnailUrl || toCompactDerivativeUrl(photo.url)}
                         alt={photo.altText || photo.caption || "Birthday memory"}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", aspectRatio: "1" }}
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
                   ))}
@@ -411,9 +573,11 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                   <div style={{ position: "relative", aspectRatio: "1" }}>
                     {coverPhoto ? (
                       <img
-                        src={coverPhoto.url}
+                        src={coverPhoto.thumbnailUrl || toCompactDerivativeUrl(coverPhoto.url)}
                         alt={album.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", aspectRatio: "1" }}
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div
@@ -464,6 +628,10 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                         color: "var(--memories-muted)",
                         cursor: "pointer",
                         fontSize: "14px",
+                        minWidth: "44px",
+                        minHeight: "44px",
+                        display: "grid",
+                        placeItems: "center",
                       }}
                       title="Delete album"
                       aria-label={`Delete album ${album.title}`}
@@ -526,9 +694,11 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                 >
                   {cover ? (
                     <img
-                      src={cover.url}
+                      src={cover.thumbnailUrl || toCompactDerivativeUrl(cover.url)}
                       alt={story.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", aspectRatio: "9/16" }}
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <div style={{ display: "grid", placeItems: "center", height: "100%", color: "#fff" }}>
@@ -564,6 +734,7 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Photo viewer"
+          className="memoriesLightboxOverlay"
           style={{
             position: "fixed",
             inset: 0,
@@ -575,10 +746,13 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
             alignItems: "center",
             justifyContent: "center",
             padding: "16px",
+            paddingTop: "max(16px, env(safe-area-inset-top))",
+            paddingBottom: "max(24px, env(safe-area-inset-bottom))",
           }}
           onClick={handleCloseLightbox}
         >
           <div
+            className="memoriesLightboxCard"
             style={{
               position: "relative",
               maxWidth: "560px",
@@ -592,10 +766,69 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
           >
             <div style={{ position: "relative", width: "100%", maxHeight: "65vh", overflow: "hidden" }}>
               <img
-                src={selectedPhoto.url}
+                src={selectedPhoto.fullDisplayUrl || selectedPhoto.url}
                 alt={selectedPhoto.altText || selectedPhoto.caption || "Memory detail"}
                 style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }}
+                decoding="async"
               />
+
+              {/* Navigation: Previous */}
+              <button
+                type="button"
+                onClick={handlePrevPhoto}
+                aria-label="Previous photo"
+                style={{
+                  position: "absolute",
+                  left: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "rgba(0,0,0,0.6)",
+                  border: "none",
+                  color: "#fff",
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  fontSize: "24px",
+                  display: "grid",
+                  placeItems: "center",
+                  zIndex: 2,
+                }}
+              >
+                ‹
+              </button>
+
+              {/* Navigation: Next */}
+              <button
+                type="button"
+                onClick={handleNextPhoto}
+                aria-label="Next photo"
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "rgba(0,0,0,0.6)",
+                  border: "none",
+                  color: "#fff",
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  fontSize: "24px",
+                  display: "grid",
+                  placeItems: "center",
+                  zIndex: 2,
+                }}
+              >
+                ›
+              </button>
+
+              {/* Close Button */}
               <button
                 type="button"
                 onClick={handleCloseLightbox}
@@ -606,18 +839,39 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                   background: "rgba(0,0,0,0.6)",
                   border: "none",
                   color: "#fff",
-                  width: "36px",
-                  height: "36px",
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  width: "44px",
+                  height: "44px",
                   borderRadius: "50%",
                   cursor: "pointer",
                   fontSize: "18px",
                   display: "grid",
                   placeItems: "center",
+                  zIndex: 3,
                 }}
                 aria-label="Close photo viewer"
               >
                 ✕
               </button>
+
+              {/* Slide Counter */}
+              <span
+                style={{
+                  position: "absolute",
+                  top: "12px",
+                  left: "12px",
+                  background: "rgba(0,0,0,0.6)",
+                  color: "#fff",
+                  padding: "4px 8px",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  zIndex: 3,
+                }}
+              >
+                {photos.findIndex((p) => p.id === selectedPhoto.id) + 1} / {photos.length}
+              </span>
             </div>
 
             <div style={{ padding: "16px" }}>
@@ -626,30 +880,69 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                   <h4 style={{ margin: "0 0 4px", fontSize: "16px", color: "var(--memories-ink)" }}>
                     {selectedPhoto.caption || "Birthday Memory"}
                   </h4>
-                  <span style={{ fontSize: "12px", color: "var(--memories-muted)" }}>
-                    {formatEffectiveDate(selectedPhoto.effectiveCaptureDate, selectedPhoto.hasKnownCaptureDate)}
-                  </span>
+                  {selectedPhoto.hasKnownCaptureDate && selectedPhoto.effectiveCaptureDate && (
+                    <span style={{ fontSize: "12px", color: "var(--memories-muted)" }}>
+                      🗓 {formatEffectiveDate(selectedPhoto.effectiveCaptureDate, true)}
+                    </span>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleFavorite(selectedPhoto.id)}
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    borderRadius: "50%",
-                    border: "1px solid var(--memories-line)",
-                    background: favorites.includes(selectedPhoto.id) ? "var(--memories-rose)" : "var(--memories-white)",
-                    color: favorites.includes(selectedPhoto.id) ? "#fff" : "var(--memories-rose)",
-                    cursor: "pointer",
-                    fontSize: "20px",
-                    display: "grid",
-                    placeItems: "center",
-                  }}
-                  aria-label={favorites.includes(selectedPhoto.id) ? "Unfavorite photo" : "Favorite photo"}
-                >
-                  ♥
-                </button>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSharePhoto(selectedPhoto)}
+                    style={{
+                      minWidth: "44px",
+                      minHeight: "44px",
+                      borderRadius: "22px",
+                      border: "1px solid var(--memories-line)",
+                      background: "var(--memories-white)",
+                      color: "var(--memories-ink)",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      padding: "0 12px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                    aria-label="Share photo"
+                  >
+                    <span>↗</span>
+                    <span>Share</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleFavorite(selectedPhoto.id)}
+                    style={{
+                      minWidth: "44px",
+                      minHeight: "44px",
+                      borderRadius: "50%",
+                      border: "1px solid var(--memories-line)",
+                      background: favorites.includes(selectedPhoto.id) ? "var(--memories-rose)" : "var(--memories-white)",
+                      color: favorites.includes(selectedPhoto.id) ? "#fff" : "var(--memories-rose)",
+                      cursor: "pointer",
+                      fontSize: "20px",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                    aria-label={favorites.includes(selectedPhoto.id) ? "Unfavorite photo" : "Favorite photo"}
+                  >
+                    ♥
+                  </button>
+                </div>
               </div>
+              {shareToast && (
+                <div
+                  role="status"
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--memories-rose)",
+                    fontWeight: 600,
+                    marginTop: "4px",
+                  }}
+                >
+                  {shareToast}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -736,7 +1029,13 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                           opacity: isSelected ? 1 : 0.6,
                         }}
                       >
-                        <img src={p.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img
+                          src={toCompactDerivativeUrl(p.url)}
+                          alt=""
+                          style={{ width: "100%", height: "100%", objectFit: "cover", aspectRatio: "1" }}
+                          loading="lazy"
+                          decoding="async"
+                        />
                       </div>
                     );
                   })}

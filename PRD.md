@@ -856,3 +856,84 @@ The primary birthday landing experience (`src/components/Experience.tsx`, `tab =
 - **TypeScript & ESLint Quality:**
   - 0 TypeScript compilation errors (`npx tsc --noEmit`).
   - 0 ESLint errors and 0 warnings (`npm run lint`).
+
+
+---
+
+## 24. Google Photos Asset Pipeline, Unified Media Contract & Navigation Deduplication (Wave 3)
+
+### 24.1 Google Photos Asset Pipeline Architecture
+1. **Shared Album URL Resolution & Ingestion:**
+   - Supports both `https://photos.app.goo.gl/{shortKey}` short share links and canonical `https://photos.google.com/share/{albumKey}?key={authKey}` endpoints.
+   - Strict protocol (`https:`) and host allowlisting (`photos.app.goo.gl`, `photos.google.com`).
+   - Server route `/api/photos/google` resolves live album markup or falls back transparently to bundled JSON manifests (`google-photos-manifest.json`) if offline or rate-limited.
+   - Server-side in-memory caching with 1-hour stale-while-revalidate headers (`s-maxage=3600, stale-while-revalidate=86400`) and manual `?refresh=true` invalidation.
+
+2. **Image Derivative Generation:**
+   - Dynamic parameter rewriting leveraging Google Photos / GoogleUserContent CDN parameters:
+     * Full Preview: `=w1920-h1080` (optimized high-resolution display without fetching uncompressed originals).
+     * Thumbnail / Polaroid Crop: `=w400-h400-c` (centered 1:1 square crop for performance and fast grid layout).
+     * Bounded Scaling: `=s{dimension}` for proportional resizing without aspect distortion.
+     * Direct Asset Download: `=d` for original full-size export.
+   - Safe compact fallback URLs via `toCompactDerivativeUrl()` across Google, Unsplash, and Supabase storage providers.
+
+3. **Shared Media Domain Contract Integration (`src/types/media-contracts.ts`):**
+   - Transformed assets conform strictly to `PhotoAsset`:
+     * Unique stable content-hashed or deterministic ID (`gp-{id}`).
+     * Clean relative sanitized `storagePath` preventing path traversal.
+     * `mediaKind`: detects `"image"` vs `"video"` via MIME headers or metadata.
+     * Strict capture date preservation (`effectiveCaptureDate`, `hasKnownCaptureDate`) to prevent fabricating fictional timestamps.
+     * Cohesive metadata: `width`, `height`, `caption`, `altText`, and `isPrivate` flags.
+
+### 24.2 Profile & Memories Multi-Surface Rendering
+1. **Profile Surface Integration (`ProfilePanel.tsx`):**
+   - Seamlessly converts `PhotoAsset[]` to `ProfilePostItem[]` via `photoAssetToProfilePostItem` and `transformPhotosToProfilePosts`.
+   - Tri-modal grid views:
+     * `posts`: all standard photographs (`media_kind !== "video"`).
+     * `reels`: video assets (`media_kind === "video"`) with autoplay disabled and badge indicators.
+     * `favorites`: visitor-persisted heart-marked media items.
+   - User-friendly empty state guidance with supportive guidance copy for each mode.
+   - Stats row reflecting true media item counts (`posts?.length ?? 0`).
+
+2. **Memories Room Surface Integration (`MemoriesPanel.tsx`):**
+   - Dynamic collection mapping into `AlbumCollection` items.
+   - Chronological year/month grouping via `groupPhotosChronologically()` with unknown-capture-date photos safely bucketed under "Cherished Moments ✿".
+   - "On This Day" anniversary retrospective engine (`groupPhotosOnThisDay()`) matching historical photographs on October 29/30 across prior years.
+   - Fullscreen photo lightbox with keyboard navigation (`Escape`, `ArrowRight`, `ArrowLeft`), scroll position preservation, and native clipboard/web sharing.
+
+### 24.3 Single Authoritative Navigation Architecture & Deduplication
+1. **Authoritative BottomNav (`src/components/shared/BottomNav.tsx`):**
+   - Single authoritative mobile navigation component mounted exclusively once in the root `Experience.tsx` layout shell.
+   - Connects all 7 core destinations: Home (`⌂`), Memories (`◎`), Profile (`▦`), Music (`♫`), Study (`📖`), Games (`🎮`), and Chat (`☏`).
+   - Semantic accessibility: `role="navigation"`, `aria-label="Application Navigation"`, `role="menubar"`, `role="menuitem"`, and `aria-current="page"` for the active tab.
+   - Fixed viewport pinning (`position: fixed`, `bottom: 0`, `z-index: 999`) with comprehensive safe-area padding (`env(safe-area-inset-bottom)`).
+
+2. **Complete Elimination of Duplicate Shell Navigation & Ambient Headers:**
+   - Repeated "Today is all yours" ambient header removed from all secondary tabs (`profile`, `songs`, `stories`, `chat`, `games`, `study`).
+   - Sub-views delegate navigation directly to the primary controller; zero rogue or duplicated subnav bars.
+
+### 24.4 Security, Privacy & Defensive Guarantees
+1. **Path Traversal Prevention:**
+   - Strict sanitization in `sanitizeAssetPath()`: strips `../`, `..\\`, null bytes (`\0`), leading slashes, and Windows drive roots (`C:\`).
+2. **Secret Redaction in Client Logs:**
+   - `redactSensitiveUrlParams()` automatically redacts `key`, `auth`, `token`, `secret`, and `apikey` query parameters from console logs and analytics.
+   - Automated secret-leak scanning (`test/secret-leak-scan.test.ts` & `test/google-photos-e2e-acceptance.test.ts`) verifies no Supabase service role JWTs or RSA/EC private keys are committed in source code.
+3. **Zero-Autoplay Guarantee:**
+   - Background audio and HTML5 `<video>` tags strictly avoid unprompted autoplay. Audio requires user gesture or explicit interaction.
+
+### 24.5 Accessibility & Focus Management
+1. **Lightbox Keyboard Focus Trap:**
+   - `handleLightboxFocusTrap()` traps `Tab` and `Shift+Tab` cycles between interactive elements inside open lightboxes and dialogs.
+2. **ARIA Dialog Specifications:**
+   - All modals declare `role="dialog"`, `aria-modal="true"`, descriptive `aria-label` or `aria-labelledby`, and high-contrast close buttons.
+3. **Descriptive Image Alt Text:**
+   - Transformed Google Photos guarantee non-empty `altText` attributes with graceful fallback formatting.
+
+### 24.6 Quality & Verification Metrics
+- **Automated Test Suite:** **832 / 832 tests passing across 125 suites (0 failures)**.
+  - Dedicated Google Photos Acceptance suite: `test/google-photos-e2e-acceptance.test.ts` (27 tests across 8 suites).
+  - Pipeline & caching unit suite: `test/google-photos-pipeline.test.ts` (9 tests).
+  - Navigation & integration audit: `test/eight-agent-integration-audit.test.ts`.
+- **TypeScript Strictness:** 0 type errors (`npx tsc --noEmit`).
+- **ESLint Quality:** 0 errors and 0 warnings (`npm run lint`).
+- **Production Build:** Next.js production build (`npm run build`) compiles in 4.1s across all 14 static and dynamic routes.

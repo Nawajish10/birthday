@@ -170,3 +170,48 @@ To eliminate merge conflicts and accidental regression of shared application sta
    - All landing components must include the `"use client"` directive.
    - Direct access to browser globals (`window`, `document`, `localStorage`, `AudioContext`) must be guarded with `typeof window !== "undefined"` checks or wrapped in `useEffect` hooks.
    - `setState` calls must never be executed synchronously within the body of an effect to prevent cascading render loops and comply with React 19 rules.
+
+
+---
+
+## 7. Google Photos Asset Pipeline, Configuration Contracts & Mobile Layout Rules (Wave 3)
+
+1. **Google Photos Ingestion & Operational Contracts:**
+   - All Google Photos operations must route through `/api/photos/google` or `src/lib/google-photos/google-photos-service.ts`.
+   - Never query un-whitelisted external photo URLs directly from client components. Allowlisted domains are strictly:
+     * `photos.app.goo.gl`
+     * `photos.google.com`
+     * `*.googleusercontent.com`
+   - Every ingested photo must be transformed into the canonical `PhotoAsset` interface (`src/types/media-contracts.ts`).
+   - Photos must specify responsive derivative suffixes:
+     * Thumbnail / square crop: `=w400-h400-c`
+     * High-res preview: `=w1920-h1080`
+     * Max bounding dimension: `=s{dimension}`
+
+2. **Configuration Variables & Fallback Hierarchy:**
+   - Primary album URL configuration: `process.env.GOOGLE_PHOTOS_ALBUM_URL` (or `NEXT_PUBLIC_GOOGLE_PHOTOS_ALBUM_URL`).
+   - Manifest fallback: If external network access is blocked, offline, or returns 404/429, the pipeline must seamlessly fall back to `src/data/google-photos-manifest.json`. Zero image rendering errors or broken image icons are permitted.
+   - Cache control: Server route responses must specify `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
+   - Sensitive parameter handling: Any query parameters containing `key`, `auth`, `token`, or `secret` must be redacted via `redactSensitiveUrlParams()` before logging to console or telemetry.
+
+3. **Single Authoritative BottomNav Architecture & Mobile Rules:**
+   - `BottomNav.tsx` must be rendered exclusively in `src/components/Experience.tsx`.
+   - Under no circumstances should individual panels (`ProfilePanel`, `MemoriesPanel`, `MusicRoom`, etc.) render their own duplicate bottom navigation bars.
+   - Fixed positioning rules: `position: fixed`, `bottom: 0`, `left: 0`, `right: 0`, `z-index: 999`.
+   - Mobile clearance: Shell content containers must include bottom padding equal to `max(64px, calc(56px + env(safe-area-inset-bottom)))` to prevent active content from being obscured behind the navigation bar.
+   - Ambient shell headers: Never wrap shared sub-tabs in duplicate ambient headings ("Today is all yours"). All ambient headers were permanently decommissioned in favor of view-specific headers.
+
+4. **Capture Date Integrity Invariant:**
+   - Never fabricate synthetic or fake capture dates for photographs without known EXIF metadata.
+   - When `hasKnownCaptureDate` is false, the photo must be routed to the curated "Cherished Moments ✿" section in chronological views, and omitted from the "On This Day" anniversary calculation.
+
+5. **Security & Path Traversal Guards:**
+   - Any path or filename accepted from external input or manifests must be passed through `sanitizeAssetPath()`.
+   - Reject or sanitize any input containing `../`, `..\\`, null bytes (`\0`), leading slashes, or Windows drive prefixes.
+   - Never modify or commit secrets into `.env` or `.env.local`. Ensure `.gitignore` continuously protects all environment configuration files.
+
+6. **Accessibility & Focus Trapping Invariants:**
+   - All lightboxes, photo viewers, and modal dialogs must trap keyboard focus (`handleLightboxFocusTrap()`).
+   - `Escape` key must immediately dismiss open lightboxes and return focus to the trigger element without resetting page scroll position (`scrollPositionRef`).
+   - Modals must supply `role="dialog"`, `aria-modal="true"`, and accessible labels (`aria-label` or `aria-labelledby`).
+   - All photographic images must define non-empty, meaningful `alt` text.

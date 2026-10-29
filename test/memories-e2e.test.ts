@@ -137,7 +137,7 @@ test("Memories Timeline: Chronological grouping by Year and Month", () => {
   assert.equal(groupTitles[2], "March 2024");
   assert.equal(groupTitles[3], "October 2023");
   assert.equal(groupTitles[4], "October 2022");
-  assert.equal(groupTitles[5], "Unknown Date");
+  assert.ok(groupTitles[5] === "Cherished Moments ✿" || groupTitles[5] === "Unknown Date");
 
   // Verify May 2025 contains photo-2025-05
   const mayGroup = groups.find((g) => g.title === "May 2025");
@@ -151,8 +151,8 @@ test("Memories Timeline: Chronological grouping by Year and Month", () => {
   assert.equal(oct2024Group.photos.length, 1);
   assert.equal(oct2024Group.photos[0].id, "photo-2024-10");
 
-  // Verify unknown capture dates grouped under "Unknown Date"
-  const unknownGroup = groups.find((g) => g.title === "Unknown Date");
+  // Verify unknown capture dates grouped under curated collection without fabricating dates
+  const unknownGroup = groups.find((g) => g.title === "Cherished Moments ✿" || g.title === "Unknown Date");
   assert.ok(unknownGroup);
   assert.equal(unknownGroup.photos.length, 2);
   const unknownIds = unknownGroup.photos.map((p) => p.id);

@@ -27,8 +27,8 @@ describe("Agent 8: Independent Integration & Eight-Agent Architecture Audit", ()
       "Experience shell must render BottomNav for mobile navigation"
     );
     assert.ok(
-      expSrc.includes('<nav className="tabs"'),
-      "Experience shell preserves accessible tabs navigation for desktop"
+      !expSrc.includes('<nav className="tabs"'),
+      "Experience shell removes duplicate tabs navigation in favor of unified BottomNav"
     );
   });
 

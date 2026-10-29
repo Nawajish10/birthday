@@ -4,7 +4,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 999;
+  z-index: 1000;
   background: rgba(255, 253, 248, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -137,22 +137,47 @@
 
 /* Ensure Page Bottom Clearance */
 .shell-content-with-bottom-nav {
-  padding-bottom: clamp(84px, 12vw, 110px) !important;
+  padding-bottom: clamp(72px, 10vw, 96px) !important;
 }
 
-/* Adaptive Desktop vs Mobile Navigation */
-@media (max-width: 768px) {
-  .tabs.desktop-tabs {
-    display: none !important;
-  }
+.shell {
+  padding-bottom: clamp(72px, 10vw, 96px);
 }
 
+.shell > footer {
+  margin-bottom: clamp(64px, 8vw, 88px);
+}
+
+/* Polished Desktop Bottom Navigation Enhancement */
 @media (min-width: 769px) {
   .bottom-nav-container {
-    display: none !important;
+    padding: 8px 24px;
+    border-top: 1px solid rgba(182, 83, 95, 0.22);
+    box-shadow: 0 -10px 32px rgba(74, 21, 37, 0.12);
   }
 
-  .shell-content-with-bottom-nav {
-    padding-bottom: 32px !important;
+  [data-theme="love"] .bottom-nav-container {
+    border-top: 1px solid rgba(233, 185, 188, 0.22);
+    box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.42);
+  }
+
+  .bottom-nav-list {
+    max-width: 680px;
+    gap: 8px;
+  }
+
+  .bottom-nav-btn {
+    min-height: 52px;
+    padding: 6px 12px;
+    border-radius: 14px;
+  }
+
+  .bottom-nav-icon {
+    font-size: 21px;
+  }
+
+  .bottom-nav-label {
+    font-size: 11px;
+    font-weight: 600;
   }
 }

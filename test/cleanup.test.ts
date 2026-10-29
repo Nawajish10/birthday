@@ -189,32 +189,38 @@ test("3.1 'Gift' or 'Gifts' does NOT appear as a primary tab in the main navigat
   assert.ok(fs.existsSync(EXPERIENCE_PATH), "Experience.tsx must exist");
   const expSource = fs.readFileSync(EXPERIENCE_PATH, "utf8");
 
-  // Match the navigation container
-  const navMatch = expSource.match(/<nav className="tabs"[\s\S]*?<\/nav>/);
-  assert.ok(navMatch, "Experience.tsx must contain <nav className=\"tabs\"> element");
-  const navContent = navMatch[0];
+  // Verify Experience renders BottomNav as primary unified navigation
+  assert.ok(
+    expSource.includes("<BottomNav currentTab={tab}"),
+    "Experience.tsx must render BottomNav navigation element"
+  );
+  const bottomNavPath = path.resolve(process.cwd(), "src/components/shared/BottomNav.tsx");
+  const navContent = fs.readFileSync(bottomNavPath, "utf8");
 
   // Assert neither "Gift" nor "Gifts" is present in tab labels
   const hasGiftTab = /["'`]Gifts?["'`]/i.test(navContent);
   assert.ok(
     !hasGiftTab,
-    `Experience.tsx navigation must NOT contain 'Gift' or 'Gifts' tab! Found: ${navContent}`
+    `Navigation must NOT contain 'Gift' or 'Gifts' tab! Found: ${navContent}`
   );
 });
 
 test("3.2 'Study' and 'Games' are present as primary tabs in Experience.tsx", () => {
   const expSource = fs.readFileSync(EXPERIENCE_PATH, "utf8");
-  const navMatch = expSource.match(/<nav className="tabs"[\s\S]*?<\/nav>/);
-  assert.ok(navMatch, "Experience.tsx must contain <nav className=\"tabs\"> element");
-  const navContent = navMatch[0];
+  assert.ok(
+    expSource.includes("<BottomNav currentTab={tab}"),
+    "Experience.tsx must render BottomNav navigation element"
+  );
+  const bottomNavPath = path.resolve(process.cwd(), "src/components/shared/BottomNav.tsx");
+  const navContent = fs.readFileSync(bottomNavPath, "utf8");
 
   assert.ok(
     navContent.includes('"Study"'),
-    `Experience.tsx navigation must include 'Study' tab! Found: ${navContent}`
+    `Navigation must include 'Study' tab! Found: ${navContent}`
   );
   assert.ok(
     navContent.includes('"Games"'),
-    `Experience.tsx navigation must include 'Games' tab! Found: ${navContent}`
+    `Navigation must include 'Games' tab! Found: ${navContent}`
   );
 });
 
