@@ -16,6 +16,7 @@ import { VideoPanel } from "./video/VideoPanel";
 import { ChatPanel } from "./chat/ChatPanel";
 import { MusicRoom } from "./music/MusicRoom";
 import { PasscodeGate } from "./PasscodeGate";
+import { BottomNav } from "./shared/BottomNav";
 
 const BookCanvas = dynamic(() => import("./book/BookCanvas").then(mod => mod.BookCanvas), { ssr: false });
 
@@ -55,28 +56,7 @@ function WelcomeCard({ onContinue, photo }: { onContinue: () => void; photo?: st
   );
 }
 
-function Avatar() {
-  return (
-    <div className="birthdayAvatar" role="img" aria-label="A cheerful birthday character waving hello">
-      <svg viewBox="0 0 130 140" aria-hidden="true">
-        <circle cx="60" cy="60" r="52" fill="#f4d3bd" />
-        <path d="M22 51Q20 10 59 12q39 0 40 41l-8 13H29z" fill="#56382f" />
-        <ellipse cx="60" cy="58" rx="31" ry="37" fill="#d99673" />
-        <path d="M30 51q3-31 31-32 20 0 30 24-20-8-33-20-11 17-28 28" fill="#56382f" />
-        <circle className="avatarEye" cx="49" cy="59" r="2.7" fill="#382d27" />
-        <circle className="avatarEye" cx="71" cy="59" r="2.7" fill="#382d27" />
-        <path d="M52 75q8 8 16 0" fill="none" stroke="#a64245" strokeWidth="3" strokeLinecap="round" />
-        <path d="M23 116q6-31 37-31t37 31" fill="#376e58" />
-        <path d="M44 91l16 17 16-17" fill="#fff3da" />
-        <g className="avatarWave">
-          <path d="M91 106Q100 98 104 86Q106 80 111 83Q115 86 108 97Q116 88 121 92Q124 97 112 106Q119 103 121 108Q120 114 106 118" fill="none" stroke="#376e58" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-        </g>
-      </svg>
-      <span>✿</span>
-      <i className="avatarSparkle">✧</i>
-    </div>
-  );
-}
+
 
 function BookLeafPage({ page, index }: { page: BookPage; index: number }) {
   return (
@@ -310,18 +290,14 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
         <a className="wordmark" onClick={() => setTab("home")}>Meerah <span>✿</span></a>
         <div className="headernote">a little world for you</div>
       </header>
-      <div className="ambient">
-        <span className="kicker">✿ Birthday · October 30 · سالگرہ مبارک</span>
-        <h1>Today is all <i>yours.</i></h1>
-        <p>Open a page, find a little surprise, stay as long as you like.</p>
-        <Avatar />
-      </div>
+
       <nav className="tabs" aria-label="Birthday sections">
         {([["home", "⌂", "Home"], ["stories", "◎", "Memories"], ["profile", "▦", "Profile"], ["songs", "♫", "Songs"], ["study", "📖", "Study"], ["games", "🎮", "Games"], ["chat", "☏", "Chat"]] as [Tab, string, string][]).map(([id, icon, label]) => (
           <button key={id} className={tab === id ? "selected" : ""} onClick={() => setTab(id)}><b>{icon}</b>{label}</button>
         ))}
       </nav>
-      <section className="content">
+
+      <section className="content shell-content-with-bottom-nav">
         {tab === "home" && (
           showFullBook ? (
             <>
@@ -476,6 +452,7 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
         onEnded={() => setMusicPlaying(false)}
       />
       <footer>Made with love · Built for Meerah · <Link href="/admin">Creator workspace</Link></footer>
+      <BottomNav currentTab={tab} onSelectTab={(t) => setTab(t as Tab)} />
       {showVideoModal && (
         <VideoPanel isModal={true} onClose={() => setShowVideoModal(false)} />
       )}

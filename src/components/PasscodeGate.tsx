@@ -165,3 +165,4 @@ export function PasscodeGate({ onUnlocked }: PasscodeGateProps) {
     </main>
   );
 }
+

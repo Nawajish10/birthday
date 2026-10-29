@@ -92,3 +92,4 @@ describe("Passcode Landing Page UI, Mobile Responsiveness & Favicon Audit", () =
     assert.ok(layoutSrc.includes("Meerah"), "Title must include Meerah");
   });
 });
+
