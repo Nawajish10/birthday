@@ -1,0 +1,397 @@
+/* Passcode Gate - Romantic Luxury Birthday Invitation */
+.passcode-gate-viewport {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 36px) clamp(12px, 3vw, 24px);
+  background: 
+    radial-gradient(circle at 50% 12%, rgba(233, 185, 188, 0.45) 0%, transparent 60%),
+    radial-gradient(circle at 88% 85%, rgba(216, 134, 81, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 12% 90%, rgba(182, 83, 95, 0.15) 0%, transparent 50%),
+    linear-gradient(175deg, #F9F1E5 0%, #F5E8D8 50%, #EFE1D0 100%);
+  position: relative;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Ambient floating petal sparkles */
+.passcode-ambient-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambient-particle {
+  position: absolute;
+  color: rgba(182, 83, 95, 0.35);
+  font-size: 14px;
+  animation: floatParticle 8s ease-in-out infinite alternate;
+}
+
+.particle-1 { top: 10%; left: 12%; font-size: 16px; animation-duration: 9s; }
+.particle-2 { top: 22%; right: 15%; font-size: 18px; animation-duration: 11s; }
+.particle-3 { bottom: 18%; left: 18%; font-size: 20px; animation-duration: 10s; }
+.particle-4 { bottom: 12%; right: 20%; font-size: 14px; animation-duration: 7s; }
+
+@keyframes floatParticle {
+  0% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+  100% { transform: translateY(-16px) rotate(15deg); opacity: 0.7; }
+}
+
+/* Card Container */
+.passcode-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 450px;
+  background: #FFFDF8;
+  border-radius: 28px;
+  border: 1px solid rgba(182, 83, 95, 0.24);
+  box-shadow: 
+    0 24px 64px rgba(74, 21, 37, 0.12),
+    0 4px 16px rgba(74, 21, 37, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  padding: clamp(28px, 6vw, 44px) clamp(22px, 5vw, 36px);
+  text-align: center;
+  box-sizing: border-box;
+  animation: cardEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Floral Emblem */
+.passcode-emblem-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.passcode-emblem-glow {
+  position: absolute;
+  width: 68px;
+  height: 68px;
+  background: radial-gradient(circle, rgba(233, 185, 188, 0.55) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0.9; }
+}
+
+.passcode-emblem-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FBF4E8 0%, #F5E2DA 100%);
+  border: 1px solid rgba(182, 83, 95, 0.3);
+  border-radius: 50%;
+  font-size: 26px;
+  color: #B6535F;
+  box-shadow: 0 4px 12px rgba(182, 83, 95, 0.15);
+  position: relative;
+  z-index: 1;
+}
+
+/* Typography Hierarchy */
+.passcode-kicker {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8C4752;
+  margin-bottom: 8px;
+}
+
+.passcode-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(28px, 6vw, 36px);
+  font-weight: 500;
+  line-height: 1.15;
+  color: #382D27;
+  margin: 0 0 12px;
+}
+
+.passcode-title i {
+  color: #B6535F;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.passcode-subtitle {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #7A6960;
+  margin: 0 0 24px;
+  padding: 0 4px;
+}
+
+/* Form Controls */
+.passcode-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.passcode-label-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.passcode-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6E4B3B;
+  letter-spacing: 0.02em;
+}
+
+.passcode-hint {
+  font-size: 11px;
+  color: #9E897D;
+}
+
+.passcode-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passcode-input {
+  width: 100%;
+  height: 52px;
+  padding: 0 48px 0 16px;
+  border: 1.5px solid rgba(182, 83, 95, 0.28);
+  border-radius: 14px;
+  background: #FFFDF8;
+  color: #382D27;
+  font-size: 20px;
+  font-family: 'DM Sans', -apple-system, monospace;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-align: center;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.passcode-input:focus {
+  outline: none;
+  border-color: #B6535F;
+  box-shadow: 0 0 0 4px rgba(182, 83, 95, 0.16);
+  background: #FFFFFF;
+}
+
+.passcode-input::placeholder {
+  color: #CFC2B5;
+  letter-spacing: 0.1em;
+  font-weight: 400;
+  font-size: 15px;
+}
+
+.passcode-input:disabled {
+  opacity: 0.7;
+  background: #F7F1E7;
+  cursor: not-allowed;
+}
+
+/* Visibility Toggle */
+.passcode-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #8C786E;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color 0.15s ease;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.passcode-toggle-btn:hover {
+  color: #B6535F;
+}
+
+.passcode-toggle-btn:focus-visible {
+  outline: 2px solid #B6535F;
+}
+
+/* Error State */
+.passcode-error-box {
+  background: #FDF1F0;
+  border: 1px solid rgba(182, 83, 95, 0.35);
+  border-radius: 12px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #9C323E;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+  animation: errorShake 0.4s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.passcode-error-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+/* Primary CTA Button */
+.passcode-submit-btn {
+  width: 100%;
+  height: 52px;
+  min-height: 48px;
+  background: linear-gradient(135deg, #B6535F 0%, #A34450 100%);
+  border: none;
+  border-radius: 14px;
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(182, 83, 95, 0.28);
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.passcode-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #C25B67 0%, #AD4B57 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(182, 83, 95, 0.34);
+}
+
+.passcode-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(182, 83, 95, 0.2);
+}
+
+.passcode-submit-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(182, 83, 95, 0.35);
+}
+
+.passcode-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button Loading Spinner */
+.passcode-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Card Footer */
+.passcode-footer {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(232, 221, 206, 0.7);
+  font-size: 12px;
+  color: #8C786E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.passcode-footer-heart {
+  color: #B6535F;
+  font-size: 14px;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 360px) {
+  .passcode-card {
+    padding: 24px 16px;
+    border-radius: 20px;
+  }
+  .passcode-title {
+    font-size: 26px;
+  }
+  .passcode-input {
+    font-size: 17px;
+    letter-spacing: 0.15em;
+    height: 48px;
+  }
+  .passcode-submit-btn {
+    font-size: 14px;
+    height: 48px;
+  }
+}
+
+@media (max-height: 650px) and (orientation: landscape) {
+  .passcode-gate-viewport {
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+  .passcode-card {
+    margin: 12px auto;
+    padding: 20px 24px;
+  }
+  .passcode-emblem-wrap {
+    margin-bottom: 8px;
+  }
+  .passcode-subtitle {
+    margin-bottom: 14px;
+  }
+  .passcode-footer {
+    margin-top: 14px;
+    padding-top: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .passcode-card,
+  .ambient-particle,
+  .passcode-emblem-glow,
+  .passcode-error-box {
+    animation: none !important;
+    transition: none !important;
+  }
+}

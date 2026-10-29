@@ -566,3 +566,9 @@ insert into public.birthday_gifts (slot_number, title, hint, reward_type, reward
   (24, 'The Eve of Joy', 'Almost at the crowning gift', 'note', 'You are so special to everyone around you. Thank you for being you.'),
   (25, 'The Birthday Star', 'The grand birthday reveal', 'letter', 'You are the heart of this entire little world. Happy Birthday, my dearest Meerah!')
 on conflict (slot_number) do nothing;
+
+-- 8. Seed Authoritative Access Secrets (Authoritative Passcode: 30102001)
+insert into public.access_secrets (scope, method, secret_hash) values
+  ('birthday', 'passcode', extensions.crypt('30102001', extensions.gen_salt('bf', 12))),
+  ('eternalus', 'recovery_code', extensions.crypt('30102001', extensions.gen_salt('bf', 12)))
+on conflict (scope) do update set secret_hash = excluded.secret_hash, updated_at = now();

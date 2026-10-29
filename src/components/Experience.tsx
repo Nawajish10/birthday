@@ -15,6 +15,7 @@ import { GamesPanel } from "./games/GamesPanel";
 import { VideoPanel } from "./video/VideoPanel";
 import { ChatPanel } from "./chat/ChatPanel";
 import { MusicRoom } from "./music/MusicRoom";
+import { PasscodeGate } from "./PasscodeGate";
 
 const BookCanvas = dynamic(() => import("./book/BookCanvas").then(mod => mod.BookCanvas), { ssr: false });
 
@@ -103,8 +104,6 @@ function BookLeafPage({ page, index }: { page: BookPage; index: number }) {
 export function Experience({ unlocked }: { unlocked: boolean }) {
   const [open, setOpen] = useState(unlocked);
   const [welcomeDone, setWelcomeDone] = useState(false);
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("home");
   const [data, setData] = useState<Payload>({ cards: [], posts: [], stories: [], games: [] });
   const [loading, setLoading] = useState(unlocked);
@@ -228,38 +227,9 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
     };
   }, [open]);
 
-  async function unlock(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    const r = await fetch("/api/access", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, scope: "birthday" }) });
-    if (r.ok) {
-      setOpen(true);
-      location.reload();
-    } else {
-      const d = await r.json().catch(() => ({}));
-      setError(d.error || "That code did not work.");
-    }
-  }
-
   if (open && !welcomeDone) return <WelcomeCard onContinue={() => setWelcomeDone(true)} photo={data.posts.find(post => post.media_kind === "image")?.url} />;
 
-  if (!open) return (
-    <main className="gate">
-      <div className="gatecard">
-        <div className="flower">✿</div>
-        <span className="kicker">A little birthday world</span>
-        <h1>A note for <i>Meerah</i></h1>
-        <p>Something made just for you is waiting on the other side.</p>
-        <form onSubmit={unlock}>
-          <label htmlFor="code">Enter your special date</label>
-          <input id="code" type="password" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value)} required />
-          <button className="button rose">Open your birthday world</button>
-          {error && <div className="error">{error}</div>}
-        </form>
-        <small>Made with love · بنایا محبت سے</small>
-      </div>
-    </main>
-  );
+  if (!open) return <PasscodeGate onUnlocked={() => { setOpen(true); location.reload(); }} />;
 
   const cssBookSpread = (
     <div className="bookStage" onTouchStart={e => { const t = e.touches[0]; e.currentTarget.dataset.startX = String(t.clientX); e.currentTarget.dataset.startY = String(t.clientY); }} onTouchEnd={e => { const sx = Number(e.currentTarget.dataset.startX || 0), sy = Number(e.currentTarget.dataset.startY || 0), dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.2) turnPage(dx < 0 ? "next" : "prev"); }}>

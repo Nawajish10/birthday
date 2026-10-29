@@ -341,3 +341,54 @@
                      ├── Turn alternation ("Your Turn!" vs "Waiting for opponent...")
                      └── Win / completion detection with celebratory banner and scores
 ```
+
+---
+
+## 11. Passcode Authentication & Gate Access Flow (DDMMYYYY Authoritative Verification)
+
+```
+[ Visitor arrives at babyyy.axcrivo.in / root ]
+               │
+               ▼
+[ Server renders PasscodeGate (`readScope('birthday') === false`) ]
+               │
+   ┌───────────┴────────────────────────┐
+   │ PasscodeGate Component (UI)        │
+   │  - Inputs: 8-digit date (DDMMYYYY) │
+   │  - Eye toggle (show/hide password) │
+   │  - Primary CTA: Open World         │
+   │  - Double-submit prevention guard  │
+   └───────────┬────────────────────────┘
+               │
+               ▼
+[ Visitor submits passcode (e.g. "30102001") ]
+               │
+               ▼
+[ Client normalizes: `code.trim()` -> `POST /api/access` ]
+               │
+               ├──► Tier 1: Authoritative Timing-Safe Check
+               │    - `crypto.timingSafeEqual` over SHA-256 digests
+               │    - Matches `AUTHORITATIVE_BIRTHDAY_CODE` ("30102001")
+               │    - Immune to DB latency, cold starts, and schema misses
+               │
+               ├──► Tier 2: Supabase RPC `verify_access_code`
+               │    - Rate-limit check & bcrypt hash verification
+               │    - Auto-healing sync if DB was unseeded
+               │
+               ▼
+[ Result Evaluation ]
+   ├── Code Matches (Tier 1 or Tier 2):
+   │     ├── Issues signed `meerah_access` cookie (`httpOnly`, `sameSite: lax`, 12h)
+   │     ├── Sets `meerah_visitor` tracking cookie (90 days)
+   │     ├── Clears lockout bucket if authoritative code entered
+   │     ├── Returns HTTP 200 `{ ok: true }`
+   │     └── Client transitions -> unloads gate & opens full birthday experience
+   │
+   ├── Code Mismatched:
+   │     ├── Returns HTTP 401 `{ error: "That date is not correct..." }`
+   │     └── Client displays inline alert badge with subtle shake
+   │
+   └── Rate Limited (6+ wrong attempts in DB):
+         ├── Returns HTTP 429 `{ error: "Too many attempts..." }`
+         └── Client displays cooldown warning
+```
