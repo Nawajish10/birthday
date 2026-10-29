@@ -291,3 +291,227 @@ export function buildSelectPhotoPayload(item: MemoryPreviewItem): {
     kind: item.media_kind || "image",
   };
 }
+
+
+// ============================================================================
+// Section 1: Midnight Birthday Reveal Contracts & Pure Date Helpers
+// ============================================================================
+export const DEFAULT_RECIPIENT_TIMEZONE = "Asia/Kolkata";
+export const BIRTHDAY_TARGET_MONTH = 9; // October (0-indexed in JS Date)
+export const BIRTHDAY_TARGET_DAY = 30; // 30th
+export const REVEAL_STORAGE_KEY_PREFIX = "birthday-reveal-completed-";
+
+/**
+ * Calculates current year/month/day in the specified IANA timezone.
+ * Returns { year, month (0-11), day (1-31), hours (0-23), minutes (0-59), seconds (0-59) }.
+ */
+export function getTimeInTimezone(
+  timeZone: string = DEFAULT_RECIPIENT_TIMEZONE,
+  referenceDate: Date = new Date()
+): { year: number; month: number; day: number; hours: number; minutes: number; seconds: number } {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(referenceDate);
+    const getPart = (type: string) => {
+      const p = parts.find((x) => x.type === type);
+      return p ? parseInt(p.value, 10) : 0;
+    };
+    return {
+      year: getPart("year"),
+      month: getPart("month") - 1, // convert 1-12 to 0-11
+      day: getPart("day"),
+      hours: getPart("hour"),
+      minutes: getPart("minute"),
+      seconds: getPart("second"),
+    };
+  } catch {
+    return {
+      year: referenceDate.getUTCFullYear(),
+      month: referenceDate.getUTCMonth(),
+      day: referenceDate.getUTCDate(),
+      hours: referenceDate.getUTCHours(),
+      minutes: referenceDate.getUTCMinutes(),
+      seconds: referenceDate.getUTCSeconds(),
+    };
+  }
+}
+
+/**
+ * Pure checker: Is today October 30 in the recipient's timezone?
+ */
+export function isBirthdayToday(
+  timeZone: string = DEFAULT_RECIPIENT_TIMEZONE,
+  referenceDate: Date = new Date()
+): boolean {
+  const t = getTimeInTimezone(timeZone, referenceDate);
+  return t.month === BIRTHDAY_TARGET_MONTH && t.day === BIRTHDAY_TARGET_DAY;
+}
+
+/**
+ * Check if the birthday reveal has already been completed for the current birthday year.
+ */
+export function isMidnightRevealCompleted(
+  timeZone: string = DEFAULT_RECIPIENT_TIMEZONE,
+  storage?: Storage
+): boolean {
+  if (typeof window === "undefined" && !storage) return false;
+  const s = storage || window.localStorage;
+  try {
+    const year = getTimeInTimezone(timeZone).year;
+    const key = `${REVEAL_STORAGE_KEY_PREFIX}${year}-10-30`;
+    return s.getItem(key) === "true";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Persist that the birthday reveal has been completed for this year.
+ */
+export function markMidnightRevealCompleted(
+  timeZone: string = DEFAULT_RECIPIENT_TIMEZONE,
+  storage?: Storage
+): void {
+  if (typeof window === "undefined" && !storage) return;
+  const s = storage || window.localStorage;
+  try {
+    const year = getTimeInTimezone(timeZone).year;
+    const key = `${REVEAL_STORAGE_KEY_PREFIX}${year}-10-30`;
+    s.setItem(key, "true");
+  } catch {}
+}
+
+// ============================================================================
+// Section 3: Swipeable Photo Cards Contracts
+// ============================================================================
+export interface PhotoCardItem {
+  id: string;
+  url: string;
+  caption?: string;
+  date?: string;
+  alt?: string;
+  kind?: "image" | "video";
+}
+
+export const SAMPLE_LANDING_PHOTOS: PhotoCardItem[] = [
+  {
+    id: "photo-1",
+    url: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=900&q=82",
+    caption: "A little celebration · ایک چھوٹی سی خوشی",
+    date: "October 2026",
+    alt: "Celebration with warm fairy lights and birthday decorations",
+  },
+  {
+    id: "photo-2",
+    url: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82",
+    caption: "A night full of light · روشنیوں بھری رات",
+    date: "Autumn Memory",
+    alt: "Night celebration under soft lanterns and golden sparkles",
+  },
+  {
+    id: "photo-3",
+    url: "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=900&q=82",
+    caption: "Together in the moment · ایک خوبصورت لمحہ",
+    date: "Golden Hour",
+    alt: "Sunlit afternoon with warm smiles and coffee",
+  },
+  {
+    id: "photo-4",
+    url: "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=900&q=82",
+    caption: "Sweetest birthday wishes · ڈھیروں دعائیں",
+    date: "Special Day",
+    alt: "Birthday cake with softly glowing candles and rose petals",
+  },
+];
+
+// ============================================================================
+// Section 4: Personal Messages and Poetry Contracts
+// ============================================================================
+export interface PersonalMessageItem {
+  id: string;
+  title: string;
+  kicker?: string;
+  body_en: string;
+  body_ur?: string;
+  poet?: string;
+  isUrduPrimary?: boolean;
+}
+
+export const DEFAULT_PERSONAL_MESSAGES: PersonalMessageItem[] = [
+  {
+    id: "msg-1",
+    title: "A Little Wish For You",
+    kicker: "BIRTHDAY LETTER · سالگرہ کی دعا",
+    body_en: "May your day be filled with warm sunlight, quiet peace, and all the gentle joy your heart can hold. You bring so much light into the world simply by being in it.",
+    body_ur: "تمہاری سالگرہ کا ہر لمحہ خوشیوں سے مہکتا رہے، اور آنے والا ہر سال تمہارے لیے مسکراہٹیں اور برکتیں لائے۔",
+    poet: "With all my heart",
+  },
+  {
+    id: "msg-2",
+    title: "Whispers of Starlight",
+    kicker: "URDU POETRY · اردو شاعری",
+    body_en: "Some souls are like gentle rain on parched earth — they don't demand attention, but everything blossoms in their presence.",
+    body_ur: "خدا کرے کہ تری عمر کے گلستاں میں\nکبھی خزاں کا گزر بھی نہ ہو خدا کے لیے\nسدا بہار رہے یہ چمن، سدا آباد\nیہی دعا ہے مری، تیری ہر دعا کے لیے",
+    poet: "دعاؤں کا تحفہ",
+    isUrduPrimary: true,
+  },
+  {
+    id: "msg-3",
+    title: "The Chapters We Share",
+    kicker: "KEEPSAKE NOTE · یادوں کا صفحہ",
+    body_en: "Looking back at every little conversation, every shared laugh, and every quiet reassurance, I realize that the most precious things in life are the small moments we share together.",
+    body_ur: "تمہاری مسکراہٹ وہ خوبصورت روشنی ہے جو اداس دنوں کو بھی روشن کر دیتی ہے۔",
+    poet: "Always & Forever",
+  },
+  {
+    id: "msg-4",
+    title: "Ghazal of Soft Light",
+    kicker: "POETIC BLESSING · خوبصورت احساس",
+    body_en: "May every path you walk be soft beneath your feet, and may every morning greet you with hope and peace.",
+    body_ur: "ہر نئی صبح تمہارے لیے نئی امیدیں لائے، اور ہر شام تمہارے دل کو سکون عطا کرے۔ سالگرہ بہت بہت مبارک ہو!",
+    poet: "تمہارے لیے",
+  },
+];
+
+// ============================================================================
+// Section 5: Birthday Book Invitation Contracts
+// ============================================================================
+export const BOOK_INVITATION_HEADING = "There's a little more to this story.";
+export const BOOK_INVITATION_SUBTEXT = "Every page holds something I wanted you to see, remember or feel.";
+export const BOOK_INVITATION_ACTION = "Open your birthday book";
+
+// ============================================================================
+// Section 6: Our Soundtrack Contracts
+// ============================================================================
+export const SOUNDTRACK_HEADING = "Our soundtrack.";
+export const SOUNDTRACK_SUBTEXT = "Some feelings are easier to share through a song.";
+
+// ============================================================================
+// Section 7: Memories Preview Contracts
+// ============================================================================
+export const MEMORIES_PREVIEW_HEADING = "Moments worth keeping.";
+export const MEMORIES_PREVIEW_SUBTEXT = "A few little pieces of time that deserve a place of their own.";
+export const MEMORIES_PREVIEW_ACTION = "Explore memories";
+
+// ============================================================================
+// Section 8: Explore Your World Contracts
+// ============================================================================
+export const EXPLORE_WORLD_HEADING = "Explore Your World";
+export const EXPLORE_WORLD_SUBTEXT = "Every corner holds a little piece of love and memories waiting for you.";
+
+// ============================================================================
+// Section 9: Closing Message Contracts
+// ============================================================================
+export const CLOSING_HEADING = "And one last thing…";
+export const CLOSING_MESSAGE = "I hope this little world reminds you how special you are. May this new year of your life bring you happiness, beautiful surprises and countless reasons to smile.";
+export const CLOSING_LINE = "There's always another memory waiting to be made.";
+export const CLOSING_SIGNOFF = "With all my love ♡";

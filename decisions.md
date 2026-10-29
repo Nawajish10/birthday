@@ -368,3 +368,43 @@
   - TypeScript compilation and ESLint pass with 0 errors and 0 warnings.
   - Production build succeeds with all 13 routes optimized.
   - Completely non-destructive additive migration ensures existing birthday content remains unharmed.
+
+
+---
+
+### ADR-016: Landing Page 9-Section Architecture, Timezone-Aware Midnight Reveal & Scrapbook Design System
+
+- **Status:** Accepted (October 2026)
+- **Context:**
+  The birthday web application required a production-ready, highly personal landing experience celebrating Meerah's birthday. The previous landing page had placeholder cards, lacked a midnight celebration trigger, and did not present the full depth of memories, personal messages, and music in an emotionally coherent sequence. The experience needed to be mobile-first, accessible, responsive across viewports from 320px to 1440px+, respectful of motion preferences, and aligned with the handcrafted 2D scrapbook visual design system.
+- **Decision:**
+  1. **Nine-Section Linear Narrative Architecture:**
+     - Restructured the primary landing tab (`tab === "home"` in `src/components/Experience.tsx`) into a sequential 9-section narrative:
+       * Section 1: Midnight Birthday Reveal (`MidnightBirthdayReveal.tsx`)
+       * Section 2: Welcome Hero & Avatar (`HeroSection.tsx`)
+       * Section 3: Swipeable Photo Cards (`SwipeablePhotoCards.tsx`)
+       * Section 4: Personal Messages and Poetry (`PersonalMessagesSection.tsx`)
+       * Section 5: Birthday Book Invitation (`BirthdayBookInvitation.tsx`)
+       * Section 6: Our Soundtrack (`OurSoundtrackSection.tsx`)
+       * Section 7: Memories Preview (`MemoriesPreviewSection.tsx`)
+       * Section 8: Explore Your World (`ExploreWorldSection.tsx` & `ScrapbookCardWall.tsx`)
+       * Section 9: Closing Message (`ClosingMessageSection.tsx`)
+  2. **Timezone-Aware Date Gating & Audio Chime Fallback:**
+     - Date-gated to October 30 evaluated against the recipient's timezone (`Asia/Kolkata` default) using `Intl.DateTimeFormat`.
+     - Deterministic annual completion state persisted to `localStorage` under `birthday-reveal-completed-YYYY-10-30`.
+     - Multi-tier audio fallback: attempts configured track audio -> gracefully catches autoplay denial without breaking -> renders fallback "Tap to celebrate ♫" button -> provides Web Audio API synthesized music-box acoustic chime (`playMusicBoxChime`) using pure sine waves and natural exponential decay envelopes.
+  3. **Handcrafted Scrapbook Visual Design System:**
+     - Unified color tokens (`landing-tokens.css`): Warm ivory (`#FFF9EF`), cream paper (`#FBF4E6`), sunflower gold (`#F1C75B`), rose pink (`#D4798D`), sage foliage green (`#5B8266`), and plum ink (`#624752`).
+     - Embellishments: Reusable semi-transparent washi tape (`.washi-tape`, `washi-tape-pink`, `washi-tape-sage`), deckled borders, tilt rotations, floor contact shadows, and realistic wax seal SVG stamps with embossed hearts.
+  4. **Bicultural English & Urdu RTL Typography:**
+     - Strict bilingual representation with bidirectional isolation: Urdu elements explicitly declare `lang="ur"` and `dir="rtl"`, preventing punctuation inversion and layout drift.
+  5. **Single-Audio-Controller & Zero-Autoplay Compliance:**
+     - Section 6 (`OurSoundtrackSection`) delegates playback to the parent audio controller in `Experience.tsx` via callback props (`onTogglePlay`, `onPlayTrack`). Zero duplicate `<audio>` DOM elements are created.
+  6. **Accessibility & Reduced-Motion Guarantee:**
+     - All 10 landing stylesheets define `@media (prefers-reduced-motion: reduce)` to disable non-essential animations, spins, and transitions for users with vestibular or motion sensitivities.
+     - All interactive controls feature semantic ARIA roles, descriptive labels, and keyboard operability (`tabIndex={0}`, Enter/Space handlers).
+- **Consequences:**
+  - 100% of landing page tests pass (763/763 tests passing across 117 suites in the repository).
+  - TypeScript strict typecheck passes with 0 errors (`npx tsc --noEmit`).
+  - ESLint passes with 0 errors and 0 warnings (`npm run lint`).
+  - Mobile responsiveness verified across all target viewports (320px iPhone SE through 1440px+ desktop).

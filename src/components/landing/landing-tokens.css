@@ -18,6 +18,27 @@
   --scrapbook-border: #EADBCE;
   --scrapbook-shadow: 0 10px 30px rgba(98, 71, 82, 0.08);
   --scrapbook-shadow-hover: 0 16px 40px rgba(98, 71, 82, 0.14);
+
+  /* Mobile Accessibility & Touch Target Tokens */
+  --touch-target-min: 44px;
+  --safe-area-bottom: max(16px, env(safe-area-inset-bottom));
+  --safe-area-top: max(12px, env(safe-area-inset-top));
+  --landing-content-max: 1200px;
+
+  /* Typography Clamping Tokens */
+  --font-fluid-h1: clamp(1.85rem, 4.5vw, 2.75rem);
+  --font-fluid-h2: clamp(1.4rem, 3.5vw, 2.1rem);
+  --font-fluid-body: clamp(0.925rem, 2vw, 1.05rem);
+  --font-fluid-small: clamp(0.75rem, 1.5vw, 0.85rem);
+}
+
+/* Base Scrapbook Container Containment */
+.scrapbook-container,
+.scrapbook-shell-containment {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 /* Washi tape decorative styles */
@@ -49,6 +70,8 @@
   border: 1px solid rgba(234, 219, 206, 0.6);
   position: relative;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .polaroid-frame:hover {
@@ -56,9 +79,24 @@
   box-shadow: var(--scrapbook-shadow-hover);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .polaroid-frame:hover {
-    transform: none;
+/* Mobile responsive tokens & washi adjustments */
+@media (max-width: 480px) {
+  .washi-tape {
+    height: 18px;
+    width: 68px;
+  }
+
+  .polaroid-frame {
+    padding: 8px 8px 24px 8px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
   }
 }
 
+/* Prefers-reduced-motion coverage */
+@media (prefers-reduced-motion: reduce) {
+  .polaroid-frame,
+  .polaroid-frame:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}

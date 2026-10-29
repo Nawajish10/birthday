@@ -1,0 +1,646 @@
+/**
+ * Our Soundtrack Section Styles (Section 6)
+ * Vinyl turntable aesthetic, mobile-first player controls, quick track list, loading/error states.
+ */
+
+@import "./landing-tokens.css";
+
+.soundtrack-section {
+  position: relative;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 48px 24px max(48px, env(safe-area-inset-bottom)) 24px;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.soundtrack-header {
+  text-align: center;
+  margin-bottom: 32px;
+  max-width: 640px;
+}
+
+.soundtrack-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--scrapbook-plum);
+  background: var(--scrapbook-rose);
+  padding: 4px 14px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(212, 121, 141, 0.25);
+}
+
+.soundtrack-heading {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  line-height: 1.25;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.soundtrack-supporting {
+  font-size: clamp(14px, 2vw, 16px);
+  color: var(--scrapbook-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Main Card Container */
+.soundtrack-card {
+  position: relative;
+  width: 100%;
+  background: var(--scrapbook-ivory);
+  border-radius: 18px;
+  border: 1px solid var(--scrapbook-border);
+  box-shadow: var(--scrapbook-shadow);
+  padding: 32px 28px;
+  box-sizing: border-box;
+  overflow: visible;
+  transition: box-shadow 0.3s ease;
+}
+
+.soundtrack-card:hover {
+  box-shadow: var(--scrapbook-shadow-hover);
+}
+
+/* Washi Tape Accents */
+.soundtrack-card .washi-tape-top-left {
+  top: -10px;
+  left: 28px;
+  transform: rotate(-3deg);
+}
+
+.soundtrack-card .washi-tape-top-right {
+  top: -10px;
+  right: 28px;
+  transform: rotate(2.5deg);
+}
+
+/* Loading & Error States */
+.soundtrack-state-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+  gap: 16px;
+}
+
+.soundtrack-pulse-disc {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2D1A23 0%, #4A2E3B 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(98, 71, 82, 0.2);
+  animation: soundtrackPulse 2s ease-in-out infinite;
+}
+
+.soundtrack-pulse-disc span {
+  font-size: 32px;
+}
+
+.soundtrack-state-title {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  margin: 0;
+}
+
+.soundtrack-state-desc {
+  font-size: 14px;
+  color: var(--scrapbook-muted);
+  max-width: 440px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.soundtrack-state-btn {
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 10px 24px;
+  background: var(--scrapbook-plum);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.soundtrack-state-btn:hover {
+  background: var(--scrapbook-plum-dark);
+  transform: translateY(-1px);
+}
+
+.soundtrack-state-btn:focus-visible {
+  outline: 3px solid var(--scrapbook-rose-deep);
+  outline-offset: 3px;
+}
+
+/* Player Body Layout: Turntable + Controls */
+.soundtrack-player-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 36px;
+  align-items: center;
+}
+
+/* Vinyl Turntable Display */
+.soundtrack-turntable {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  background: #EADBCE;
+  border-radius: 20px;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1), 0 6px 18px rgba(98, 71, 82, 0.08);
+  margin: 0 auto;
+}
+
+.soundtrack-vinyl {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #33222B 0%, #150C10 50%, #281820 70%, #11090E 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.soundtrack-card.is-playing .soundtrack-vinyl {
+  animation: vinylSpin 6s linear infinite;
+}
+
+.soundtrack-vinyl-groove {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.soundtrack-vinyl-groove.g1 { width: 140px; height: 140px; }
+.soundtrack-vinyl-groove.g2 { width: 100px; height: 100px; }
+.soundtrack-vinyl-groove.g3 { width: 66px; height: 66px; }
+
+.soundtrack-vinyl-label {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--scrapbook-sunflower) 0%, var(--scrapbook-rose-deep) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.soundtrack-vinyl-center-hole {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #150C10;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Tonearm */
+.soundtrack-tonearm {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 32px;
+  height: 90px;
+  pointer-events: none;
+  transform-origin: 24px 12px;
+  transform: rotate(-18deg);
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 3;
+}
+
+.soundtrack-card.is-playing .soundtrack-tonearm {
+  transform: rotate(16deg);
+}
+
+.soundtrack-tonearm-base {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #846F77;
+  border: 2px solid #543E48;
+}
+
+.soundtrack-tonearm-rod {
+  position: absolute;
+  top: 18px;
+  right: 12px;
+  width: 4px;
+  height: 60px;
+  background: linear-gradient(to right, #B09EA6, #EADBCE);
+  border-radius: 2px;
+}
+
+.soundtrack-tonearm-head {
+  position: absolute;
+  bottom: 0;
+  right: 8px;
+  width: 12px;
+  height: 16px;
+  background: #3D2B33;
+  border-radius: 2px;
+}
+
+/* Player Info and Controls */
+.soundtrack-info-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.soundtrack-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.soundtrack-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--scrapbook-sage);
+  color: var(--scrapbook-sage-dark);
+}
+
+.soundtrack-card.is-playing .soundtrack-status-badge {
+  background: var(--scrapbook-rose);
+  color: var(--scrapbook-rose-deep);
+}
+
+/* Soundwave Equalizer Bars */
+.soundtrack-soundwave {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+}
+
+.soundtrack-soundwave-bar {
+  width: 3px;
+  height: 6px;
+  background: var(--scrapbook-rose-deep);
+  border-radius: 2px;
+}
+
+.soundtrack-card.is-playing .soundtrack-soundwave-bar:nth-child(1) {
+  animation: soundwaveBounce 0.7s ease-in-out infinite alternate;
+}
+.soundtrack-card.is-playing .soundtrack-soundwave-bar:nth-child(2) {
+  animation: soundwaveBounce 0.9s ease-in-out infinite alternate 0.15s;
+}
+.soundtrack-card.is-playing .soundtrack-soundwave-bar:nth-child(3) {
+  animation: soundwaveBounce 0.6s ease-in-out infinite alternate 0.3s;
+}
+.soundtrack-card.is-playing .soundtrack-soundwave-bar:nth-child(4) {
+  animation: soundwaveBounce 1.1s ease-in-out infinite alternate 0.2s;
+}
+
+.soundtrack-active-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.soundtrack-active-title {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.soundtrack-active-artist {
+  font-size: 14px;
+  color: var(--scrapbook-muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+.soundtrack-unavailable-notice {
+  display: inline-block;
+  font-size: 12px;
+  color: #B9536B;
+  background: #FDF2F4;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+/* Progress Bar Simulation */
+.soundtrack-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.soundtrack-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(98, 71, 82, 0.12);
+  border-radius: 999px;
+  position: relative;
+  overflow: hidden;
+}
+
+.soundtrack-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  background: linear-gradient(90deg, var(--scrapbook-sunflower) 0%, var(--scrapbook-rose-deep) 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.soundtrack-card.is-playing .soundtrack-progress-fill {
+  width: 65%;
+  animation: progressPulse 8s ease-in-out infinite;
+}
+
+.soundtrack-progress-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--scrapbook-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Playback Control Buttons */
+.soundtrack-control-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.soundtrack-play-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--scrapbook-rose-deep) 0%, #A6475D 100%);
+  color: #FFFFFF;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(212, 121, 141, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.soundtrack-play-toggle-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(212, 121, 141, 0.5);
+}
+
+.soundtrack-play-toggle-btn:focus-visible {
+  outline: 3px solid var(--scrapbook-plum);
+  outline-offset: 3px;
+}
+
+.soundtrack-skip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid var(--scrapbook-border);
+  color: var(--scrapbook-plum);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.soundtrack-skip-btn:hover {
+  background: var(--scrapbook-paper);
+  transform: translateY(-1px);
+}
+
+.soundtrack-skip-btn:focus-visible {
+  outline: 3px solid var(--scrapbook-rose-deep);
+  outline-offset: 2px;
+}
+
+.soundtrack-open-songbook-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 18px;
+  background: rgba(98, 71, 82, 0.08);
+  border: 1px solid rgba(98, 71, 82, 0.15);
+  border-radius: 999px;
+  color: var(--scrapbook-plum-dark);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  margin-left: auto;
+}
+
+.soundtrack-open-songbook-btn:hover {
+  background: rgba(98, 71, 82, 0.14);
+  transform: translateY(-1px);
+}
+
+.soundtrack-open-songbook-btn:focus-visible {
+  outline: 3px solid var(--scrapbook-plum);
+  outline-offset: 2px;
+}
+
+/* Quick Track Select Playlist */
+.soundtrack-playlist-container {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px dashed rgba(234, 219, 206, 0.8);
+}
+
+.soundtrack-playlist-heading {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--scrapbook-muted);
+  margin: 0 0 14px 0;
+}
+
+.soundtrack-playlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.soundtrack-track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 14px;
+  background: #FFFFFF;
+  border: 1px solid rgba(234, 219, 206, 0.8);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  color: inherit;
+}
+
+.soundtrack-track-row:hover {
+  background: #FFFDF9;
+  border-color: var(--scrapbook-rose-deep);
+  transform: translateY(-1px);
+}
+
+.soundtrack-track-row:focus-visible {
+  outline: 3px solid var(--scrapbook-rose-deep);
+  outline-offset: 2px;
+}
+
+.soundtrack-track-row.is-active {
+  background: var(--scrapbook-rose);
+  border-color: var(--scrapbook-rose-deep);
+  box-shadow: 0 2px 8px rgba(212, 121, 141, 0.15);
+}
+
+.soundtrack-track-row.is-unavailable {
+  opacity: 0.6;
+}
+
+.soundtrack-track-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--scrapbook-muted);
+  min-width: 18px;
+}
+
+.soundtrack-track-row.is-active .soundtrack-track-num {
+  color: var(--scrapbook-rose-deep);
+}
+
+.soundtrack-track-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.soundtrack-track-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--scrapbook-plum-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.soundtrack-track-artist {
+  font-size: 11px;
+  color: var(--scrapbook-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.soundtrack-track-duration {
+  font-size: 11px;
+  color: var(--scrapbook-muted);
+  font-variant-numeric: tabular-nums;
+  margin-left: 6px;
+}
+
+@keyframes vinylSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes soundwaveBounce {
+  0% { height: 4px; }
+  100% { height: 18px; }
+}
+
+@keyframes soundtrackPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes progressPulse {
+  0% { width: 35%; }
+  50% { width: 75%; }
+  100% { width: 35%; }
+}
+
+@media (max-width: 768px) {
+  .soundtrack-player-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .soundtrack-card {
+    padding: 24px 16px;
+  }
+  .soundtrack-open-songbook-btn {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soundtrack-vinyl,
+  .soundtrack-tonearm,
+  .soundtrack-pulse-disc,
+  .soundtrack-progress-fill,
+  .soundtrack-soundwave-bar {
+    animation: none !important;
+    transition: none !important;
+  }
+}

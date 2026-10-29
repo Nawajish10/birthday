@@ -298,6 +298,7 @@ export function StoryDestinationCards({
                               alt={altText}
                               className="polaroid-image"
                               loading="lazy"
+                              decoding="async"
                             />
                             {item.media_kind === "video" && (
                               <span

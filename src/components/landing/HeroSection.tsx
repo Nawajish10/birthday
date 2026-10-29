@@ -106,6 +106,7 @@ export function HeroSection({
                     src={avatarUrl}
                     alt={`${activeRecipient}'s avatar`}
                     className="hero-avatar-real-photo"
+                    decoding="async"
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
@@ -314,6 +315,7 @@ export function HeroSection({
           <div className="hero-text-column">
             {/* Expressive Serif Heading */}
             <h1 className="hero-heading" data-testid="hero-heading">
+              <span className="hero-heading-lead">Happy Birthday, {activeRecipient}</span>
               <span className="hero-heading-main">
                 Today is all <em>yours</em>, {activeRecipient}
               </span>
@@ -354,7 +356,7 @@ export function HeroSection({
                   ↓
                 </span>
               </button>
-              <p className="hero-cta-hint">Turn the page to begin your birthday scrapbook journey</p>
+              <p className="hero-cta-hint">Let&apos;s begin — turn the page to enter your birthday scrapbook world</p>
             </div>
           </div>
         </div>

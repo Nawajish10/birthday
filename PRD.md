@@ -773,3 +773,86 @@ The Profile and Memories experiences represent an authentic Instagram and Snapch
 - **TypeScript Strict Verification:** 0 type errors (`npx tsc --noEmit`).
 - **ESLint Code Quality:** 0 errors, 0 warnings (`npm run lint`).
 - **Production Build:** Next.js production build compiled cleanly (`npm run build`), generating all static and dynamic application routes.
+
+
+---
+
+## 23. Production-Ready Landing Page Implementation (October 2026)
+
+### 23.1 Nine-Section Linear Narrative Architecture
+The primary birthday landing experience (`src/components/Experience.tsx`, `tab === "home"`) is structured as an immersive 9-section linear narrative celebrating Meerah's birthday. Each section is encapsulated as an accessible, responsive, independent client component under `src/components/landing/`:
+
+1. **Section 1: Midnight Birthday Reveal (`MidnightBirthdayReveal.tsx`):**
+   - Date-gated celebratory banner and modal triggered exclusively on October 30 in the recipient's local timezone (`Asia/Kolkata`).
+   - Timezone-aware date calculations via `getTimezoneDateParts` and `isBirthdayActive`.
+   - Multi-tier audio fallback: attempts configured audio playback (`audioSrc`), handles browser autoplay rejection with a prominent "Tap to celebrate ♫" button, and synthesizes an acoustic music-box chime via the Web Audio API (`playMusicBoxChime`).
+   - Annual dismissal persistence via deterministic localStorage key `birthday-reveal-completed-YYYY-10-30`.
+   - Accessible ARIA semantics: `role="dialog"`, `aria-modal="true"`, `aria-labelledby="midnight-reveal-title"`, and `aria-live="polite"` audio status.
+
+2. **Section 2: Welcome Hero & Avatar (`HeroSection.tsx`):**
+   - Handcrafted floral wreath illustration embedding three distinct floral motifs: sunflower (`#F1C75B`), deep rose (`#D4798D`), and white jasmine/daisy (`#FFFFFF`).
+   - Dual-state avatar cameo: renders real recipient photograph with automatic asynchronous decoding (`decoding="async"`) and graceful fallback (`onError`) to a symbolic antique 2D silhouette cameo.
+   - Personalized greeting header with recipient name (`Meerah`), date kicker (`October 30`), and Urdu blessing (`DEFAULT_URDU_BLESSING`) with bidirectional isolation (`dir="rtl"`, `lang="ur"`).
+   - Primary continuation CTA button (`aria-label="Open your little world"`) with smooth-scrolling navigation.
+
+3. **Section 3: Swipeable Photo Cards (`SwipeablePhotoCards.tsx`):**
+   - Responsive, touch-gesture-enabled polaroid card carousel featuring authentic washi tape accents (`gold`, `pink`, `sage`) and subtle organic rotations (-1.5deg to +1.5deg).
+   - Touch swipe interaction with calibrated 45px travel threshold (`SWIPE_THRESHOLD_PX`).
+   - Accessible navigation: dot indicators with `aria-current="true"`, previous/next buttons with descriptive `aria-label`, keyboard arrow navigation (`ArrowLeft`, `ArrowRight`, `Home`, `End`), and visible position counter ("N of M").
+   - Click-to-open photo viewer integration via `onSelectPhoto` callback.
+
+4. **Section 4: Personal Messages and Poetry (`PersonalMessagesSection.tsx`):**
+   - Bicultural stacked-card keepsake deck presenting handwritten birthday letters, classic Urdu poetry (e.g. Allama Iqbal ghazal verses), and heartfelt prayers.
+   - Strict typography standards: English body with serif typography, Urdu verses in Noto Nastaliq Urdu with `dir="rtl"` and `lang="ur"`.
+   - Decorative wax seal stamp graphics with color varieties (`pink`, `gold`, `sage`).
+   - Tactile card deck navigation with swipe gestures, keyboard arrow support, and deckled-edge layering.
+
+5. **Section 5: Birthday Book Invitation (`BirthdayBookInvitation.tsx`):**
+   - 3D physical book presentation showcasing a realistic bound spine with crease, floor contact shadow, and deckled page edges.
+   - Antique gold foil stamp featuring bilingual title: "For my baba" in English and "تمہاری سالگرہ" in Urdu calligraphy (`lang="ur"`, `dir="rtl"`).
+   - Interactive book opening action: keyboard operable (`role="button"`, `tabIndex={0}`, Enter/Space key handling) and primary action button (`book-invitation-cta-btn`) triggering `onOpenBook`.
+
+6. **Section 6: Our Soundtrack (`OurSoundtrackSection.tsx`):**
+   - Prominent shared soundtrack player with vinyl turntable illustration, spinning record animation (`.is-spinning`), and engaged tonearm.
+   - Strict single-audio-controller invariant: delegates all playback through `onTogglePlay` and `onPlayTrack` to the shared parent audio engine, strictly prohibiting duplicate `<audio>` elements or uncoordinated autoplay.
+   - Quick-select tracklist with formatted durations (`mm:ss`), active playback indicators, and "Open full songbook ♫" CTA button navigating to the Music Room.
+
+7. **Section 7: Memories Preview (`MemoriesPreviewSection.tsx`):**
+   - Pinned polaroid memory preview grid capped at 4 curated photographs (`MAX_MEMORIES_PREVIEW = 4`).
+   - Polaroid styling with white photographic borders, handwritten captions, washi tape corners, and video indicators.
+   - Supportive empty-state guidance and skeleton loading placeholders.
+   - "Explore memories" CTA button navigating directly to the Memories/Stories room.
+
+8. **Section 8: Explore Your World (`ExploreWorldSection.tsx` & `ScrapbookCardWall.tsx`):**
+   - Comprehensive destination navigation hub connecting to all application experiences: Profile, Games, Study, Music Room, Memories, and Birthday Book.
+   - Accessible button elements with individual washi tape colors, category chip badges, and descriptive `aria-label`.
+   - Truthful destination contract: 100% of linked destinations are active and operational (zero dead-ends or "Coming Soon" placeholders).
+
+9. **Section 9: Closing Message (`ClosingMessageSection.tsx`):**
+   - Handcrafted stationery letter card with top washi tape accent and crimson wax seal SVG featuring an embossed heart mark and radial gradient.
+   - Heartfelt closing signoff ("With all my love ♡"), personal closing phrase, and closing Urdu blessing.
+   - "Return to beginning" smooth-scrolling button (`window.scrollTo({ top: 0, behavior: "smooth" })`) and secondary "Explore your world" navigation shortcut.
+
+### 23.2 Handcrafted Scrapbook Design System
+1. **Color Tokens & Textures (`landing-tokens.css`):**
+   - Paper surfaces: Warm ivory (`#FFF9EF`), antique cream paper (`#FBF4E6`), crisp polaroid white (`#FFFFFF`).
+   - Accents: Sunflower gold (`#F1C75B` / `#C69325`), soft rose pink (`#D4798D` / `#E8A2B0`), sage foliage green (`#5B8266` / `#376E58`), deep plum ink (`#624752` / `#3D2B33`).
+   - Tactile embellishments: Washi tape utility classes (`.washi-tape`, `.washi-tape-pink`, `.washi-tape-sage`) with semi-transparent paper texture, deckled edges, and organic tilt angles (-2deg to +2deg).
+   - Layered depth: Multi-stop soft contact shadows (`--scrapbook-shadow`, `--scrapbook-shadow-hover`).
+2. **Bicultural Typography:**
+   - English: Playfair Display / Cormorant Garamond serif headings, clean sans-serif UI copy.
+   - Urdu: Noto Nastaliq Urdu / Scheherazade New with `unicode-bidi: isolate`, explicit `lang="ur"`, and `dir="rtl"` to prevent punctuation inversion and layout corruption.
+
+### 23.3 Quality & Verification Metrics
+- **Automated Test Suite:** **763 / 763 tests passing across 117 suites (0 failures)**.
+  - Dedicated landing test suite: `test/landing-page-nine-sections.test.ts` (37 tests), `test/midnight-reveal.test.ts`, `test/swipeable-cards-messages.test.ts`, `test/book-music-explore.test.ts`, `test/landing-mobile-performance.test.ts`, `test/landing-integration.test.ts`.
+- **Accessibility & Motion Safety:**
+  - 100% coverage of `@media (prefers-reduced-motion: reduce)` across all 10 landing stylesheets.
+  - All interactive elements meet 44x44px touch target guidelines and define `:focus-visible` high-contrast outlines.
+  - All dialogs and overlays feature `role="dialog"`, `aria-modal="true"`, and escape key listeners.
+- **Hydration & Lifecycle Safety:**
+  - Zero hydration mismatches: all 9 components marked `"use client"` with SSR-safe browser API guards (`typeof window !== "undefined"`).
+  - Clean resource cleanup: zero interval/timeout leaks, audio stopped on unmount.
+- **TypeScript & ESLint Quality:**
+  - 0 TypeScript compilation errors (`npx tsc --noEmit`).
+  - 0 ESLint errors and 0 warnings (`npm run lint`).

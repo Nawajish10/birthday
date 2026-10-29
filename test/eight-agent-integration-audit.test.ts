@@ -93,11 +93,20 @@ describe("Agent 8: Independent Integration & Eight-Agent Architecture Audit", ()
   it("AUDIT 5: All 7 feature panels are properly wired and preserved in Experience.tsx", () => {
     const expSrc = fs.readFileSync(expPath, "utf-8");
 
-    // Home
+    // Home (9-section landing page architecture)
     assert.ok(expSrc.includes("<HeroSection"), "Home must render HeroSection");
-    assert.ok(expSrc.includes("<ScrapbookCardWall"), "Home must render ScrapbookCardWall");
-    assert.ok(expSrc.includes("<LandingMusicCard"), "Home must render LandingMusicCard");
-    assert.ok(expSrc.includes("<StoryDestinationCards"), "Home must render StoryDestinationCards");
+    assert.ok(
+      expSrc.includes("<ScrapbookCardWall") || expSrc.includes("<ExploreWorldSection"),
+      "Home must render ScrapbookCardWall or ExploreWorldSection"
+    );
+    assert.ok(
+      expSrc.includes("<LandingMusicCard") || expSrc.includes("<OurSoundtrackSection"),
+      "Home must render LandingMusicCard or OurSoundtrackSection"
+    );
+    assert.ok(
+      expSrc.includes("<StoryDestinationCards") || expSrc.includes("<MemoriesPreviewSection"),
+      "Home must render StoryDestinationCards or MemoriesPreviewSection"
+    );
 
     // Other 6 features
     assert.ok(expSrc.includes("<ProfilePanel"), "Must wire ProfilePanel for profile tab");

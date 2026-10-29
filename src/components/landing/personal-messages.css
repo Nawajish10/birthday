@@ -1,0 +1,472 @@
+/* ============================================================================
+ * Section 4: Personal Messages & Poetry — Stylesheet
+ * Warm paper surfaces, antique gold & blush accents, and elegant Urdu typography.
+ * ============================================================================ */
+
+@import "./landing-tokens.css";
+
+.personal-messages-section {
+  position: relative;
+  width: 100%;
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem max(2.5rem, env(safe-area-inset-bottom)) 1.25rem;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  outline: none;
+  border-radius: 20px;
+}
+
+.personal-messages-section:focus-visible {
+  outline: 2px solid var(--scrapbook-rose-deep, #D4798D);
+  outline-offset: 4px;
+}
+
+/* Header Styles */
+.personal-messages-header {
+  text-align: center;
+  margin-bottom: 2.25rem;
+}
+
+.messages-kicker-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.personal-messages-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--scrapbook-rose-deep, #D4798D);
+}
+
+.messages-counter-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #FFF9EF;
+  border: 1px solid #EADBCE;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #624752;
+  box-shadow: 0 1px 3px rgba(98, 71, 82, 0.05);
+}
+
+.personal-messages-heading {
+  margin: 0 0 0.6rem 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  line-height: 1.25;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  font-weight: 600;
+}
+
+.personal-messages-supporting {
+  margin: 0 auto;
+  max-width: 540px;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--scrapbook-muted, #846F77);
+}
+
+/* Interactive Card Deck Container */
+.personal-card-deck-container {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Ghost stacked cards behind primary card */
+.deck-card-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  background: var(--scrapbook-paper, #FBF4E6);
+  border: 1px solid var(--scrapbook-border, #EADBCE);
+  pointer-events: none;
+  transition: transform 0.3s ease;
+}
+
+.deck-card-back {
+  transform: rotate(-3.5deg) scale(0.95) translateY(8px);
+  opacity: 0.5;
+  box-shadow: 0 4px 16px rgba(98, 71, 82, 0.06);
+  z-index: 1;
+}
+
+.deck-card-middle {
+  transform: rotate(2.8deg) scale(0.98) translateY(4px);
+  opacity: 0.8;
+  box-shadow: 0 8px 24px rgba(98, 71, 82, 0.08);
+  z-index: 2;
+}
+
+/* Active Message Card */
+.message-card-active {
+  position: relative;
+  width: 100%;
+  background: #FFF9EF;
+  background-image:
+    radial-gradient(rgba(212, 121, 141, 0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 1.5px solid var(--scrapbook-border, #EADBCE);
+  border-radius: 16px;
+  padding: 2.25rem 2.25rem 1.75rem 2.25rem;
+  box-sizing: border-box;
+  box-shadow:
+    0 18px 45px rgba(98, 71, 82, 0.12),
+    0 4px 12px rgba(98, 71, 82, 0.06);
+  z-index: 3;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.message-card-active:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 22px 50px rgba(98, 71, 82, 0.15),
+    0 6px 16px rgba(98, 71, 82, 0.08);
+}
+
+/* Washi Tape on active message card */
+.message-card-tape {
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(0.8deg);
+  width: 120px;
+  height: 24px;
+  z-index: 4;
+}
+
+/* Card Topbar */
+.message-card-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.message-category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chip-pink {
+  background: #F8E8EC;
+  color: #D4798D;
+  border: 1px solid rgba(212, 121, 141, 0.3);
+}
+
+.chip-gold {
+  background: #FFF5DD;
+  color: #C69325;
+  border: 1px solid rgba(198, 147, 37, 0.35);
+}
+
+.chip-sage {
+  background: #E5EDE2;
+  color: #376E58;
+  border: 1px solid rgba(55, 110, 88, 0.3);
+}
+
+.category-symbol {
+  font-size: 0.8rem;
+}
+
+.message-wax-seal {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #D4798D;
+  box-shadow: 0 2px 6px rgba(212, 121, 141, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFF9EF;
+}
+
+.wax-seal-icon {
+  font-size: 0.95rem;
+}
+
+/* Card Title */
+.message-card-title {
+  margin: 0 0 1rem 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.6rem;
+  line-height: 1.3;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  font-weight: 600;
+}
+
+/* English Body */
+.message-card-body-en p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: #553D47;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  letter-spacing: 0.01em;
+}
+
+/* Ornamental Divider */
+.message-card-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin: 1.5rem 0 1.25rem 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #EADBCE;
+}
+
+.divider-ornament {
+  color: var(--scrapbook-rose-deep, #D4798D);
+  font-size: 0.85rem;
+}
+
+/* Urdu Typography & RTL Handling */
+.message-card-urdu-container {
+  margin-top: 1rem;
+}
+
+.message-card-urdu-text {
+  margin: 0;
+  padding: 0;
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: isolate;
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", "Arabic Typesetting", serif;
+  font-size: 1.26rem;
+  line-height: 2.2;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  font-weight: 500;
+}
+
+.urdu-verse-line {
+  display: block;
+  margin-bottom: 0.35rem;
+  unicode-bidi: isolate;
+}
+
+/* Card Footer */
+.message-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #F1E5D7;
+  font-size: 0.82rem;
+}
+
+.message-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--scrapbook-rose-deep, #D4798D);
+}
+
+.author-icon {
+  font-size: 0.85rem;
+  font-style: normal;
+}
+
+.message-date {
+  color: var(--scrapbook-muted, #846F77);
+  font-size: 0.78rem;
+}
+
+/* Navigation Controls Bar */
+.messages-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.messages-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #FFF9EF;
+  border: 1.5px solid #EADBCE;
+  border-radius: 999px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(98, 71, 82, 0.06);
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.messages-nav-btn:hover {
+  background: #FFFFFF;
+  border-color: var(--scrapbook-rose-deep, #D4798D);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(98, 71, 82, 0.1);
+}
+
+.messages-nav-btn:active {
+  transform: translateY(0);
+}
+
+/* Pills row */
+.messages-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.messages-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #FBF4E6;
+  border: 1px solid #EADBCE;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--scrapbook-muted, #846F77);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 36px;
+}
+
+.messages-pill .pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #D4798D;
+  opacity: 0.4;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.messages-pill.active {
+  background: #FFFFFF;
+  border-color: var(--scrapbook-rose-deep, #D4798D);
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(212, 121, 141, 0.12);
+}
+
+.messages-pill.active .pill-dot {
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+.messages-swipe-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--scrapbook-muted, #846F77);
+  margin-top: 1rem;
+  opacity: 0.8;
+}
+
+/* Empty State */
+.personal-messages-empty-card {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #FFF9EF;
+  border: 1.5px dashed #EADBCE;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(98, 71, 82, 0.06);
+}
+
+.empty-message-seal {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.empty-message-title {
+  margin: 0 0 0.5rem 0;
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+}
+
+.empty-message-description {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--scrapbook-muted, #846F77);
+}
+
+/* Responsive queries */
+@media (max-width: 640px) {
+  .message-card-active {
+    padding: 1.75rem 1.25rem 1.5rem 1.25rem;
+  }
+  .personal-messages-heading {
+    font-size: 1.6rem;
+  }
+  .message-card-title {
+    font-size: 1.35rem;
+  }
+  .message-card-urdu-text {
+    font-size: 1.15rem;
+    line-height: 2;
+  }
+  .messages-pill .pill-text {
+    display: none;
+  }
+  .messages-pill {
+    padding: 0.4rem;
+    min-width: 32px;
+    justify-content: center;
+  }
+  .messages-controls-bar {
+    justify-content: center;
+  }
+}
+
+/* Prefers-reduced-motion: clean accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .personal-messages-section,
+  .deck-card-ghost,
+  .message-card-active,
+  .messages-nav-btn,
+  .messages-pill,
+  .messages-pill .pill-dot {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}

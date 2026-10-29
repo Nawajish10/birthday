@@ -127,3 +127,46 @@ To eliminate merge conflicts and accidental regression of shared application sta
    - No YouTube ripping or DRM circumvention is permitted. Local audio plays without streaming provider dependencies.
 
 
+
+
+---
+
+## 6. Landing Page Contracts & Operational Rules (Wave 2 / 9-Section Architecture)
+
+1. **9-Section Modular Component Ownership:**
+   - All landing sections must reside under `src/components/landing/` and be re-exported from `src/components/landing/index.ts`:
+     * Section 1: `MidnightBirthdayReveal.tsx` (`midnight-reveal.css`)
+     * Section 2: `HeroSection.tsx` (`hero-section.css`)
+     * Section 3: `SwipeablePhotoCards.tsx` (`swipeable-photo-cards.css`)
+     * Section 4: `PersonalMessagesSection.tsx` (`personal-messages.css`)
+     * Section 5: `BirthdayBookInvitation.tsx` (`book-invitation.css`)
+     * Section 6: `OurSoundtrackSection.tsx` (`our-soundtrack.css`)
+     * Section 7: `MemoriesPreviewSection.tsx` (`memories-preview.css`)
+     * Section 8: `ExploreWorldSection.tsx` (`explore-world.css` & `ScrapbookCardWall.tsx`)
+     * Section 9: `ClosingMessageSection.tsx` (`closing-message.css`)
+   - Pure domain models, constants, and helper functions must be maintained in `landing-helpers.ts` or co-located pure functions to enable fast unit testability without browser overhead.
+
+2. **Single Audio Controller Invariant on Landing Page:**
+   - Section 6 (`OurSoundtrackSection`) must strictly delegate playback commands to the parent audio controller via `onTogglePlay` and `onPlayTrack` props.
+   - Under no circumstances may landing components instantiate standalone `<audio>` tags or manipulate HTML5 audio directly, preventing audio collisions and memory leaks.
+
+3. **Timezone-Aware Midnight Gating Rules:**
+   - The reveal modal must determine date activation using the recipient's timezone (`Asia/Kolkata` default) via `getTimezoneDateParts`.
+   - Never use local server time or unadjusted UTC timestamps for midnight gating.
+   - Persistence must use deterministic keys formatted as `birthday-reveal-completed-YYYY-10-30`.
+   - In automated test suites, `forcePreview={true}` must be supported to allow deterministic testing regardless of calendar date.
+
+4. **Autoplay Policy & Web Audio Chime Synthesis:**
+   - Audio playback attempts must catch promise rejections cleanly. If autoplay is rejected by the browser, set `autoplayBlocked = true` and display a prominent "Tap to celebrate ♫" button requiring explicit user gesture.
+   - Acoustic music-box fallback must use the Web Audio API (`AudioContext`) with graceful no-op handling in server-side or unsupported environments.
+
+5. **Motion Sensitivity & Accessibility Invariants:**
+   - Every landing component stylesheet must implement `@media (prefers-reduced-motion: reduce)`.
+   - When reduced motion is preferred, transitions and transforms must be set to `none` or `0.01ms`, vinyl spinning animations must be disabled, and modal pop-in animations must be replaced with instant opacity fades.
+   - All interactive controls must define `:focus-visible` outlines with high-contrast offsets.
+   - Modal overlays must provide `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, and keyboard escape listeners.
+
+6. **Hydration & SSR Safety:**
+   - All landing components must include the `"use client"` directive.
+   - Direct access to browser globals (`window`, `document`, `localStorage`, `AudioContext`) must be guarded with `typeof window !== "undefined"` checks or wrapped in `useEffect` hooks.
+   - `setState` calls must never be executed synchronously within the body of an effect to prevent cascading render loops and comply with React 19 rules.

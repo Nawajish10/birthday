@@ -1262,3 +1262,57 @@ StoryViewer opens with `externalAudioRef={sharedAudioRef}`:
 - Lyrics: `GET /api/music/lyrics/[track_id]`. Synchronized timed lyrics auto-scroll to active line
   calculated from `currentTime * 1000` with click-to-seek interactivity.
 ```
+
+
+================================================================================
+10. LANDING PAGE 9-SECTION ARCHITECTURE & MIDNIGHT REVEAL EXECUTION
+================================================================================
+
+1. MIDNIGHT BIRTHDAY REVEAL LIFECYCLE (SECTION 1)
+--------------------------------------------------------------------------------
+Visitor lands on Application -> Experience.tsx loads (`tab === "home"`):
+   1. MidnightBirthdayReveal Mounts:
+      - Reads client timezone (`Intl.DateTimeFormat().resolvedOptions().timeZone` or fallback "Asia/Kolkata").
+      - Computes target date parts via `getTimezoneDateParts(now, "Asia/Kolkata")`.
+      - Checks if today is October 30 (`isBirthdayActive`).
+      - Checks `localStorage.getItem("birthday-reveal-completed-YYYY-10-30")`.
+   2. Activation State Machine:
+      - IF (Today === Oct 30 AND !alreadyCompleted) OR forcePreview === true:
+        -> `isVisible = true`
+        -> Dialog overlay renders (`role="dialog"`, `aria-modal="true"`).
+        -> Attempts audio playback (`playBirthdayAudio()`):
+           * Primary: explicit `audioSrc` -> HTMLAudioElement.play()
+           * Fallback: Web Audio API synthesized music-box acoustic chime (`playMusicBoxChime()`).
+           * IF Autoplay Blocked:
+             - Captures promise rejection without error.
+             - Sets `autoplayBlocked = true`.
+             - Displays "Tap to celebrate ♫" button for user gesture.
+      - IF Dismissed by user:
+        -> Sets `localStorage.setItem("birthday-reveal-completed-YYYY-10-30", "true")`.
+        -> Stops chime/audio oscillator.
+        -> Invokes `onRevealComplete()` callback.
+        -> Hides modal (`isVisible = false`).
+      - Periodic Real-Time Transition:
+        -> Evaluates interval check (`checkIntervalMs = 1000`) so active users transition
+           to celebration automatically when the clock strikes midnight without refreshing.
+
+2. NINE-SECTION LINEAR NARRATIVE PROGRESSION (SECTIONS 1-9)
+--------------------------------------------------------------------------------
+[1. Midnight Reveal] 
+   └── Modal dialog (Oct 30 midnight gate / music-box chime)
+[2. Welcome Hero & Avatar] 
+   └── Cameo silhouette / photo + floral wreath (sunflower/rose/white) + "Open your little world" CTA
+[3. Swipeable Photo Cards] 
+   └── Touch carousel (45px threshold) + dot indicators + polaroid frames + click-to-view
+[4. Personal Messages & Poetry] 
+   └── Bicultural deck + English notes + Urdu ghazal (dir="rtl", lang="ur") + wax seals
+[5. Birthday Book Invitation] 
+   └── 3D bound book spine + antique gold foil stamp ("For my baba" / "تمہاری سالگرہ") + open book CTA
+[6. Our Soundtrack] 
+   └── Vinyl turntable display + single-audio-controller delegation + quick select list + songbook link
+[7. Memories Preview] 
+   └── 4 polaroid preview cards + washi tape corners + captions + "Explore memories" CTA
+[8. Explore Your World] 
+   └── 6-destination button grid (Profile, Games, Study, Music Room, Memories, Book)
+[9. Closing Message] 
+   └── Handcrafted letter card + crimson wax seal + signoff ("With all my love ♡") + "Return to beginning"
