@@ -718,3 +718,127 @@ export function revokeLocalTrackUrls(tracks: MusicTrackItem[]): void {
     }
   }
 }
+
+
+/**
+ * Supported audio/video container extensions and MIME types.
+ * Standard HTML5 media pipelines decode MP3, AAC, M4A, and MP4 containers
+ * (both audio/mp4 and video/mp4 with AAC audio tracks).
+ */
+export const STANDARD_SUPPORTED_AUDIO_EXTENSIONS = [
+  ".mp3",
+  ".mp4",
+  ".m4a",
+  ".aac",
+  ".wav",
+  ".ogg",
+  ".webm",
+  ".flac",
+] as const;
+
+export const STANDARD_SUPPORTED_AUDIO_MIMES = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mp4",
+  "video/mp4",
+  "audio/aac",
+  "audio/x-m4a",
+  "audio/wav",
+  "audio/ogg",
+  "audio/webm",
+  "audio/flac",
+] as const;
+
+export interface AudioCodecSupport {
+  mp3: boolean;
+  mp4Audio: boolean;
+  aac: boolean;
+  m4a: boolean;
+  ogg: boolean;
+  wav: boolean;
+  mp4VideoContainerAudio: boolean;
+}
+
+/**
+ * Checks browser HTMLMediaElement codec support via canPlayType.
+ * Handles server-side rendering (SSR) and environments without DOM audio safely.
+ */
+export function checkBrowserAudioCodecs(audioElement?: HTMLAudioElement | null): AudioCodecSupport {
+  let el = audioElement;
+  if (!el && typeof document !== "undefined" && typeof document.createElement === "function") {
+    try {
+      el = document.createElement("audio");
+    } catch {
+      el = null;
+    }
+  }
+
+  if (!el || typeof el.canPlayType !== "function") {
+    // In SSR or test environments without canPlayType, assume standard codecs supported
+    return {
+      mp3: true,
+      mp4Audio: true,
+      aac: true,
+      m4a: true,
+      ogg: true,
+      wav: true,
+      mp4VideoContainerAudio: true,
+    };
+  }
+
+  const canPlay = (mime: string): boolean => {
+    try {
+      const res = el!.canPlayType(mime);
+      return res === "probably" || res === "maybe";
+    } catch {
+      return false;
+    }
+  };
+
+  return {
+    mp3: canPlay("audio/mpeg") || canPlay("audio/mp3"),
+    mp4Audio: canPlay('audio/mp4; codecs="mp4a.40.2"') || canPlay("audio/mp4"),
+    aac: canPlay("audio/aac") || canPlay('audio/mp4; codecs="mp4a.40.2"'),
+    m4a: canPlay("audio/x-m4a") || canPlay('audio/mp4; codecs="mp4a.40.2"'),
+    ogg: canPlay('audio/ogg; codecs="vorbis"'),
+    wav: canPlay("audio/wav"),
+    mp4VideoContainerAudio:
+      canPlay('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') ||
+      canPlay("video/mp4") ||
+      canPlay("audio/mp4"),
+  };
+}
+
+/**
+ * Tests whether a given file name, URL, or MIME type is an HTML5-supported audio/media file.
+ */
+export function isSupportedAudioFormat(urlOrFilename: string, mimeType?: string): boolean {
+  if (mimeType) {
+    const cleanMime = mimeType.toLowerCase().split(";")[0].trim();
+    if (STANDARD_SUPPORTED_AUDIO_MIMES.includes(cleanMime as (typeof STANDARD_SUPPORTED_AUDIO_MIMES)[number])) {
+      return true;
+    }
+    if (cleanMime.startsWith("audio/")) return true;
+  }
+
+  if (!urlOrFilename || typeof urlOrFilename !== "string") return false;
+  const cleanUrl = urlOrFilename.split("?")[0].split("#")[0].toLowerCase();
+  return STANDARD_SUPPORTED_AUDIO_EXTENSIONS.some((ext) => cleanUrl.endsWith(ext));
+}
+
+/**
+ * Tests whether a URL, file name, or MIME type refers to an MP4 media container
+ * (audio/mp4, video/mp4, .mp4, or .m4a).
+ */
+export function isMp4Media(urlOrFilename: string, mimeType?: string): boolean {
+  if (mimeType) {
+    const cleanMime = mimeType.toLowerCase().split(";")[0].trim();
+    if (cleanMime === "video/mp4" || cleanMime === "audio/mp4" || cleanMime === "audio/x-m4a") {
+      return true;
+    }
+  }
+
+  if (!urlOrFilename || typeof urlOrFilename !== "string") return false;
+  const cleanUrl = urlOrFilename.split("?")[0].split("#")[0].toLowerCase();
+  return cleanUrl.endsWith(".mp4") || cleanUrl.endsWith(".m4a");
+}

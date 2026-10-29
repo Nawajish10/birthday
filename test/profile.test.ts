@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { calculateAge, calculateNextBirthdayCountdown } from "../src/lib/birthday-dates.ts";
+import { calculateAge, calculateNextBirthdayCountdown, AUTHORITATIVE_BIRTH_DATE } from "../src/lib/birthday-dates.ts";
 import {
   loadProfile,
   saveProfile,
@@ -369,27 +369,27 @@ test("Highlights logic: glyph resolver maps titles to meaningful symbols", () =>
 });
 
 // ============================================================================
-// 6. Authoritative Dynamic Age & Countdown Tests
+// 6. Authoritative Dynamic Age & Countdown Tests (28 October 2002)
 // ============================================================================
 
-test("Authoritative Age: calculates 24 when birthDate is 2002-10-29 and reference year is 2026", () => {
-  // Reference date: October 29, 2026
-  const ageOnBirthday = calculateAge("2002-10-29", new Date("2026-10-29T12:00:00Z"));
+test("Authoritative Age: calculates 24 when birthDate is 2002-10-28 and reference year is 2026", () => {
+  // Reference date: October 28, 2026
+  const ageOnBirthday = calculateAge("2002-10-28", new Date("2026-10-28T12:00:00Z"));
   assert.equal(ageOnBirthday, 24, "Should be 24 years old on birthday in 2026");
 
   // Reference date before birthday in 2026 (e.g. October 1, 2026)
-  const ageBeforeBirthday = calculateAge("2002-10-29", new Date("2026-10-01T12:00:00Z"));
+  const ageBeforeBirthday = calculateAge("2002-10-28", new Date("2026-10-01T12:00:00Z"));
   assert.equal(ageBeforeBirthday, 23, "Should be 23 before birthday");
 });
 
 test("Authoritative Countdown: detects isToday flag and countdown breakdown accurately", () => {
-  // On birthday day
-  const countdownToday = calculateNextBirthdayCountdown("2002-10-29", new Date("2026-10-29T08:00:00Z"));
+  // On birthday day (October 28)
+  const countdownToday = calculateNextBirthdayCountdown("2002-10-28", new Date("2026-10-28T08:00:00Z"));
   assert.equal(countdownToday.isToday, true, "isToday should be true on birthday date");
   assert.equal(countdownToday.days, 0);
 
   // Before birthday day
-  const countdownUpcoming = calculateNextBirthdayCountdown("2002-10-29", new Date("2026-10-20T00:00:00Z"));
+  const countdownUpcoming = calculateNextBirthdayCountdown("2002-10-28", new Date("2026-10-19T00:00:00Z"));
   assert.equal(countdownUpcoming.isToday, false);
   assert.ok(countdownUpcoming.days >= 8 && countdownUpcoming.days <= 10, "Should have ~9 days remaining");
 });
@@ -403,13 +403,22 @@ test("Profile identity: loadProfile loads default values and saveProfile persist
   const initial = loadProfile(mockStorage);
   assert.equal(initial.displayName, "Meerah");
   assert.equal(initial.bio, "birthday girl · main character today");
-  assert.deepEqual(initial.interests, ["Reading", "Poetry", "Music", "Photography"]);
+  assert.equal(initial.birthDate, "2002-10-28");
+  assert.deepEqual(initial.interests, [
+    "Reading",
+    "Poetry",
+    "Music",
+    "Photography",
+    "Cooking",
+    "Gardening",
+  ]);
 
   // Update profile
   const updated = saveProfile(
     {
       displayName: "Meerah Noor",
       bio: "Living my golden chapter ✨",
+      birthDate: "2002-10-28",
       interests: ["Poetry", "Astronomy", "Design"],
       avatarUrl: "https://example.com/meerah-new.jpg",
     },
@@ -418,6 +427,7 @@ test("Profile identity: loadProfile loads default values and saveProfile persist
 
   assert.equal(updated.displayName, "Meerah Noor");
   assert.equal(updated.bio, "Living my golden chapter ✨");
+  assert.equal(updated.birthDate, "2002-10-28");
   assert.deepEqual(updated.interests, ["Poetry", "Astronomy", "Design"]);
   assert.equal(updated.avatarUrl, "https://example.com/meerah-new.jpg");
 
@@ -441,7 +451,7 @@ test("Highlights service: createHighlight adds new highlight and deleteHighlight
       storagePath: "curated/1.jpg",
       url: "/photos/1.jpg",
       mediaKind: "image",
-      effectiveCaptureDate: "2024-10-29",
+      effectiveCaptureDate: "2024-10-28",
       hasKnownCaptureDate: true,
       uploadTimestamp: "2026-10-20T10:00:00Z",
     },
@@ -450,7 +460,7 @@ test("Highlights service: createHighlight adds new highlight and deleteHighlight
       storagePath: "curated/2.jpg",
       url: "/photos/2.jpg",
       mediaKind: "image",
-      effectiveCaptureDate: "2024-10-29",
+      effectiveCaptureDate: "2024-10-28",
       hasKnownCaptureDate: true,
       uploadTimestamp: "2026-10-20T10:00:00Z",
     },
@@ -533,6 +543,24 @@ test("Component verification: ProfilePanel.tsx exists and satisfies contract", (
   assert.ok(
     content.includes("saveProfile"),
     "Must save profile updates using saveProfile"
+  );
+  assert.ok(
+    content.includes("edit-profile-birthdate"),
+    "Edit Profile modal must include birthday date field"
+  );
+
+  // Check Profile Tabs: STRICTLY Posts and Favorites tabs, NO Reels tab in UI
+  assert.ok(
+    content.includes('id="tab-posts"'),
+    "Must have Posts tab"
+  );
+  assert.ok(
+    content.includes('id="tab-favorites"'),
+    "Must have Favorites tab"
+  );
+  assert.ok(
+    !content.includes('id="tab-reels"'),
+    "Strictly remove Reels tab from Profile UI"
   );
 
   // Check "+ New" Highlight button and modal

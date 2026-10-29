@@ -17,11 +17,18 @@ export function parseDateSafe(input: string | Date | null | undefined): Date | n
 }
 
 /**
+ * Authoritative recipient birthday constants.
+ * Recipient birth date: 28 October 2002.
+ */
+export const AUTHORITATIVE_BIRTH_DATE = "2002-10-28";
+export const DEFAULT_BIRTH_DATE = "2002-10-28";
+
+/**
  * Authoritative Age Calculation.
  * Calculates age given a birth date and optional reference date.
- * Never hardcodes age values.
+ * Defaults to 28 October 2002. Never hardcodes age values.
  */
-export function calculateAge(birthDateInput: string | Date, referenceDateInput?: string | Date): number {
+export function calculateAge(birthDateInput: string | Date = DEFAULT_BIRTH_DATE, referenceDateInput?: string | Date): number {
   const birth = parseDateSafe(birthDateInput);
   if (!birth) return 0;
   const ref = parseDateSafe(referenceDateInput) || new Date();
@@ -40,9 +47,10 @@ export function calculateAge(birthDateInput: string | Date, referenceDateInput?:
  * Authoritative Next Birthday Countdown.
  * Handles leap years (Feb 29 celebrated Feb 28 in non-leap years).
  * Returns live breakdown of days, hours, minutes, seconds and isToday flag.
+ * Defaults to 28 October 2002.
  */
 export function calculateNextBirthdayCountdown(
-  birthDateInput: string | Date,
+  birthDateInput: string | Date = DEFAULT_BIRTH_DATE,
   referenceDateInput?: string | Date
 ): BirthdayCountdownResult {
   const birth = parseDateSafe(birthDateInput);

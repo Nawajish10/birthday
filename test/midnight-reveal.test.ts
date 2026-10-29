@@ -39,6 +39,7 @@ const { moduleExports: revealModule, rawCode: revealCode } = loadTsxModule(
 const {
   DEFAULT_RECIPIENT_NAME,
   DEFAULT_RECIPIENT_PHOTO_URL,
+  SPECIAL_POPUP_PHOTO,
   DEFAULT_RECIPIENT_TIMEZONE,
   DEFAULT_BIRTHDAY_MONTH,
   DEFAULT_BIRTHDAY_DAY,
@@ -49,6 +50,7 @@ const {
   getRevealStorageKey,
   hasRevealCompleted,
   markRevealCompleted,
+  resetInMemoryDismissedKeys,
   playMusicBoxChime,
   MidnightBirthdayReveal,
 } = revealModule;
@@ -156,6 +158,7 @@ describe("Suite 2: Persistence Guard & Preventing Duplicate Reveal", () => {
   });
 
   test("Persistence check: returns false when not completed, true after marking completed", () => {
+    resetInMemoryDismissedKeys?.();
     const mockStorage = new Map<string, string>();
     const storageApi = {
       getItem: (k: string) => mockStorage.get(k) ?? null,
@@ -177,23 +180,29 @@ describe("Suite 2: Persistence Guard & Preventing Duplicate Reveal", () => {
     assert.equal(mockStorage.get(key), "true");
   });
 
-  test("Safe fallback: returns false gracefully when storage is unavailable or throws", () => {
+  test("Safe fallback: in-memory state persists dismissal even when storage is null or throws", () => {
+    resetInMemoryDismissedKeys?.();
+    const testKey = "test-fallback-dismissal-key-2026";
+
     const throwingStorage = {
       getItem: () => {
         throw new Error("SecurityError: Access is denied for localStorage");
       },
-    };
-    assert.equal(hasRevealCompleted("any-key", throwingStorage), false);
-
-    const throwingSetStorage = {
       setItem: () => {
         throw new Error("QuotaExceededError");
       },
     };
-    // Must not throw exception
+
+    // Initially not completed
+    assert.equal(hasRevealCompleted(testKey, throwingStorage), false);
+
+    // Mark as completed - must not throw exception
     assert.doesNotThrow(() => {
-      markRevealCompleted("any-key", throwingSetStorage);
+      markRevealCompleted(testKey, throwingStorage);
     });
+
+    // In-memory fallback remembers dismissal for the remainder of the session
+    assert.equal(hasRevealCompleted(testKey, throwingStorage), true);
   });
 });
 
@@ -296,7 +305,7 @@ describe("Suite 4: Clean Unmount / Timer Cleanup Lifecycle", () => {
 // Suite 5: Component Structure, Source & Accessibility Verification
 // ============================================================================
 describe("Suite 5: Component Source, Contracts & Accessibility", () => {
-  test("MidnightBirthdayReveal exports required contracts and components", () => {
+  test("MidnightBirthdayReveal exports required contracts, constants, and components", () => {
     assert.equal(typeof MidnightBirthdayReveal, "function");
     assert.equal(DEFAULT_RECIPIENT_NAME, "Meerah");
     assert.equal(DEFAULT_RECIPIENT_TIMEZONE, "Asia/Kolkata");
@@ -312,13 +321,15 @@ describe("Suite 5: Component Source, Contracts & Accessibility", () => {
       DEFAULT_RECIPIENT_PHOTO_URL,
       "https://lh3.googleusercontent.com/pw/AP1GczMLasTHYPPFuDPfLPRSnH5tQ6mhgV3XNu-V5SBjy_maHYwLX5_Ej716nIoS7pipr9aPZrJObZTzo-QGHxKckSqpY6EtdiRb_qnVCyjw_1dU1tYIk3iF=w1200-h1200-no"
     );
+    assert.equal(SPECIAL_POPUP_PHOTO, DEFAULT_RECIPIENT_PHOTO_URL);
   });
 
-  test("Accessibility semantics: dialog role, aria-modal, and labelledby", () => {
+  test("Accessibility semantics: dialog role, aria-modal, Escape key, and labelledby", () => {
     assert.ok(revealCode.includes('role="dialog"'));
     assert.ok(revealCode.includes('aria-modal="true"'));
     assert.ok(revealCode.includes('aria-labelledby="midnight-reveal-title"'));
     assert.ok(revealCode.includes('id="midnight-reveal-title"'));
+    assert.ok(revealCode.includes('e.key === "Escape"'));
   });
 
   test("Confetti and decorative visuals: scrapbook petals, sunflowers, roses, washi tape", () => {
@@ -335,6 +346,7 @@ describe("Suite 5: Component Source, Contracts & Accessibility", () => {
     assert.ok(revealCode.includes("Tap to celebrate ♫"));
     assert.ok(revealCode.includes('aria-label="Tap to celebrate and play birthday music"'));
     assert.ok(revealCode.includes("Step into your day ♡"));
+    assert.ok(revealCode.includes("midnight-close-icon-btn"));
   });
 
   test("midnight-reveal.css defines tokens, animations, touch targets, and prefers-reduced-motion", () => {

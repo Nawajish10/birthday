@@ -5,7 +5,9 @@ import "./personal-messages.css";
 
 /**
  * ============================================================================
- * Section 4: Personal Messages & Poetry — Types & Contracts
+ * Section 4: Personal Notes & Wishes — Types & Contracts
+ * Warm keepsake notes expressing sincere love, gratitude, and blessings.
+ * Displays English notes only with editorial typography and bounded controls.
  * ============================================================================
  */
 
@@ -28,6 +30,7 @@ export interface PersonalMessagesSectionProps {
   onCardChange?: (index: number, card: PersonalMessageCard) => void;
   className?: string;
   allowEmptyState?: boolean;
+  wrap?: boolean;
 }
 
 export const DEFAULT_HEADING = "A few things from my heart.";
@@ -35,13 +38,14 @@ export const DEFAULT_SUPPORTING_TEXT = "Some things deserve more than a simple b
 export const MESSAGE_SWIPE_THRESHOLD_PX = 45;
 
 /**
- * Curated default heartfelt birthday messages, Urdu poetry, and prayers for Meerah
+ * Curated default heartfelt birthday messages, personal notes, and blessings for Meerah.
+ * Preserves the sincere, heartfelt tone in clear, beautiful English.
  */
 export const DEFAULT_PERSONAL_MESSAGES: readonly PersonalMessageCard[] = [
   {
     id: "msg-1",
     title: "To the Light in Every Room",
-    category: "Birthday Wish · سالگرہ مبارک",
+    category: "Birthday Blessing",
     body_en:
       "Happy Birthday, Meerah. Watching you bring warmth, kindness, and light to everyone around you is one of the greatest blessings. May this new year of your life be filled with gentle peace, deep laughter, and beautiful surprises around every corner.",
     body_ur:
@@ -52,22 +56,22 @@ export const DEFAULT_PERSONAL_MESSAGES: readonly PersonalMessageCard[] = [
   },
   {
     id: "msg-2",
-    title: "A Timeless Ghazal Verse",
-    category: "Poetry · خوبصورت شعر",
+    title: "Beyond the Far Horizon",
+    category: "A Note for Your Journey",
     body_en:
-      "Some souls do not just walk through life; they leave a trail of gentle starlight behind them. Wherever you journey, may you remember that your wings were made for the highest skies.",
+      "Some souls do not just walk through life; they leave a trail of gentle starlight behind them. Wherever your path leads, remember that your wings were made for the highest skies. There are worlds waiting for your courage, and endless horizons made brighter by your presence.",
     body_ur:
       "ستاروں سے آگے جہاں اور بھی ہیں\nابھی عشق کے امتحان اور بھی ہیں\nتو شاہیں ہے، پرواز ہے کام تیرا\nتیرے سامنے آسماں اور بھی ہیں",
-    date: "Allama Iqbal",
-    author: "A verse for your journey",
+    date: "Always believing in you",
+    author: "A verse for your wings",
     sealColor: "gold",
   },
   {
     id: "msg-3",
     title: "A Quiet Prayer for Your Path",
-    category: "Prayer & Blessing · دلی دعا",
+    category: "Prayer & Blessing",
     body_en:
-      "Whenever the road feels uncertain or the days feel long, I pray that you always feel protected, deeply cherished, and confident in your own extraordinary strength. You are never walking alone.",
+      "Whenever the road feels uncertain or the days feel long, I pray that you always feel protected, deeply cherished, and confident in your own extraordinary strength. May ease find you in every difficulty, and may your heart always be anchored in peace. You are never walking alone.",
     body_ur:
       "دعا ہے کہ زندگی کا ہر موڑ تمہارے لیے آسانیاں، قلبی سکون اور سچی خوشیاں لائے۔ تمہارا مسکراتا چہرہ ہمیشہ یونہی کھلتا رہے، آمین۔",
     date: "Always & forever",
@@ -76,10 +80,10 @@ export const DEFAULT_PERSONAL_MESSAGES: readonly PersonalMessageCard[] = [
   },
   {
     id: "msg-4",
-    title: "Gratitude for the Journey",
-    category: "Keepsake · شکر گزاری",
+    title: "Gratitude for Who You Are",
+    category: "Keepsake Note",
     body_en:
-      "Thank you for the honesty of your laughter, for listening when words are hard to find, and for being the most genuine person I have ever known. Celebrating you today is the easiest thing in the world.",
+      "Thank you for the honesty of your laughter, for listening when words are hard to find, and for being the most genuine person I have ever known. Your warmth touches everyone fortunate enough to know you. Celebrating you today—and every day—is the easiest and truest joy in the world.",
     body_ur:
       "تمہارا وجود ہماری زندگیوں میں ایک خوبصورت تحفہ ہے۔ تم جیسی ہو، ویسی ہی رہنا—بے لوث، سچی اور بے حد عزیز۔",
     date: "October 30",
@@ -115,7 +119,7 @@ export function clampMessageIndex(index: number, total: number): number {
   return index;
 }
 
-export function getNextMessageIndex(current: number, total: number, wrap: boolean = true): number {
+export function getNextMessageIndex(current: number, total: number, wrap: boolean = false): number {
   if (total <= 0) return 0;
   if (wrap) {
     return (current + 1) % total;
@@ -123,7 +127,7 @@ export function getNextMessageIndex(current: number, total: number, wrap: boolea
   return Math.min(current + 1, total - 1);
 }
 
-export function getPrevMessageIndex(current: number, total: number, wrap: boolean = true): number {
+export function getPrevMessageIndex(current: number, total: number, wrap: boolean = false): number {
   if (total <= 0) return 0;
   if (wrap) {
     return (current - 1 + total) % total;
@@ -156,7 +160,8 @@ export function resolveSealColor(
 
 /**
  * PersonalMessagesSection Component
- * Interactive card stack for heartfelt personal messages, birthday wishes, and poetry.
+ * Interactive card stack for heartfelt personal notes and wishes.
+ * Strictly English display with improved typography, spacing, and bounded navigation.
  */
 export function PersonalMessagesSection({
   cards,
@@ -166,6 +171,7 @@ export function PersonalMessagesSection({
   onCardChange,
   className = "",
   allowEmptyState = false,
+  wrap = false,
 }: PersonalMessagesSectionProps): JSX.Element {
   const resolvedCards = resolvePersonalMessages(cards, allowEmptyState);
   const totalCards = resolvedCards.length;
@@ -176,6 +182,9 @@ export function PersonalMessagesSection({
 
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
+
+  const isFirst = activeIndex === 0;
+  const isLast = activeIndex === totalCards - 1;
 
   const goTo = useCallback(
     (index: number) => {
@@ -189,12 +198,14 @@ export function PersonalMessagesSection({
   );
 
   const goNext = useCallback(() => {
-    goTo(getNextMessageIndex(activeIndex, totalCards, true));
-  }, [activeIndex, totalCards, goTo]);
+    if (!wrap && isLast) return;
+    goTo(getNextMessageIndex(activeIndex, totalCards, wrap));
+  }, [activeIndex, totalCards, goTo, isLast, wrap]);
 
   const goPrev = useCallback(() => {
-    goTo(getPrevMessageIndex(activeIndex, totalCards, true));
-  }, [activeIndex, totalCards, goTo]);
+    if (!wrap && isFirst) return;
+    goTo(getPrevMessageIndex(activeIndex, totalCards, wrap));
+  }, [activeIndex, totalCards, goTo, isFirst, wrap]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -254,7 +265,7 @@ export function PersonalMessagesSection({
     return (
       <section
         className={`personal-messages-section is-empty ${className}`}
-        aria-label="Personal Messages and Poetry — No Messages Available"
+        aria-label="Personal Messages and Poetry"
       >
         <div className="personal-messages-header">
           <span className="personal-messages-kicker">HEARTFELT NOTES · دلی پیغامات</span>
@@ -266,7 +277,7 @@ export function PersonalMessagesSection({
           <span className="empty-message-seal" aria-hidden="true">💌</span>
           <h3 className="empty-message-title">No personal messages yet</h3>
           <p className="empty-message-description">
-            Heartfelt birthday letters, poetry, and blessings will appear here.
+            Heartfelt birthday letters, memories, and blessings will appear here.
           </p>
         </div>
       </section>
@@ -303,12 +314,12 @@ export function PersonalMessagesSection({
         <div className="deck-card-ghost deck-card-back" aria-hidden="true" />
         <div className="deck-card-ghost deck-card-middle" aria-hidden="true" />
 
-        {/* Primary Interactive Message Card */}
+        {/* Primary Interactive Message Card (English only) */}
         <article
           key={activeCard.id}
           className="message-card-active"
           aria-roledescription="card"
-          aria-label={`Message ${activeIndex + 1} of ${totalCards}: ${activeCard.title}`}
+          aria-label={`Note ${activeIndex + 1} of ${totalCards}: ${activeCard.title}`}
         >
           {/* Washi Tape Accent */}
           <div
@@ -345,8 +356,6 @@ export function PersonalMessagesSection({
                 <span className="divider-ornament">✿</span>
                 <span className="divider-line" />
               </div>
-
-              {/* Strict Urdu typography attributes: dir='rtl', lang='ur' */}
               <blockquote
                 className="message-card-urdu-text"
                 lang="ur"
@@ -376,12 +385,13 @@ export function PersonalMessagesSection({
         </article>
       </div>
 
-      {/* Navigation Controls */}
+      {/* Navigation Controls with strict boundary disabling */}
       <div className="messages-controls-bar">
         <button
           type="button"
           className="messages-nav-btn messages-nav-prev"
           onClick={goPrev}
+          disabled={!wrap && isFirst}
           aria-label="Previous message"
         >
           <span aria-hidden="true">←</span>
@@ -392,7 +402,7 @@ export function PersonalMessagesSection({
         <div
           className="messages-pills-row"
           role="tablist"
-          aria-label="Select a personal message"
+          aria-label="Select a personal note"
         >
           {resolvedCards.map((card, i) => (
             <button
@@ -400,12 +410,14 @@ export function PersonalMessagesSection({
               type="button"
               role="tab"
               aria-selected={i === activeIndex}
-              aria-label={`Read ${card.title} (${i + 1} of ${totalCards})`}
+              aria-label={`Read note ${i + 1}: ${card.title}`}
               className={`messages-pill ${i === activeIndex ? "active" : ""}`}
               onClick={() => goTo(i)}
             >
               <span className="pill-dot" />
-              <span className="pill-text">{card.title.slice(0, 14)}...</span>
+              <span className="pill-text">
+                {card.title.length > 20 ? `${card.title.slice(0, 18)}...` : card.title}
+              </span>
             </button>
           ))}
         </div>
@@ -414,6 +426,7 @@ export function PersonalMessagesSection({
           type="button"
           className="messages-nav-btn messages-nav-next"
           onClick={goNext}
+          disabled={!wrap && isLast}
           aria-label="Next message"
         >
           <span className="btn-label">Next Note</span>

@@ -242,7 +242,7 @@ export function StudyPanel({
   return (
     <div className={`study-container ${className}`.trim()}>
       {/* ================================================================== */}
-      {/* Welcoming Header */}
+      {/* Welcoming Header — Literary Bookshelf Sanctuary */}
       {/* ================================================================== */}
       <header className="study-header">
         <div className="study-kicker">
@@ -254,6 +254,22 @@ export function StudyPanel({
           A quiet, cozy sanctuary of cherished books, timeless poetry, and contemplative prose,
           thoughtfully handpicked for {recipientName}’s gentle afternoons and reflective evenings.
         </p>
+        <div className="study-header-stats" aria-label="Bookshelf summary">
+          <span className="study-stat-pill">
+            <span aria-hidden="true">📚</span>
+            <span>{initialBooks.length} Curated Volumes</span>
+          </span>
+          <span className="study-stat-divider" aria-hidden="true">·</span>
+          <span className="study-stat-pill">
+            <span aria-hidden="true">🏷️</span>
+            <span>{STUDY_GENRES.length} Literary Shelves</span>
+          </span>
+          <span className="study-stat-divider" aria-hidden="true">·</span>
+          <span className="study-stat-pill">
+            <span aria-hidden="true">☕</span>
+            <span>Cozy Reading Corner</span>
+          </span>
+        </div>
       </header>
 
       {/* ================================================================== */}
@@ -292,7 +308,7 @@ export function StudyPanel({
       )}
 
       {/* ================================================================== */}
-      {/* Curated Recommendations Highlights */}
+      {/* Curated Recommendations Highlights (Display Table) */}
       {/* ================================================================== */}
       {recommendations.length > 0 && selectedGenre === "all" && !searchQuery && (
         <section

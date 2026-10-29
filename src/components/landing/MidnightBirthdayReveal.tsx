@@ -7,11 +7,22 @@ import "./midnight-reveal.css";
 export const DEFAULT_RECIPIENT_NAME = "Meerah";
 export const DEFAULT_RECIPIENT_PHOTO_URL =
   "https://lh3.googleusercontent.com/pw/AP1GczMLasTHYPPFuDPfLPRSnH5tQ6mhgV3XNu-V5SBjy_maHYwLX5_Ej716nIoS7pipr9aPZrJObZTzo-QGHxKckSqpY6EtdiRb_qnVCyjw_1dU1tYIk3iF=w1200-h1200-no";
+export const SPECIAL_POPUP_PHOTO = DEFAULT_RECIPIENT_PHOTO_URL;
 export const DEFAULT_RECIPIENT_TIMEZONE = "Asia/Kolkata";
 export const DEFAULT_BIRTHDAY_MONTH = 10; // October
 export const DEFAULT_BIRTHDAY_DAY = 30; // 30th
 export const DEFAULT_STORAGE_KEY_PREFIX = "birthday-reveal-completed";
 export const DEFAULT_URDU_BLESSING = "تمہاری سالگرہ کا ہر لمحہ محبت اور روشنی سے بھرا رہے";
+
+// In-memory fallback for private browsing or environments where localStorage throws/is disabled
+const inMemoryDismissedKeys = new Set<string>();
+
+/**
+ * Resets the in-memory dismissed keys set (used for testing and test isolation).
+ */
+export function resetInMemoryDismissedKeys(): void {
+  inMemoryDismissedKeys.clear();
+}
 
 export interface TimezoneDateParts {
   year: number;
@@ -107,6 +118,9 @@ export function hasRevealCompleted(
   storageKey: string,
   storage?: { getItem: (key: string) => string | null }
 ): boolean {
+  if (inMemoryDismissedKeys.has(storageKey)) {
+    return true;
+  }
   try {
     const s =
       storage ||
@@ -127,6 +141,7 @@ export function markRevealCompleted(
   storageKey: string,
   storage?: { setItem: (key: string, value: string) => void }
 ): void {
+  inMemoryDismissedKeys.add(storageKey);
   try {
     const s =
       storage ||
@@ -284,9 +299,15 @@ export function MidnightBirthdayReveal({
 
     // 2. Otherwise trigger gentle music-box acoustic chime
     try {
+      if (chimeStopRef.current) {
+        chimeStopRef.current();
+        chimeStopRef.current = null;
+      }
       const chime = playMusicBoxChime();
       chimeStopRef.current = chime.stop;
       if (chime.state === "suspended") {
+        chime.stop();
+        chimeStopRef.current = null;
         setAutoplayBlocked(true);
         setAudioPlaying(false);
       } else if (chime.state === "running") {
@@ -338,6 +359,7 @@ export function MidnightBirthdayReveal({
       }
       if (chimeStopRef.current) {
         chimeStopRef.current();
+        chimeStopRef.current = null;
       }
     };
   }, [recipientTimezone, birthdayMonth, birthdayDay, forcePreview, checkIntervalMs]);
@@ -354,6 +376,11 @@ export function MidnightBirthdayReveal({
 
   // Manual button click when autoplay is rejected
   const handleTapToCelebrate = () => {
+    if (chimeStopRef.current) {
+      chimeStopRef.current();
+      chimeStopRef.current = null;
+    }
+
     if (audioRef.current) {
       audioRef.current
         .play()
@@ -377,10 +404,11 @@ export function MidnightBirthdayReveal({
   };
 
   // Dismiss modal and persist completed state
-  const handleDismiss = () => {
-    if (storageKeyRef.current) {
-      markRevealCompleted(storageKeyRef.current);
-    }
+  const handleDismiss = useCallback(() => {
+    const key =
+      storageKeyRef.current ||
+      getRevealStorageKey(new Date().getFullYear(), birthdayMonth, birthdayDay);
+    markRevealCompleted(key);
     setIsVisible(false);
     if (audioRef.current) {
       try {
@@ -391,9 +419,22 @@ export function MidnightBirthdayReveal({
     }
     if (chimeStopRef.current) {
       chimeStopRef.current();
+      chimeStopRef.current = null;
     }
     onRevealComplete?.();
-  };
+  }, [birthdayMonth, birthdayDay, onRevealComplete]);
+
+  // Escape key accessibility handler
+  useEffect(() => {
+    if (!isVisible) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleDismiss();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isVisible, handleDismiss]);
 
   // If outside birthday and not forcePreview, render nothing
   if (!isVisible) {
@@ -472,21 +513,20 @@ export function MidnightBirthdayReveal({
             </div>
           </div>
         ) : (
-        <div className="midnight-emblem-wrapper" aria-hidden="true">
-          <svg className="midnight-emblem-svg" viewBox="0 0 48 48">
-            {/* Candle & Flame */}
-            <path d="M 24 6 C 24 6, 21 11, 21 14 C 21 16, 22.3 17, 24 17 C 25.7 17, 27 16, 27 14 C 27 11, 24 6, 24 6 Z" fill="#F1C75B" />
-            <path d="M 23 17 L 25 17 L 25 24 L 23 24 Z" fill="#624752" />
-            {/* Cake Tiers */}
-            <rect x="15" y="24" width="18" height="9" rx="2" fill="#F8E8EC" stroke="#D4798D" strokeWidth="1.2" />
-            <rect x="11" y="33" width="26" height="10" rx="3" fill="#FFF9EF" stroke="#EADBCE" strokeWidth="1.2" />
-            {/* Cake Garland Dots */}
-            <circle cx="18" cy="28" r="1.5" fill="#F1C75B" />
-            <circle cx="24" cy="28" r="1.5" fill="#D4798D" />
-            <circle cx="30" cy="28" r="1.5" fill="#F1C75B" />
-          </svg>
-        </div>
-
+          <div className="midnight-emblem-wrapper" aria-hidden="true">
+            <svg className="midnight-emblem-svg" viewBox="0 0 48 48">
+              {/* Candle & Flame */}
+              <path d="M 24 6 C 24 6, 21 11, 21 14 C 21 16, 22.3 17, 24 17 C 25.7 17, 27 16, 27 14 C 27 11, 24 6, 24 6 Z" fill="#F1C75B" />
+              <path d="M 23 17 L 25 17 L 25 24 L 23 24 Z" fill="#624752" />
+              {/* Cake Tiers */}
+              <rect x="15" y="24" width="18" height="9" rx="2" fill="#F8E8EC" stroke="#D4798D" strokeWidth="1.2" />
+              <rect x="11" y="33" width="26" height="10" rx="3" fill="#FFF9EF" stroke="#EADBCE" strokeWidth="1.2" />
+              {/* Cake Garland Dots */}
+              <circle cx="18" cy="28" r="1.5" fill="#F1C75B" />
+              <circle cx="24" cy="28" r="1.5" fill="#D4798D" />
+              <circle cx="30" cy="28" r="1.5" fill="#F1C75B" />
+            </svg>
+          </div>
         )}
 
         {/* Personalized Headline */}

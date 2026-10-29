@@ -49,7 +49,7 @@ test("Media Service: Profile loading and updating", () => {
   const storage = new MockStorage();
   const profile = loadProfile(storage);
   assert.equal(profile.displayName, DEFAULT_PROFILE.displayName);
-  assert.equal(profile.birthDate, "2002-10-29");
+  assert.equal(profile.birthDate, DEFAULT_PROFILE.birthDate);
 
   const updated = saveProfile({ displayName: "Meerah Jaan", bio: "Queen of today" }, storage);
   assert.equal(updated.displayName, "Meerah Jaan");

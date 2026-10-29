@@ -172,8 +172,8 @@ export function MusicRoom({
   const internalAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const getAudioEl = useCallback((): HTMLAudioElement | null => {
-    if (externalAudioRef && externalAudioRef.current) {
-      return externalAudioRef.current;
+    if (externalAudioRef !== undefined) {
+      return externalAudioRef ? externalAudioRef.current : null;
     }
     // When store is active, use shared audio ref
     const sharedRef = getMusicAudioRef();
@@ -474,6 +474,11 @@ export function MusicRoom({
       setUnavailableToast(null);
 
       if (audio) {
+        if (typeof document !== "undefined") {
+          try {
+            document.querySelectorAll("video").forEach((v) => { if (!v.paused) v.pause(); });
+          } catch {}
+        }
         if (audio.src !== track.url) {
           audio.src = track.url;
           audio.load();
@@ -682,12 +687,17 @@ export function MusicRoom({
 
     const onPlay = () => setIsPlayingState(true);
     const onPause = () => setIsPlayingState(false);
+    const onError = () => {
+      setIsPlayingState(false);
+      setUnavailableToast(`Playback issue with "${currentTrack?.title || "track"}". Check format compatibility.`);
+    };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
@@ -695,6 +705,7 @@ export function MusicRoom({
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("error", onError);
     };
   }, [
     getAudioEl,
@@ -998,7 +1009,7 @@ export function MusicRoom({
               type="file"
               id="music-local-input"
               className="music-upload-input"
-              accept="audio/*"
+              accept="audio/*,audio/mp4,video/mp4,audio/aac,audio/x-m4a,audio/mp3,.mp3,.mp4,.m4a,.aac,.wav,.ogg"
               multiple
               onChange={handleAddLocalFiles}
               aria-label="Upload local audio files"

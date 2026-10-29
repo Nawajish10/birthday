@@ -701,11 +701,37 @@ export function CameraPanel({
           <div className="actions cameraActions">
             <button
               type="button"
-              className="button secondary cameraBtn"
+              className="button secondary cameraBtn cameraRetakeBtn"
               onClick={retakePhoto}
               disabled={uploadStatus === "uploading"}
+              aria-label="Retake photo"
             >
               ↺ Retake
+            </button>
+
+            <button
+              type="button"
+              className="button secondary cameraBtn cameraReplaceBtn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadStatus === "uploading"}
+              title="Replace with another photo"
+              aria-label="Replace with another photo"
+            >
+              🔄 Replace
+            </button>
+
+            <button
+              type="button"
+              className="button secondary cameraBtn cameraCancelBtn"
+              onClick={() => {
+                retakePhoto();
+                if (onClose) onClose();
+              }}
+              disabled={uploadStatus === "uploading"}
+              title="Cancel and discard"
+              aria-label="Cancel and discard"
+            >
+              ✕ Cancel
             </button>
 
             <a

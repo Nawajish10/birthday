@@ -6,12 +6,15 @@ import "./swipeable-photo-cards.css";
 /**
  * ============================================================================
  * Section 3: Swipeable Photo Cards — Types & Contracts
+ * Editorial scrapbook photo cards with washi tape accents and heartfelt narratives.
  * ============================================================================
  */
 
 export interface SwipeablePhotoItem {
   id?: string;
   url: string;
+  heading?: string;
+  title?: string;
   caption?: string;
   date?: string;
   alt?: string;
@@ -37,22 +40,28 @@ export interface SwipeablePhotoCardsProps {
 export const SWIPE_THRESHOLD_PX = 45;
 
 /**
- * Curated default photographs for Meerah's birthday album
+ * Curated default photographs for Meerah's journey album.
+ * Each card features an intentional editorial heading, heartfelt narrative,
+ * authentic date stamp, and subtle scrapbook washi tape styling.
  */
 export const DEFAULT_PHOTOS: readonly SwipeablePhotoItem[] = [
   {
     id: "photo-1",
     url: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=900&q=82",
-    caption: "Sunlit celebrations and laughter that lit up the whole room · یادگار لمحہ",
+    heading: "Golden Hour Celebrations",
+    title: "Golden Hour Celebrations",
+    caption: "The room filled with laughter as the sparklers were lit. A moment where time seemed to slow down, bathed in the softest amber light.",
     date: "October 2025",
     alt: "Meerah celebrating with birthday sparkles and golden ambient lighting",
     washiTapeColor: "gold",
-    rotation: -1.2,
+    rotation: -1.4,
   },
   {
     id: "photo-2",
     url: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82",
-    caption: "Golden fairy lights glowing into the twilight · جگمگاتے چراغ",
+    heading: "Starlit Evenings & Twilight",
+    title: "Starlit Evenings & Twilight",
+    caption: "Tiny fairy lights strung across the patio, casting gentle glows into the twilight. Long stories, comfortable silences, and endless tea.",
     date: "November 2025",
     alt: "Soft golden bokeh lights illuminating a calm evening celebration",
     washiTapeColor: "pink",
@@ -61,38 +70,46 @@ export const DEFAULT_PHOTOS: readonly SwipeablePhotoItem[] = [
   {
     id: "photo-3",
     url: "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=900&q=82",
-    caption: "Quiet conversations and treasured smiles along the way.",
+    heading: "Cozy Teacups & Quiet Talks",
+    title: "Cozy Teacups & Quiet Talks",
+    caption: "Cinnamon tea in vintage porcelain, steam rising against the rainy windowpane. The quietest conversations that always meant the most.",
     date: "December 2025",
-    alt: "A warm cozy tea moment captured with genuine smiles",
+    alt: "A warm cozy tea moment captured with genuine smiles and gentle light",
     washiTapeColor: "sage",
-    rotation: -0.9,
+    rotation: -1.0,
   },
   {
     id: "photo-4",
     url: "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=900&q=82",
-    caption: "A birthday cake decorated with fresh petals and sweet wishes.",
+    heading: "Sweet Confections & Petals",
+    title: "Sweet Confections & Petals",
+    caption: "Handmade birthday cake adorned with delicate edible rose petals and candlelight. Blown out candles with wishes whispered into the breeze.",
     date: "October 2025",
-    alt: "Handcrafted birthday cake with edible flower petals and candlelight",
+    alt: "Handcrafted birthday cake decorated with fresh petals and glowing candlelight",
     washiTapeColor: "gold",
-    rotation: 1.4,
+    rotation: 1.6,
   },
   {
     id: "photo-5",
     url: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=900&q=82",
-    caption: "Melodies that stay in our hearts long after the song ends · سریلی یادیں",
+    heading: "Vintage Melodies & Strings",
+    title: "Vintage Melodies & Strings",
+    caption: "Spinning old vinyl records while humming familiar refrains. The chords that bring back whole seasons in a single strum.",
     date: "January 2026",
-    alt: "Vintage vinyl record and acoustic guitar in warm evening light",
+    alt: "Vintage vinyl record and acoustic guitar surrounded by warm afternoon sunlight",
     washiTapeColor: "pink",
-    rotation: -1.4,
+    rotation: -1.3,
   },
   {
     id: "photo-6",
     url: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=900&q=82",
-    caption: "A year of warmth, growth, and countless shared reasons to smile.",
+    heading: "A Tapestry of Moments",
+    title: "A Tapestry of Moments",
+    caption: "A full year of courage, warmth, and shared smiles behind us, with an even brighter chapter opening today. Happy Birthday, Meerah.",
     date: "March 2026",
-    alt: "Joyful birthday memories with loved ones under fairy string lights",
+    alt: "Joyful birthday memories under fairy string lights and celebratory garlands",
     washiTapeColor: "sage",
-    rotation: 0.8,
+    rotation: 0.9,
   },
 ] as const;
 
@@ -138,7 +155,15 @@ export function calculateSwipeDirection(
 export function resolvePhotoAltText(photo: SwipeablePhotoItem, index: number): string {
   if (photo.alt?.trim()) return photo.alt.trim();
   if (photo.caption?.trim()) return photo.caption.trim();
+  if (photo.heading?.trim()) return photo.heading.trim();
+  if (photo.title?.trim()) return photo.title.trim();
   return `Meerah's birthday memory photograph ${index + 1}`;
+}
+
+export function resolvePhotoHeading(photo: SwipeablePhotoItem, index: number): string {
+  if (photo.heading?.trim()) return photo.heading.trim();
+  if (photo.title?.trim()) return photo.title.trim();
+  return `Memory ${String(index + 1).padStart(2, "0")}`;
 }
 
 export function resolvePhotoWashiColor(
@@ -154,7 +179,7 @@ export function resolvePhotoWashiColor(
 
 /**
  * SwipeablePhotoCards Component
- * A responsive, image-led carousel of authentic polaroid-framed photos with washi tape accents.
+ * A responsive, editorial scrapbook carousel of polaroid-framed photos with washi tape accents.
  */
 export function SwipeablePhotoCards({
   photos = DEFAULT_PHOTOS as SwipeablePhotoItem[],
@@ -268,6 +293,7 @@ export function SwipeablePhotoCards({
         <div className="photos-skeleton-card polaroid-frame">
           <div className="washi-tape washi-tape-gold washi-pos-center" aria-hidden="true" />
           <div className="photos-skeleton-image shimmer" />
+          <div className="photos-skeleton-heading shimmer" />
           <div className="photos-skeleton-caption shimmer" />
         </div>
       </section>
@@ -311,6 +337,7 @@ export function SwipeablePhotoCards({
   const isLast = currentIndex === totalPhotos - 1;
   const washiColor = resolvePhotoWashiColor(currentPhoto.washiTapeColor, currentIndex);
   const altText = resolvePhotoAltText(currentPhoto, currentIndex);
+  const headingText = resolvePhotoHeading(currentPhoto, currentIndex);
   const hasError = imageErrors[currentIndex] === true;
 
   return (
@@ -324,12 +351,12 @@ export function SwipeablePhotoCards({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Header section with badge */}
+      {/* Header section with kicker and live badge */}
       <div className="photos-header">
         <div className="photos-kicker-row">
           <span className="photos-kicker">PHOTO REEL · یادیں</span>
           <span className="photos-counter-pill" aria-live="polite">
-            {currentIndex + 1} of {totalPhotos}
+            Photo {currentIndex + 1} of {totalPhotos}
           </span>
         </div>
         <h2 className="photos-title">{title}</h2>
@@ -338,7 +365,7 @@ export function SwipeablePhotoCards({
 
       {/* Main carousel viewport */}
       <div className="photos-carousel-viewport">
-        {/* Previous peek card (desktop/tablet hint) */}
+        {/* Previous peek card (desktop context hint) */}
         {currentIndex > 0 && (
           <div
             className="photo-card-peek photo-card-peek-prev"
@@ -354,7 +381,7 @@ export function SwipeablePhotoCards({
           </div>
         )}
 
-        {/* Active Polaroid Frame */}
+        {/* Active Polaroid Scrapbook Frame */}
         <div
           className="active-polaroid-container"
           style={{
@@ -380,8 +407,8 @@ export function SwipeablePhotoCards({
             }}
             aria-label={
               onSelectPhoto
-                ? `Photo ${currentIndex + 1}: ${currentPhoto.caption || altText}. Click to enlarge.`
-                : `Photo ${currentIndex + 1}: ${currentPhoto.caption || altText}`
+                ? `Photo ${currentIndex + 1}: ${headingText}. Click to enlarge.`
+                : `Photo ${currentIndex + 1}: ${headingText}`
             }
           >
             {/* Image frame */}
@@ -410,11 +437,19 @@ export function SwipeablePhotoCards({
               )}
             </div>
 
-            {/* Polaroid Chin / Caption Area */}
+            {/* Editorial Polaroid Chin / Narrative Area */}
             <div className="polaroid-chin">
+              <div className="polaroid-header-row">
+                <h3 className="polaroid-heading">{headingText}</h3>
+                <span className="polaroid-index-badge">
+                  NO. {String(currentIndex + 1).padStart(2, "0")}
+                </span>
+              </div>
+
               {currentPhoto.caption && (
                 <p className="polaroid-caption">{currentPhoto.caption}</p>
               )}
+
               <div className="polaroid-meta-row">
                 {currentPhoto.date && (
                   <span className="polaroid-date-stamp">
@@ -422,15 +457,16 @@ export function SwipeablePhotoCards({
                     {currentPhoto.date}
                   </span>
                 )}
-                <span className="polaroid-index-badge">
-                  NO. {String(currentIndex + 1).padStart(2, "0")}
+                <span className="polaroid-tag-badge">
+                  <span className="tag-flower" aria-hidden="true">✦</span>
+                  Keepsake Album
                 </span>
               </div>
             </div>
           </article>
         </div>
 
-        {/* Next peek card (desktop/tablet hint) */}
+        {/* Next peek card (desktop context hint) */}
         {currentIndex < totalPhotos - 1 && (
           <div
             className="photo-card-peek photo-card-peek-next"
@@ -472,7 +508,7 @@ export function SwipeablePhotoCards({
               type="button"
               className={`photos-dot ${i === currentIndex ? "active" : ""}`}
               onClick={() => goTo(i)}
-              aria-label={`Go to photo ${i + 1} of ${totalPhotos}`}
+              aria-label={`Go to photo ${i + 1} of ${totalPhotos}: ${resolvePhotoHeading(photo, i)}`}
               aria-current={i === currentIndex ? "true" : undefined}
             />
           ))}
@@ -492,7 +528,7 @@ export function SwipeablePhotoCards({
 
       {/* Touch swipe hint for touch screens */}
       <div className="photos-mobile-hint" aria-hidden="true">
-        <span>← Swipe across the photo to flip through moments →</span>
+        <span>← Swipe across the photo or use arrows to flip through moments →</span>
       </div>
     </section>
   );

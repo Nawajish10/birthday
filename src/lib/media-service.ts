@@ -121,8 +121,8 @@ export const DEFAULT_PROFILE: ProfileData = {
   id: "profile-meerah",
   displayName: "Meerah",
   bio: "birthday girl · main character today",
-  birthDate: "2002-10-29",
-  interests: ["Reading", "Poetry", "Music", "Photography"],
+  birthDate: "2002-10-28",
+  interests: ["Reading", "Poetry", "Music", "Photography", "Cooking", "Gardening"],
   canEdit: true,
   externalInstagramUrl: null,
 };

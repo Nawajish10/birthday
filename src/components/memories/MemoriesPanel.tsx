@@ -10,13 +10,18 @@ import {
   toggleFavorite as toggleFavoriteService,
   createAlbum,
   deleteAlbum,
+  deletePhotoAsset,
 } from "../../lib/media-service.ts";
 import {
   groupPhotosChronologically,
   groupPhotosOnThisDay,
   formatEffectiveDate,
   toCompactDerivativeUrl,
+  filterPhotosByCategory,
+  getRecentMemories,
+  CATEGORY_FILTERS,
   type MemoriesTab,
+  type PhotoCategory,
 } from "./memories-helpers.ts";
 import { StoryViewer } from "./StoryViewer.tsx";
 import { StoryBuilderModal } from "./StoryBuilderModal.tsx";
@@ -56,6 +61,8 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
   const [albums, setAlbums] = useState<AlbumCollection[]>(() => loadAlbums(storage));
   const [favorites, setFavorites] = useState<string[]>(() => loadFavorites(storage));
   const [shareToast, setShareToast] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<PhotoCategory>("all");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Sync when propPhotos updates
   useEffect(() => {
@@ -216,8 +223,32 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
     setAlbums(remaining);
   };
 
-  const chronologicalGroups = groupPhotosChronologically(photos);
+  const handleDeletePhoto = (photoId: string) => {
+    const result = deletePhotoAsset(photoId, storage);
+    setPhotos(result.photos);
+    setFavorites(result.favorites);
+    setAlbums(result.albums);
+    setStories(result.stories);
+    setShareToast("Memory safely deleted ✿");
+    setTimeout(() => setShareToast(null), 3000);
+
+    if (selectedPhoto && selectedPhoto.id === photoId) {
+      const curIdx = photos.findIndex((p) => p.id === photoId);
+      const remaining = photos.filter((p) => p.id !== photoId);
+      if (remaining.length > 0) {
+        const nextIdx = curIdx >= remaining.length ? 0 : curIdx;
+        setSelectedPhoto(remaining[nextIdx]);
+      } else {
+        setSelectedPhoto(null);
+      }
+    }
+    setDeleteConfirmId(null);
+  };
+
+  const filteredPhotos = filterPhotosByCategory(photos, activeCategory, favorites);
+  const chronologicalGroups = groupPhotosChronologically(filteredPhotos);
   const onThisDayGroups = groupPhotosOnThisDay(photos);
+  const recentMemories = getRecentMemories(photos, 8);
 
   return (
     <div className="memoriesContainer" ref={containerRef} data-theme="love">
@@ -392,6 +423,72 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
       {/* TAB 1: ALL PHOTOS (Chronological Timeline) */}
       {(activeTab === "photos" || activeTab === "all-photos") && (
         <section className="memoriesTimeline" aria-label="Chronological photo timeline">
+          {/* Category Filters Bar */}
+          <div className="memoriesCategoryFilters" role="radiogroup" aria-label="Photo Category Filters">
+            {CATEGORY_FILTERS.map((cat) => {
+              const count =
+                cat.id === "all"
+                  ? photos.length
+                  : cat.id === "favorites"
+                  ? favorites.length
+                  : filterPhotosByCategory(photos, cat.id, favorites).length;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={activeCategory === cat.id}
+                  className={`memoriesCategoryChip ${activeCategory === cat.id ? "active" : ""}`}
+                  onClick={() => setActiveCategory(cat.id)}
+                  aria-label={`Filter by ${cat.label} (${count} items)`}
+                >
+                  <span aria-hidden="true">{cat.icon}</span>
+                  <span>{cat.label}</span>
+                  <span style={{ fontSize: "11px", opacity: 0.85 }}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Recent Memories Strip (Snapchat-style Highlight Reel) */}
+          {(activeCategory === "all" || activeCategory === "recent") && recentMemories.length > 0 && (
+            <div className="recentMemoriesSection" aria-label="Recent memories">
+              <div className="recentMemoriesHeader">
+                <h4 className="recentMemoriesTitle">
+                  <span aria-hidden="true">✨</span>
+                  <span>Recent Memories</span>
+                </h4>
+                <span style={{ fontSize: "11px", color: "var(--memories-muted)" }}>
+                  {recentMemories.length} recent {recentMemories.length === 1 ? "snap" : "snaps"}
+                </span>
+              </div>
+              <div className="recentMemoriesTrack">
+                {recentMemories.map((photo) => (
+                  <button
+                    key={`recent-${photo.id}`}
+                    type="button"
+                    className="recentMemoryCard"
+                    onClick={() => handlePhotoClick(photo)}
+                    aria-label={`View recent memory: ${photo.caption || "Untitled"}`}
+                  >
+                    <div className="recentMemoryRing">
+                      <img
+                        src={photo.thumbnailUrl || toCompactDerivativeUrl(photo.url)}
+                        alt={photo.altText || photo.caption || "Recent memory"}
+                        className="recentMemoryThumb"
+                        loading="lazy"
+                        decoding="async"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", aspectRatio: "1" }}
+                      />
+                    </div>
+                    <span className="recentMemoryLabel">
+                      {photo.caption || (photo.hasKnownCaptureDate ? formatEffectiveDate(photo.effectiveCaptureDate) : "Memory")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {chronologicalGroups.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 16px", color: "var(--memories-muted)" }}>
               <p>No photos in your memories yet.</p>
@@ -885,6 +982,72 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
                   )}
                 </div>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  {deleteConfirmId === selectedPhoto.id ? (
+                    <div style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePhoto(selectedPhoto.id)}
+                        style={{
+                          minWidth: "44px",
+                          minHeight: "44px",
+                          borderRadius: "22px",
+                          border: "none",
+                          background: "var(--memories-red)",
+                          color: "#ffffff",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          padding: "0 12px",
+                        }}
+                        aria-label="Confirm delete photo"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(null)}
+                        style={{
+                          minWidth: "44px",
+                          minHeight: "44px",
+                          borderRadius: "22px",
+                          border: "1px solid var(--memories-line)",
+                          background: "var(--memories-white)",
+                          color: "var(--memories-ink)",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          padding: "0 10px",
+                        }}
+                        aria-label="Cancel delete photo"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="lightboxDeleteBtn"
+                      onClick={() => setDeleteConfirmId(selectedPhoto.id)}
+                      style={{
+                        minWidth: "44px",
+                        minHeight: "44px",
+                        borderRadius: "22px",
+                        border: "1px solid rgba(182, 83, 95, 0.3)",
+                        background: "var(--memories-white)",
+                        color: "var(--memories-red)",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        padding: "0 12px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                      aria-label="Delete photo"
+                      title="Delete photo"
+                    >
+                      <span>🗑</span>
+                      <span>Delete</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleSharePhoto(selectedPhoto)}

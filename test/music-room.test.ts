@@ -394,7 +394,8 @@ test("MusicRoom Component: renders header, toolbar, vinyl card, and song library
   assert.ok(html.includes("Favourites ♡"), "Must render Favourites filter chip");
   assert.ok(html.includes("Playlists ♫"), "Must render Playlists filter chip");
   assert.ok(html.includes("Add local songs"), "Must render Add local songs button");
-  assert.ok(html.includes('accept="audio/*"'), "File input must accept audio/*");
+  assert.ok(html.includes('accept="audio/*'), "File input must accept audio");
+  assert.ok(html.includes("video/mp4") || html.includes(".mp4"), "File input must accept MP4 media files");
 
   // Featured Now Playing Card Verification
   assert.ok(html.includes("NOW PLAYING"), "Must render NOW PLAYING badge");
@@ -478,4 +479,75 @@ test("CSS Verification: music-room.css implements design tokens and responsive r
   // Accessibility
   assert.ok(css.includes("focus-visible"), "Must define high-contrast focus-visible styles");
   assert.ok(css.includes("prefers-reduced-motion"), "Must support prefers-reduced-motion");
+});
+
+// ============================================================================
+// 8. MP4 Media Pipeline & Shared Audio Engine Invariant Verification
+// ============================================================================
+
+test("MP4 & Codec Support: detects MP4 containers, video/mp4 with AAC audio, and verifies standard codecs", () => {
+  const { isMp4Media, isSupportedAudioFormat, checkBrowserAudioCodecs, STANDARD_SUPPORTED_AUDIO_EXTENSIONS } = catalogueExports;
+  assert.ok(typeof isMp4Media === "function", "isMp4Media must be exported");
+  assert.ok(typeof isSupportedAudioFormat === "function", "isSupportedAudioFormat must be exported");
+  assert.ok(typeof checkBrowserAudioCodecs === "function", "checkBrowserAudioCodecs must be exported");
+
+  // Extension and MIME testing
+  assert.equal(isMp4Media("track.mp4"), true, "Should identify .mp4 as MP4 media");
+  assert.equal(isMp4Media("song.m4a"), true, "Should identify .m4a as MP4 media");
+  assert.equal(isMp4Media("video.mp4?token=123#t=10"), true, "Should handle query and hash in MP4 URL");
+  assert.equal(isMp4Media("blob:http://localhost/uuid", "video/mp4"), true, "Should identify video/mp4 MIME as MP4");
+  assert.equal(isMp4Media("blob:http://localhost/uuid", "audio/mp4"), true, "Should identify audio/mp4 MIME as MP4");
+  assert.equal(isMp4Media("music.mp3"), false, "MP3 is not MP4 container");
+
+  // Audio format support
+  assert.equal(isSupportedAudioFormat("song.mp3"), true, "MP3 must be supported");
+  assert.equal(isSupportedAudioFormat("recording.mp4"), true, "MP4 must be supported");
+  assert.equal(isSupportedAudioFormat("voice.m4a"), true, "M4A must be supported");
+  assert.equal(isSupportedAudioFormat("track.aac"), true, "AAC must be supported");
+  assert.equal(isSupportedAudioFormat("audio.wav"), true, "WAV must be supported");
+  assert.equal(isSupportedAudioFormat("stream.ogg"), true, "OGG must be supported");
+  assert.equal(isSupportedAudioFormat("document.pdf"), false, "PDF is not supported audio");
+
+  // Codec check SSR fallback
+  const codecs = checkBrowserAudioCodecs(null);
+  assert.equal(codecs.mp3, true, "MP3 codec must be supported");
+  assert.equal(codecs.mp4Audio, true, "MP4 audio codec must be supported");
+  assert.equal(codecs.aac, true, "AAC codec must be supported");
+  assert.equal(codecs.m4a, true, "M4A codec must be supported");
+  assert.equal(codecs.mp4VideoContainerAudio, true, "MP4 video container audio must be supported");
+});
+
+test("Shared Audio Engine: MusicRoom renders ZERO <audio> tags when externalAudioRef is provided", () => {
+  const { moduleExports } = loadMusicRoomModule();
+  const MusicRoomComponent = moduleExports.MusicRoom;
+
+  const externalAudioRef = { current: null };
+  const html = ReactDOMServer.renderToStaticMarkup(
+    React.createElement(MusicRoomComponent, { externalAudioRef })
+  );
+
+  assert.equal(html.includes("<audio"), false, "MusicRoom must NOT render any <audio> elements when externalAudioRef is provided");
+});
+
+test("Shared Audio Engine: MusicRoom renders single fallback <audio> only when externalAudioRef is missing", () => {
+  const { moduleExports } = loadMusicRoomModule();
+  const MusicRoomComponent = moduleExports.MusicRoom;
+
+  const html = ReactDOMServer.renderToStaticMarkup(
+    React.createElement(MusicRoomComponent)
+  );
+
+  const audioOccurrences = (html.match(/<audio/g) || []).length;
+  assert.equal(audioOccurrences, 1, "MusicRoom must render exactly 1 fallback <audio> when externalAudioRef is omitted");
+});
+
+test("MP4 Media Pipeline: creates local track from MP4 file and preserves playback URL", () => {
+  const { createLocalTrack } = catalogueExports;
+  const mockMp4File = { name: "birthday-song.mp4", type: "video/mp4", size: 10485760 } as unknown as File;
+  const objectUrl = "blob:http://localhost:3000/mock-uuid-mp4";
+  const track = createLocalTrack(mockMp4File, objectUrl);
+
+  assert.equal(track.title, "birthday-song", "Should strip .mp4 extension");
+  assert.equal(track.url, objectUrl, "Should store objectUrl for playback");
+  assert.equal(track.isLocal, true, "Should mark track as local");
 });

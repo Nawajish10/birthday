@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { calculateAge, calculateNextBirthdayCountdown, formatEffectiveDate } from "../../lib/birthday-dates.ts";
+import {
+  calculateAge,
+  calculateNextBirthdayCountdown,
+  formatEffectiveDate,
+  AUTHORITATIVE_BIRTH_DATE,
+} from "../../lib/birthday-dates.ts";
 import {
   loadProfile,
   saveProfile,
@@ -69,7 +74,7 @@ export interface ProfilePanelProps {
 /**
  * Filter profile media based on the active tab mode.
  * - "posts": all items where media_kind !== "video"
- * - "reels": all items where media_kind === "video"
+ * - "reels": all items where media_kind === "video" (kept for contract compatibility)
  * - "favorites": all items whose id is in favorites
  */
 export function filterProfileMedia(
@@ -222,15 +227,20 @@ export function ProfilePanel({
   onPauseBackgroundMusic,
   onResumeBackgroundMusic,
 }: ProfilePanelProps) {
+  // Primary photo tabs: "posts" | "favorites"
   const [internalMode, setInternalMode] = useState<ProfileMode>("posts");
-  const mode = profileMode ?? internalMode;
+  // Default to posts if an external reels mode was passed
+  const effectivePropMode = profileMode === "reels" ? "posts" : profileMode;
+  const mode = effectivePropMode ?? internalMode;
 
   const wasPlayingBeforeDetailVideoRef = useRef(false);
 
   const handleModeChange = (newMode: ProfileMode) => {
-    setInternalMode(newMode);
+    // Only switch to valid tabs: posts or favorites
+    const targetMode = newMode === "reels" ? "posts" : newMode;
+    setInternalMode(targetMode);
     if (onModeChange) {
-      onModeChange(newMode);
+      onModeChange(targetMode);
     }
   };
 
@@ -266,7 +276,7 @@ export function ProfilePanel({
     return merged;
   }, [posts, photos]);
 
-  // 1. Profile State & Persistence
+  // 1. Profile State & Persistence (authoritative birth date: 28 October 2002)
   const [profile, setProfile] = useState<ProfileData>(() => {
     const saved = loadProfile();
     return {
@@ -275,13 +285,13 @@ export function ProfilePanel({
       bio: saved.bio || bio || "birthday girl · main character today",
       interests: saved.interests && saved.interests.length > 0
         ? saved.interests
-        : ["Reading", "Poetry", "Music", "Photography"],
-      birthDate: saved.birthDate || "2002-10-29",
+        : ["Reading", "Poetry", "Music", "Photography", "Cooking", "Gardening"],
+      birthDate: saved.birthDate || AUTHORITATIVE_BIRTH_DATE,
     };
   });
 
-  // 2. Authoritative Dynamic Age & Countdown
-  const birthDateStr = profile.birthDate || "2002-10-29";
+  // 2. Authoritative Dynamic Age & Countdown (28 October 2002 -> 24 years young in 2026)
+  const birthDateStr = profile.birthDate || AUTHORITATIVE_BIRTH_DATE;
   const [countdown, setCountdown] = useState<BirthdayCountdownResult>(() =>
     calculateNextBirthdayCountdown(birthDateStr)
   );
@@ -344,9 +354,11 @@ export function ProfilePanel({
   const [editName, setEditName] = useState(profile.displayName);
   const [editBio, setEditBio] = useState(profile.bio);
   const [editAvatarUrl, setEditAvatarUrl] = useState(profile.avatarUrl || "");
+  const [editBirthDate, setEditBirthDate] = useState(profile.birthDate || AUTHORITATIVE_BIRTH_DATE);
   const [editInterests, setEditInterests] = useState<string[]>(profile.interests || []);
   const [newInterestTag, setNewInterestTag] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const headerFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Create Highlight Form State
   const [newHighlightTitle, setNewHighlightTitle] = useState("");
@@ -362,7 +374,7 @@ export function ProfilePanel({
   const rawIgUrl = instagramUrl || externalInstagramUrl || profile.externalInstagramUrl || undefined;
   const safeInstagram = useMemo(() => sanitizeExternalUrl(rawIgUrl), [rawIgUrl]);
 
-  // Filtered media for the active tab
+  // Filtered media for the active tab (posts or favorites)
   const visiblePosts = useMemo(
     () => filterProfileMedia(effectivePosts, mode, favorites),
     [effectivePosts, mode, favorites]
@@ -370,11 +382,6 @@ export function ProfilePanel({
 
   const postsCount = useMemo(
     () => effectivePosts.filter((p) => p.media_kind !== "video").length,
-    [effectivePosts]
-  );
-
-  const reelsCount = useMemo(
-    () => effectivePosts.filter((p) => p.media_kind === "video").length,
     [effectivePosts]
   );
 
@@ -472,6 +479,7 @@ export function ProfilePanel({
     setEditName(profile.displayName);
     setEditBio(profile.bio);
     setEditAvatarUrl(profile.avatarUrl || "");
+    setEditBirthDate(profile.birthDate || AUTHORITATIVE_BIRTH_DATE);
     setEditInterests([...(profile.interests || [])]);
     setNewInterestTag("");
     setIsEditModalOpen(true);
@@ -495,7 +503,13 @@ export function ProfilePanel({
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          setEditAvatarUrl(event.target.result as string);
+          const newAvatar = event.target.result as string;
+          setEditAvatarUrl(newAvatar);
+          // Auto-save direct avatar upload immediately
+          const updated = saveProfile({
+            avatarUrl: newAvatar,
+          });
+          setProfile((prev) => ({ ...prev, avatarUrl: updated.avatarUrl }));
         }
       };
       reader.readAsDataURL(file);
@@ -508,6 +522,7 @@ export function ProfilePanel({
       displayName: editName.trim() || profile.displayName,
       bio: editBio.trim() || profile.bio,
       avatarUrl: editAvatarUrl.trim() || undefined,
+      birthDate: editBirthDate || profile.birthDate || AUTHORITATIVE_BIRTH_DATE,
       interests: editInterests,
     });
     setProfile(updated);
@@ -624,20 +639,44 @@ export function ProfilePanel({
                   className="profileAvatarImg"
                   loading="lazy"
                   decoding="async"
+                  onError={(e) => {
+                    // Prevent broken image display
+                    e.currentTarget.style.display = "none";
+                    const fallback = e.currentTarget.parentElement?.querySelector(".profileAvatarFlower") as HTMLElement | null;
+                    if (fallback) fallback.style.display = "inline";
+                  }}
                 />
-              ) : (
-                <span className="profileAvatarFlower" aria-hidden="true">
-                  ✿
-                </span>
-              )}
+              ) : null}
+              <span
+                className="profileAvatarFlower"
+                aria-hidden="true"
+                style={{ display: profile.avatarUrl ? "none" : "inline" }}
+              >
+                ✿
+              </span>
             </div>
           </div>
+          <input
+            type="file"
+            ref={headerFileInputRef}
+            accept="image/*"
+            onChange={handleAvatarFileChange}
+            className="profileHiddenFileInput"
+            id="profile-header-avatar-file"
+            aria-label="Upload profile photo"
+          />
           <button
             type="button"
             className="profileAvatarEditBtn"
-            onClick={handleOpenEditModal}
-            aria-label="Edit Profile"
-            title="Edit Profile"
+            onClick={() => {
+              if (headerFileInputRef.current) {
+                headerFileInputRef.current.click();
+              } else {
+                handleOpenEditModal();
+              }
+            }}
+            aria-label="Change profile picture"
+            title="Change profile picture"
           >
             ✎
           </button>
@@ -690,7 +729,7 @@ export function ProfilePanel({
 
           <p className="profileBio">{profile.bio}</p>
 
-          {/* Interest Chips */}
+          {/* Interest Chips: Reading, Poetry, Music, Photography, Cooking, Gardening */}
           {profile.interests && profile.interests.length > 0 && (
             <div className="profileInterests" aria-label="Personal interests">
               {profile.interests.map((interest, idx) => (
@@ -725,7 +764,7 @@ export function ProfilePanel({
         </div>
       </section>
 
-      {/* 3. Story Highlights Section with "+ New" & Delete Capabilities */}
+      {/* 3. Story Highlights Section with "+ New" & Safe Deletion */}
       <section className="profileHighlightsContainer" aria-label="Story highlights">
         <div className="profileHighlightsScroll" role="list">
           {/* "+ New" Highlight Circle */}
@@ -771,12 +810,21 @@ export function ProfilePanel({
                       className="profileHighlightImg"
                       loading="lazy"
                       decoding="async"
+                      onError={(e) => {
+                        // Prevent broken image display by falling back to glyph
+                        e.currentTarget.style.display = "none";
+                        const fallback = e.currentTarget.parentElement?.querySelector(".profileHighlightGlyph") as HTMLElement | null;
+                        if (fallback) fallback.style.display = "inline";
+                      }}
                     />
-                  ) : (
-                    <span className="profileHighlightGlyph" aria-hidden="true">
-                      {getHighlightGlyph(hl.id, hl.title)}
-                    </span>
-                  )}
+                  ) : null}
+                  <span
+                    className="profileHighlightGlyph"
+                    aria-hidden="true"
+                    style={{ display: hl.coverUrl ? "none" : "inline" }}
+                  >
+                    {getHighlightGlyph(hl.id, hl.title)}
+                  </span>
                 </div>
               </button>
               <span className="profileHighlightTitle" title={hl.title}>
@@ -787,7 +835,7 @@ export function ProfilePanel({
         </div>
       </section>
 
-      {/* 4. Mode Navigation Tabs */}
+      {/* 4. Mode Navigation Tabs: STRICTLY TWO TABS (Posts & Favorites) - NO REELS */}
       <nav
         className="profileModes"
         role="tablist"
@@ -808,24 +856,6 @@ export function ProfilePanel({
           <span className="profileModeLabel">Posts</span>
           <span className="profileModeBadge" aria-label={`${postsCount} posts`}>
             {postsCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          id="tab-reels"
-          aria-selected={mode === "reels"}
-          aria-controls="profile-media-panel"
-          className={`profileModeTab ${mode === "reels" ? "active" : ""}`}
-          onClick={() => handleModeChange("reels")}
-        >
-          <span className="profileModeIcon" aria-hidden="true">
-            ▶
-          </span>
-          <span className="profileModeLabel">Reels</span>
-          <span className="profileModeBadge" aria-label={`${reelsCount} reels`}>
-            {reelsCount}
           </span>
         </button>
 
@@ -894,7 +924,7 @@ export function ProfilePanel({
                         />
                         <span
                           className="profileReelPlayBadge"
-                          aria-label="Reel video"
+                          aria-label="Video memory"
                         >
                           ▶
                         </span>
@@ -905,6 +935,10 @@ export function ProfilePanel({
                         alt={p.alt_text || p.caption || "Birthday memory"}
                         loading="lazy"
                         decoding="async"
+                        onError={(e) => {
+                          // Prevent broken image tile
+                          e.currentTarget.style.opacity = "0.7";
+                        }}
                       />
                     )}
                     <span className="profileTileOverlay">
@@ -960,13 +994,11 @@ export function ProfilePanel({
         {!isActuallyLoading && !error && visiblePosts.length === 0 && (
           <div className="profileEmptyState" role="status">
             <div className="profileEmptyIcon" aria-hidden="true">
-              {mode === "favorites" ? "♡" : mode === "reels" ? "▶" : "✿"}
+              {mode === "favorites" ? "♡" : "✿"}
             </div>
             <h4 className="profileEmptyTitle">
               {mode === "favorites"
                 ? "No favourites saved yet"
-                : mode === "reels"
-                ? "No reels yet"
                 : "No moments yet"}
             </h4>
             <p className="profileEmptyMessage">{getEmptyStateMessage(mode)}</p>
@@ -1006,7 +1038,7 @@ export function ProfilePanel({
           7. Modals
           ====================================================================== */}
 
-      {/* A. Edit Profile Modal */}
+      {/* A. Edit Profile Modal (Name, Bio, Birthday Date, Avatar & Interests) */}
       {isEditModalOpen && (
         <div
           className="profileModalBackdrop"
@@ -1054,6 +1086,17 @@ export function ProfilePanel({
                   value={editBio}
                   onChange={(e) => setEditBio(e.target.value)}
                   placeholder="Tell your story..."
+                />
+              </div>
+
+              <div className="profileFormGroup">
+                <label htmlFor="edit-profile-birthdate">Birthday Date</label>
+                <input
+                  type="date"
+                  id="edit-profile-birthdate"
+                  value={editBirthDate}
+                  onChange={(e) => setEditBirthDate(e.target.value)}
+                  required
                 />
               </div>
 
@@ -1212,6 +1255,9 @@ export function ProfilePanel({
                           className="profilePickerImg"
                           loading="lazy"
                           decoding="async"
+                          onError={(e) => {
+                            e.currentTarget.style.opacity = "0.7";
+                          }}
                         />
                         {isSelected && (
                           <span className="profilePickerCheck" aria-hidden="true">
@@ -1295,7 +1341,15 @@ export function ProfilePanel({
                     className="profileHighlightCoverBig"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      const fallback = e.currentTarget.parentElement?.querySelector(".profileHighlightGlyphBig") as HTMLElement | null;
+                      if (fallback) fallback.style.display = "flex";
+                    }}
                   />
+                  <div className="profileHighlightGlyphBig" aria-hidden="true" style={{ display: "none" }}>
+                    {getHighlightGlyph(activeHighlight.id, activeHighlight.title)}
+                  </div>
                 </div>
               ) : (
                 <div className="profileHighlightGlyphBig" aria-hidden="true">
@@ -1328,7 +1382,6 @@ export function ProfilePanel({
         </div>
       )}
 
-      {/* D. Media Detail Modal (with Caption, Alt Text, and Favorite Toggle) */}
       {/* D. Interactive Lightbox Viewer */}
       {activeMediaItem && (
         <div

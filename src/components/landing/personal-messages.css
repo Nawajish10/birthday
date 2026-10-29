@@ -1,6 +1,6 @@
 /* ============================================================================
- * Section 4: Personal Messages & Poetry — Stylesheet
- * Warm paper surfaces, antique gold & blush accents, and elegant Urdu typography.
+ * Section 4: Personal Messages & Notes — Stylesheet
+ * Warm paper surfaces, antique gold & blush accents, and elegant typography.
  * ============================================================================ */
 
 @import "./landing-tokens.css";
@@ -55,6 +55,7 @@
   font-weight: 700;
   color: #624752;
   box-shadow: 0 1px 3px rgba(98, 71, 82, 0.05);
+  font-variant-numeric: tabular-nums;
 }
 
 .personal-messages-heading {
@@ -80,7 +81,7 @@
   width: 100%;
   max-width: 620px;
   margin: 0 auto;
-  min-height: 440px;
+  min-height: 380px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,14 +104,14 @@
 }
 
 .deck-card-back {
-  transform: rotate(-3.5deg) scale(0.95) translateY(8px);
+  transform: rotate(-3.2deg) scale(0.96) translateY(8px);
   opacity: 0.5;
   box-shadow: 0 4px 16px rgba(98, 71, 82, 0.06);
   z-index: 1;
 }
 
 .deck-card-middle {
-  transform: rotate(2.8deg) scale(0.98) translateY(4px);
+  transform: rotate(2.4deg) scale(0.98) translateY(4px);
   opacity: 0.8;
   box-shadow: 0 8px 24px rgba(98, 71, 82, 0.08);
   z-index: 2;
@@ -120,7 +121,7 @@
 .message-card-active {
   position: relative;
   width: 100%;
-  background: #FFF9EF;
+  background: #FFFDF9;
   background-image:
     radial-gradient(rgba(212, 121, 141, 0.04) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -212,7 +213,7 @@
 
 /* Card Title */
 .message-card-title {
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.15rem 0;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.6rem;
   line-height: 1.3;
@@ -223,8 +224,8 @@
 /* English Body */
 .message-card-body-en p {
   margin: 0;
-  font-size: 1.02rem;
-  line-height: 1.7;
+  font-size: 1.05rem;
+  line-height: 1.8;
   color: #553D47;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   letter-spacing: 0.01em;
@@ -235,14 +236,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
   margin: 1.5rem 0 1.25rem 0;
 }
 
 .divider-line {
   flex: 1;
   height: 1px;
-  background: #EADBCE;
+  background: linear-gradient(90deg, transparent, #EADBCE, transparent);
 }
 
 .divider-ornament {
@@ -250,28 +251,26 @@
   font-size: 0.85rem;
 }
 
-/* Urdu Typography & RTL Handling */
+/* Urdu Body & Poetry */
 .message-card-urdu-container {
   margin-top: 1rem;
 }
 
 .message-card-urdu-text {
-  margin: 0;
-  padding: 0;
   direction: rtl;
   text-align: right;
   unicode-bidi: isolate;
-  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", "Arabic Typesetting", serif;
-  font-size: 1.26rem;
-  line-height: 2.2;
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", Georgia, serif;
+  font-size: 1.15rem;
+  line-height: 2.1;
   color: var(--scrapbook-plum-dark, #3D2B33);
-  font-weight: 500;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
 }
 
 .urdu-verse-line {
   display: block;
   margin-bottom: 0.35rem;
-  unicode-bidi: isolate;
 }
 
 /* Card Footer */
@@ -279,7 +278,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 1.75rem;
+  margin-top: 2rem;
   padding-top: 1rem;
   border-top: 1px solid #F1E5D7;
   font-size: 0.82rem;
@@ -331,15 +330,27 @@
   min-height: 44px;
 }
 
-.messages-nav-btn:hover {
+.messages-nav-btn:hover:not(:disabled) {
   background: #FFFFFF;
   border-color: var(--scrapbook-rose-deep, #D4798D);
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(98, 71, 82, 0.1);
 }
 
-.messages-nav-btn:active {
+.messages-nav-btn:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.messages-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: #EADBCE;
+  box-shadow: none;
+}
+
+.messages-nav-btn:focus-visible {
+  outline: 2px solid var(--scrapbook-rose-deep, #D4798D);
+  outline-offset: 2px;
 }
 
 /* Pills row */
@@ -386,6 +397,11 @@
 .messages-pill.active .pill-dot {
   opacity: 1;
   transform: scale(1.3);
+}
+
+.messages-pill:focus-visible {
+  outline: 2px solid var(--scrapbook-sunflower-dark, #C69325);
+  outline-offset: 2px;
 }
 
 .messages-swipe-hint {
@@ -440,10 +456,6 @@
   .message-card-title {
     font-size: 1.35rem;
   }
-  .message-card-urdu-text {
-    font-size: 1.15rem;
-    line-height: 2;
-  }
   .messages-pill .pill-text {
     display: none;
   }
@@ -454,6 +466,10 @@
   }
   .messages-controls-bar {
     justify-content: center;
+  }
+  .messages-nav-btn {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.8rem;
   }
 }
 

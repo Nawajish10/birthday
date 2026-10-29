@@ -10,6 +10,22 @@ export { formatEffectiveDate, toCompactDerivativeUrl };
 
 export type MemoriesTab = "camera" | "photos" | "all-photos" | "on-this-day" | "albums" | "stories";
 
+export type PhotoCategory = "all" | "recent" | "favorites" | "dated" | "cherished";
+
+export interface CategoryFilterOption {
+  id: PhotoCategory;
+  label: string;
+  icon: string;
+}
+
+export const CATEGORY_FILTERS: CategoryFilterOption[] = [
+  { id: "all", label: "All Photos", icon: "✿" },
+  { id: "recent", label: "Recent Memories", icon: "✨" },
+  { id: "favorites", label: "Favorites", icon: "♥" },
+  { id: "dated", label: "Dated Moments", icon: "🗓" },
+  { id: "cherished", label: "Cherished Moments", icon: "♡" },
+];
+
 export interface TimelineMonthGroup {
   year: number;
   month: number;
@@ -46,6 +62,51 @@ export const SPECIAL_MEMORIES_TITLE = "Special Memories";
 
 export interface GroupChronologicalOptions {
   unknownGroupTitle?: string;
+}
+
+/**
+ * Filter photos by category (all, recent, favorites, dated, cherished).
+ */
+export function filterPhotosByCategory(
+  photos: PhotoAsset[],
+  category: PhotoCategory,
+  favorites: string[] = []
+): PhotoAsset[] {
+  if (!photos || photos.length === 0) return [];
+  switch (category) {
+    case "recent": {
+      const now = Date.now();
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const recentByDate = photos.filter((p) => {
+        const time = new Date(p.uploadTimestamp || p.effectiveCaptureDate).getTime();
+        return !isNaN(time) && now - time <= thirtyDaysMs;
+      });
+      return recentByDate.length > 0 ? recentByDate : photos.slice(0, 12);
+    }
+    case "favorites":
+      return photos.filter((p) => favorites.includes(p.id));
+    case "dated":
+      return photos.filter((p) => p.hasKnownCaptureDate && Boolean(p.effectiveCaptureDate));
+    case "cherished":
+      return photos.filter((p) => !p.hasKnownCaptureDate || !p.effectiveCaptureDate);
+    case "all":
+    default:
+      return photos;
+  }
+}
+
+/**
+ * Returns recent memories (up to limit) for the Snapchat-style highlight strip.
+ */
+export function getRecentMemories(photos: PhotoAsset[], limit: number = 8): PhotoAsset[] {
+  if (!photos || photos.length === 0) return [];
+  return [...photos]
+    .sort((a, b) => {
+      const timeA = new Date(a.uploadTimestamp || a.effectiveCaptureDate).getTime() || 0;
+      const timeB = new Date(b.uploadTimestamp || b.effectiveCaptureDate).getTime() || 0;
+      return timeB - timeA;
+    })
+    .slice(0, limit);
 }
 
 /**

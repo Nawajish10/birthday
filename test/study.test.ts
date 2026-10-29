@@ -7,6 +7,7 @@ import type { Book, Genre } from "../src/components/study/study-data.ts";
 import {
   STUDY_GENRES,
   STUDY_BOOKS,
+  READING_TEMPLATES,
   filterBooks,
   getCuratedRecommendations,
   getGenreById,
@@ -14,6 +15,9 @@ import {
   searchBooks,
   resolveReadingSourceDisplay,
   getGenreCounts,
+  getReadingProgressForBook,
+  saveReadingProgressForBook,
+  loadAllReadingProgress,
 } from "../src/components/study/study-data.ts";
 
 // ============================================================================
@@ -88,6 +92,19 @@ test("Data Integrity: covers are represented across all genres", () => {
     const booksInGenre = STUDY_BOOKS.filter((b) => b.genreId === genre.id);
     assert.ok(booksInGenre.length >= 1, `Genre "${genre.name}" (${genre.id}) must have at least 1 book`);
   }
+});
+
+test("Data Integrity: supports all 8 canonical reading presentation templates", () => {
+  assert.equal(READING_TEMPLATES.length, 8);
+  const templateIds = READING_TEMPLATES.map((t) => t.id);
+  assert.ok(templateIds.includes("minimal"));
+  assert.ok(templateIds.includes("romantic-journal"));
+  assert.ok(templateIds.includes("manga-panels"));
+  assert.ok(templateIds.includes("anime-story"));
+  assert.ok(templateIds.includes("graphic-novel"));
+  assert.ok(templateIds.includes("bookshelf"));
+  assert.ok(templateIds.includes("notes-workspace"));
+  assert.ok(templateIds.includes("study-cards"));
 });
 
 // ============================================================================
@@ -263,7 +280,7 @@ test("Component source: StudyPanel.tsx exists and exports StudyPanel component",
   assert.ok(source.includes("export default StudyPanel"), "Must default export StudyPanel");
 });
 
-test("Component source: renders welcoming header with Playfair title and Urdu kicker", () => {
+test("Component source: renders welcoming header with Playfair title, stats and Urdu kicker", () => {
   const source = fs.readFileSync(studyPanelPath, "utf-8");
   assert.ok(
     source.includes("Curated Bookshelf · مطالعہ اور سکون"),
@@ -276,6 +293,10 @@ test("Component source: renders welcoming header with Playfair title and Urdu ki
   assert.ok(
     source.includes("recipientName"),
     "Subtitle must include recipientName"
+  );
+  assert.ok(
+    source.includes("study-header-stats"),
+    "Header must include reading nook summary statistics"
   );
 });
 
@@ -293,6 +314,12 @@ test("Component source: supports interactive 'Read Preview Excerpt' tab", () => 
   assert.ok(source.includes("Read Preview Excerpt"), "Must have tab for Read Preview Excerpt");
   assert.ok(source.includes("About Book"), "Must have tab for About Book");
   assert.ok(source.includes("study-excerpt-reader"), "Must have excerpt reader container");
+});
+
+test("Component source: supports clean empty state with search reset action", () => {
+  const source = fs.readFileSync(studyPanelPath, "utf-8");
+  assert.ok(source.includes("study-empty-state"), "Must have empty state container");
+  assert.ok(source.includes("Clear Filters &amp; Reset") || source.includes("Clear Filters & Reset"), "Must provide reset action");
 });
 
 // ============================================================================
@@ -336,4 +363,12 @@ test("CSS verification: supports prefers-reduced-motion and high contrast focus-
     css.includes(":focus-visible"),
     "Must include high-contrast :focus-visible rules"
   );
+});
+
+test("CSS verification: does not contain tacky neon glows or harsh cyberpunk artifacts", () => {
+  const css = fs.readFileSync(studyCssPath, "utf-8");
+  // Ensure glowing backdrop has been removed or disabled
+  assert.ok(css.includes(".anime-backdrop-glow {\n  display: none;"), "Anime neon backdrop glow must be removed/disabled");
+  // Check for restrained literary colors
+  assert.ok(css.includes("--sb-bookcloth-plum"), "Must include literary bookcloth plum token");
 });
