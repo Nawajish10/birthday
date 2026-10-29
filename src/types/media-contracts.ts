@@ -5,12 +5,16 @@
 
 export type MediaKind = "image" | "video";
 
+export type PhotoAssetStatus = "ready" | "processing" | "failed";
+
 export interface PhotoAsset {
   id: string;
-  storagePath: string;
+  storagePath?: string;
   url: string;
+  originalUrl?: string;
   thumbnailPath?: string;
   thumbnailUrl?: string;
+  fullDisplayUrl?: string;
   mediaKind: MediaKind;
   effectiveCaptureDate: string; // ISO date string (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ssZ)
   hasKnownCaptureDate: boolean;
@@ -21,6 +25,9 @@ export interface PhotoAsset {
   altText?: string;
   ownerVisitorId?: string;
   isPrivate?: boolean;
+  contentHash?: string;
+  metadata?: Record<string, unknown>;
+  status?: PhotoAssetStatus;
 }
 
 export interface ProfileData {
@@ -102,4 +109,3 @@ export interface BirthdayCountdownResult {
   isToday: boolean;
   nextBirthday: Date;
 }
-
