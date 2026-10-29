@@ -13,7 +13,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 20px max(20px, env(safe-area-inset-bottom)) 20px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  overflow-y: auto;
   overflow-x: hidden;
   background-color: rgba(61, 43, 51, 0.68);
   backdrop-filter: blur(6px);
@@ -114,6 +115,7 @@
   z-index: 2;
   width: 100%;
   max-width: 620px;
+  margin: auto;
   background-color: var(--scrapbook-paper, #FBF4E6);
   border: 2px solid var(--scrapbook-border, #EADBCE);
   border-radius: 16px;
@@ -196,6 +198,79 @@
   font-size: 14px;
   letter-spacing: normal;
   text-transform: none;
+}
+
+/* Celebratory Portrait Scrapbook Frame */
+.midnight-portrait-wrapper {
+  margin: 0 auto 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.midnight-portrait-frame {
+  position: relative;
+  width: clamp(120px, 28vw, 140px);
+  height: clamp(120px, 28vw, 140px);
+  padding: 6px;
+  background: var(--scrapbook-ivory, #FFF9EF);
+  border: 2px solid var(--scrapbook-border, #EADBCE);
+  border-radius: 20px;
+  box-shadow: 
+    0 4px 16px rgba(98, 71, 82, 0.16),
+    0 1px 3px rgba(98, 71, 82, 0.08),
+    inset 0 0 16px rgba(248, 232, 236, 0.5);
+  transform: rotate(-1.5deg);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+.midnight-portrait-frame:hover {
+  transform: rotate(0deg) scale(1.03);
+  box-shadow: 
+    0 8px 24px rgba(98, 71, 82, 0.22),
+    0 2px 6px rgba(98, 71, 82, 0.12),
+    inset 0 0 16px rgba(248, 232, 236, 0.5);
+}
+
+.midnight-portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  display: block;
+  border: 1px solid rgba(212, 121, 141, 0.3);
+  background-color: var(--scrapbook-rose, #F8E8EC);
+}
+
+.midnight-portrait-tape {
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(1.5deg);
+  width: 64px;
+  height: 18px;
+  z-index: 2;
+}
+
+.midnight-portrait-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 32px;
+  height: 32px;
+  background: radial-gradient(circle, #FFF9EF 0%, #F8E8EC 50%, #F1C75B 100%);
+  border: 2px solid #FFFFFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  box-shadow: 0 2px 8px rgba(98, 71, 82, 0.22);
+  z-index: 2;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* Celebratory Cake & Sparkle Emblem */
@@ -399,6 +474,15 @@
   .midnight-dismiss-btn {
     width: 100%;
   }
+  .midnight-portrait-frame {
+    width: 120px;
+    height: 120px;
+    padding: 5px;
+    border-radius: 16px;
+  }
+  .midnight-portrait-img {
+    border-radius: 12px;
+  }
 }
 
 /* Accessibility: prefers-reduced-motion compliance */
@@ -406,7 +490,8 @@
   .midnight-reveal-overlay,
   .midnight-reveal-modal,
   .midnight-confetti-piece,
-  .midnight-play-btn {
+  .midnight-play-btn,
+  .midnight-portrait-frame {
     animation: none !important;
     transition: none !important;
   }

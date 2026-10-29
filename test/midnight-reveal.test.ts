@@ -38,6 +38,7 @@ const { moduleExports: revealModule, rawCode: revealCode } = loadTsxModule(
 
 const {
   DEFAULT_RECIPIENT_NAME,
+  DEFAULT_RECIPIENT_PHOTO_URL,
   DEFAULT_RECIPIENT_TIMEZONE,
   DEFAULT_BIRTHDAY_MONTH,
   DEFAULT_BIRTHDAY_DAY,
@@ -307,6 +308,10 @@ describe("Suite 5: Component Source, Contracts & Accessibility", () => {
     assert.equal(typeof getRevealStorageKey, "function");
     assert.equal(typeof hasRevealCompleted, "function");
     assert.equal(typeof markRevealCompleted, "function");
+    assert.equal(
+      DEFAULT_RECIPIENT_PHOTO_URL,
+      "https://lh3.googleusercontent.com/pw/AP1GczMLasTHYPPFuDPfLPRSnH5tQ6mhgV3XNu-V5SBjy_maHYwLX5_Ej716nIoS7pipr9aPZrJObZTzo-QGHxKckSqpY6EtdiRb_qnVCyjw_1dU1tYIk3iF=w1200-h1200-no"
+    );
   });
 
   test("Accessibility semantics: dialog role, aria-modal, and labelledby", () => {
@@ -354,5 +359,25 @@ describe("Suite 5: Component Source, Contracts & Accessibility", () => {
     // prefers-reduced-motion compliance
     assert.ok(css.includes("@media (prefers-reduced-motion: reduce)"));
     assert.ok(css.includes("animation: none !important"));
+  });
+
+  test("Portrait photo frame rendering with scrapbook aesthetics & fallback cake emblem", () => {
+    assert.ok(revealCode.includes("midnight-portrait-wrapper"));
+    assert.ok(revealCode.includes("midnight-portrait-frame"));
+    assert.ok(revealCode.includes("midnight-portrait-img"));
+    assert.ok(revealCode.includes("midnight-portrait-badge"));
+    assert.ok(revealCode.includes('data-testid="midnight-portrait-wrapper"'));
+    assert.ok(revealCode.includes('data-testid="midnight-portrait-img"'));
+    assert.ok(revealCode.includes("onError="));
+    assert.ok(revealCode.includes("midnight-emblem-wrapper"));
+  });
+
+  test("midnight-reveal.css includes styles for scrapbook portrait, badge, and mobile safe-area centering", () => {
+    const css = fs.readFileSync(CSS_FILE, "utf-8");
+    assert.ok(css.includes(".midnight-portrait-wrapper"));
+    assert.ok(css.includes(".midnight-portrait-frame"));
+    assert.ok(css.includes(".midnight-portrait-img"));
+    assert.ok(css.includes(".midnight-portrait-badge"));
+    assert.ok(css.includes("safe-area-inset"));
   });
 });

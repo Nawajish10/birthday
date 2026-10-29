@@ -238,15 +238,32 @@ export function ProfilePanel({
 
   // Authoritative shared photo integration: resolve posts prop, photos prop, or loadPhotos()
   const effectivePosts: ProfilePostItem[] = useMemo(() => {
-    if (posts && posts.length > 0) {
-      return posts.map((p) => ({
-        ...p,
-        fullDisplayUrl: p.fullDisplayUrl || p.url,
-        thumbnailUrl: p.thumbnailUrl || p.thumbnail_url || p.thumbnailPath || p.url,
-      }));
-    }
     const assetList = photos && photos.length > 0 ? photos : loadPhotos();
-    return assetList.map((photo) => photoAssetToProfilePostItem(photo));
+    const photoPosts = assetList.map((photo) => photoAssetToProfilePostItem(photo));
+
+    if (!posts || posts.length === 0) {
+      return photoPosts;
+    }
+
+    const formattedPosts = posts.map((p) => ({
+      ...p,
+      fullDisplayUrl: p.fullDisplayUrl || p.url,
+      thumbnailUrl: p.thumbnailUrl || p.thumbnail_url || p.thumbnailPath || p.url,
+    }));
+
+    // Merge: include formattedPosts, and seamlessly merge photoPosts so all 145 Google Photos remain visible
+    const seenIds = new Set(formattedPosts.map((p) => p.id));
+    const seenUrls = new Set(formattedPosts.map((p) => p.url));
+
+    const merged: ProfilePostItem[] = [...formattedPosts];
+    for (const item of photoPosts) {
+      if (!seenIds.has(item.id) && !seenUrls.has(item.url)) {
+        seenIds.add(item.id);
+        seenUrls.add(item.url);
+        merged.push(item);
+      }
+    }
+    return merged;
   }, [posts, photos]);
 
   // 1. Profile State & Persistence
@@ -693,7 +710,7 @@ export function ProfilePanel({
       {/* Stats Counter Row */}
       <section className="profileCounts" aria-label="Profile statistics">
         <div className="profileCountItem">
-          <b>{posts?.length ?? 0}</b>
+          <b>{effectivePosts.length}</b>
           <span>little moments</span>
         </div>
         <div className="profileCountDivider" aria-hidden="true" />

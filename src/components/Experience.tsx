@@ -25,6 +25,7 @@ import { ChatPanel } from "./chat/ChatPanel";
 import { MusicRoom } from "./music/MusicRoom";
 import { PasscodeGate } from "./PasscodeGate";
 import { BottomNav } from "./shared/BottomNav";
+import { GOOGLE_PHOTOS_DATA, SPECIAL_POPUP_PHOTO } from "@/lib/google-photos-data";
 
 const BookCanvas = dynamic(() => import("./book/BookCanvas").then(mod => mod.BookCanvas), { ssr: false });
 
@@ -55,7 +56,7 @@ function WelcomeCard({ onContinue, photo }: { onContinue: () => void; photo?: st
           <small>Made with love · تمہارے لیے</small>
         </section>
         <div className="welcomePhoto" role={photo ? undefined : "img"} aria-label={photo ? undefined : "Birthday photo placeholder. Add a photo in the creator studio."}>
-          {photo ? <img src={photo} alt="A birthday photo picked by the creator" /> : <div className="welcomePhotoScene"><span>✿</span><small>ADD MEERAH’S PHOTO<br />IN THE CREATOR STUDIO</small></div>}
+          {photo ? <img src={photo} alt="A birthday photo picked by the creator" fetchPriority="high" loading="eager" /> : <div className="welcomePhotoScene"><span>✿</span><small>ADD MEERAH’S PHOTO<br />IN THE CREATOR STUDIO</small></div>}
           <i className="welcomePetal">✿</i>
         </div>
       </div>
@@ -199,7 +200,7 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
   const bookPages: BookPage[] = [
     ...(data.cards.length ? [{ id: "card-" + data.cards[0].id, type: "note" as const, title: "Happy birthday,", accent: "Meerah", body: data.cards[0].body_en || "May your day be full of love, laughter, and everything you deserve.", urdu: data.cards[0].body_ur || "سالگرہ مبارک، میرا پیار۔" }] : [{ id: "birthday-card-1", type: "note" as const, title: "Happy birthday,", accent: "Meerah", body: "May your day be full of love, laughter, and everything you deserve.", urdu: "سالگرہ مبارک، میرا پیار۔" }]),
     ...(data.cards.length ? data.cards.slice(1).map((card, i) => ({ id: "card-" + card.id, type: "note" as const, title: card.title || "A little wish", accent: "for you", body: card.body_en || "A birthday wish, made just for you.", urdu: card.body_ur || ["تمہاری خوشی ہمیشہ قائم رہے۔", "تمہاری ہر خواہش پوری ہو۔", "تمہاری ہنسی ہمیشہ گونجتی رہے۔", "تمہارا ہر دن محبت سے روشن ہو۔"][i % 4] })) : Array.from({ length: 4 }, (_, i) => ({ id: "birthday-card-" + (i + 2), type: "note" as const, title: ["A little wish", "A day of wonder", "All my love", "Your next chapter"][i], accent: ["for you", "just for you", "always", "begins now"][i], body: ["May your day be full of little things that make you smile.", "May this year bring gentle mornings and bright adventures.", "You make ordinary moments feel like something to keep.", "There is so much joy still waiting around the corner."][i], urdu: ["تمہاری خوشی ہمیشہ قائم رہے۔", "تمہاری ہر خواہش پوری ہو۔", "تمہاری ہنسی ہمیشہ گونجتی رہے۔", "تمہارا ہر دن محبت سے روشن ہو۔"][i] }))),
-    ...(data.posts.length ? [{ id: "photos", type: "gallery" as const, title: "A few favourite", accent: "moments", body: "Little moments from your birthday world.", urdu: "چھوٹی چھوٹی یادیں، دل کے بہت قریب۔", images: data.posts.slice(0, 6).map(p => ({ url: p.url, caption: p.caption || p.alt_text || "A birthday memory", kind: p.media_kind })) }] : [{ id: "photos", type: "gallery" as const, title: "A few little", accent: "celebrations", body: "Sample scenes for the book. Replace these with your own memories in the creator studio.", urdu: "خوشیوں کے چند چھوٹے لمحے۔", images: sampleBookPhotos.map(image => ({ ...image, kind: "image" as const })) }]),
+    ...(data.posts.length ? [{ id: "photos", type: "gallery" as const, title: "A few favourite", accent: "moments", body: "Little moments from your birthday world.", urdu: "چھوٹی چھوٹی یادیں، دل کے بہت قریب۔", images: data.posts.slice(0, 6).map(p => ({ url: p.url, caption: p.caption || p.alt_text || "A birthday memory", kind: p.media_kind })) }] : [{ id: "photos", type: "gallery" as const, title: "A few favourite", accent: "moments", body: "Little moments from your birthday world.", urdu: "چھوٹی چھوٹی یادیں، دل کے بہت قریب۔", images: GOOGLE_PHOTOS_DATA.slice(0, 6).map(p => ({ url: p.url, caption: p.caption || p.altText || "A birthday memory", kind: "image" as const })) }]),
     ...(data.stories.some(story => story.media_kind === "video") ? [{ id: "video", type: "video" as const, title: "A birthday wish", accent: "just for you", body: "A creator-added birthday clip. Press play whenever you are ready.", urdu: "تمہارے لیے ایک پیارا سا پیغام۔", url: data.stories.find(story => story.media_kind === "video")?.url, poster: data.posts.find(p => p.media_kind === "image")?.url, caption: data.stories.find(story => story.media_kind === "video")?.caption || "A little birthday hello" }] : [{ id: "video", type: "video" as const, title: "A little moment", accent: "in bloom", body: "A sample flower video while your birthday clips are being prepared. Press play to watch.", urdu: "ہر خوبصورت لمحہ تمہارے نام۔", url: sampleBookVideo, poster: sampleBookPhotos[0].url, caption: "Sample video · replace with a birthday greeting" }]),
     { id: "letter", type: "note", title: "Some things", accent: "stay", body: "Some moments become memories before we even realise it. This page is waiting for a note in your own words, in English or Urdu.", urdu: "تمہاری مسکراہٹ ہر دن کو روشن کر دیتی ہے۔" },
     { id: "song", type: "song", title: "A song for", accent: "Meerah", body: "Open the shared songbook to play a birthday soundtrack. Music always waits for your tap.", urdu: "یہ گیت صرف تمہارے لیے۔", caption: "Your shared birthday playlist" },
@@ -249,7 +250,7 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
     };
   }, [open]);
 
-  if (open && !welcomeDone) return <WelcomeCard onContinue={() => setWelcomeDone(true)} photo={data.posts.find(post => post.media_kind === "image")?.url} />;
+  if (open && !welcomeDone) return <WelcomeCard onContinue={() => setWelcomeDone(true)} photo={SPECIAL_POPUP_PHOTO.url} />;
 
   if (!open) return <PasscodeGate onUnlocked={() => { setOpen(true); location.reload(); }} />;
 
@@ -374,13 +375,14 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
               <MidnightBirthdayReveal
                 recipientName="Meerah"
                 recipientTimezone="Asia/Kolkata"
+                recipientPhotoUrl={SPECIAL_POPUP_PHOTO.url}
               />
 
               {/* Section 2 — Welcome Hero and Personalized Avatar */}
               <HeroSection
                 recipientName="Meerah"
                 birthdayDate="October 30"
-                avatarUrl={data.posts.find(p => p.media_kind === "image")?.url}
+                avatarUrl={SPECIAL_POPUP_PHOTO.url}
                 onOpenWorld={() => {
                   const el = document.getElementById("section-photo-cards") || document.getElementById("scrapbook-card-wall");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -399,7 +401,13 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
                           date: "October 2026",
                           alt: p.alt_text || p.caption || "Birthday memory",
                         }))
-                      : undefined
+                      : GOOGLE_PHOTOS_DATA.slice(0, 12).map(p => ({
+                          id: p.id,
+                          url: p.url,
+                          caption: p.caption || p.altText || "A sweet birthday memory",
+                          date: "October 2026",
+                          alt: p.altText || p.caption || "Birthday memory",
+                        }))
                   }
                   onSelectPhoto={(photo) => setSelected({ url: photo.url, caption: photo.caption || "Birthday memory" })}
                   loading={loading}
@@ -450,13 +458,23 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
               {/* Section 7 — Memories Preview */}
               <div style={{ marginTop: "36px" }}>
                 <MemoriesPreviewSection
-                  memories={data.posts.map(p => ({
-                    id: p.id,
-                    url: p.url,
-                    caption: p.caption,
-                    alt_text: p.alt_text,
-                    media_kind: p.media_kind,
-                  }))}
+                  memories={
+                    data.posts.length > 0
+                      ? data.posts.map(p => ({
+                          id: p.id,
+                          url: p.url,
+                          caption: p.caption,
+                          alt_text: p.alt_text,
+                          media_kind: p.media_kind,
+                        }))
+                      : GOOGLE_PHOTOS_DATA.slice(0, 8).map(p => ({
+                          id: p.id,
+                          url: p.url,
+                          caption: p.caption,
+                          alt_text: p.altText,
+                          media_kind: p.mediaKind,
+                        }))
+                  }
                   onOpenMemories={() => setTab("stories")}
                   onSelectPhoto={(photo) => setSelected({ url: photo.url, caption: photo.caption || photo.alt_text || "Birthday memory", kind: photo.media_kind })}
                   loading={loading}
@@ -502,6 +520,7 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
         {tab === "profile" && (
           <ProfilePanel
             posts={data.posts}
+            photos={GOOGLE_PHOTOS_DATA}
             loading={loading}
             favorites={favorites}
             onToggleFavorite={toggleFavorite}
@@ -518,6 +537,7 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
         )}
         {tab === "stories" && (
           <MemoriesPanel
+            photos={GOOGLE_PHOTOS_DATA}
             externalAudioRef={playerRef}
             onNavigateToProfile={() => setTab("profile")}
           />

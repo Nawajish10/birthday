@@ -7,6 +7,8 @@ import type {
   ProfilePostItem,
 } from "../types/media-contracts.ts";
 export { photoAssetToProfilePostItem, profilePostItemToPhotoAsset } from "../types/media-contracts.ts";
+import { GOOGLE_PHOTOS_DATA, SPECIAL_POPUP_PHOTO, FIRST_GOOGLE_PHOTO } from "./google-photos-data.ts";
+export { GOOGLE_PHOTOS_DATA, SPECIAL_POPUP_PHOTO, FIRST_GOOGLE_PHOTO };
 
 /**
  * Resolves a compact image derivative URL (e.g. '=w400-h400-c' for Google/Cloud CDNs,
@@ -74,6 +76,38 @@ export function toCompactDerivativeUrl(url: string, derivative: string = "=w400-
   return `${trimmed}${trimmed.includes("?") ? "&" : "?"}derivative=w400-h400-c`;
 }
 
+/**
+ * Merges curated photos with Google Photos assets, deduplicating by ID and contentHash
+ */
+export function mergePhotoAssets(
+  curated: PhotoAsset[],
+  googlePhotos: PhotoAsset[]
+): PhotoAsset[] {
+  const seenIds = new Set<string>();
+  const seenHashes = new Set<string>();
+  const merged: PhotoAsset[] = [];
+
+  for (const photo of curated) {
+    if (!seenIds.has(photo.id)) {
+      seenIds.add(photo.id);
+      if (photo.contentHash) seenHashes.add(photo.contentHash);
+      merged.push(photo);
+    }
+  }
+
+  for (const photo of googlePhotos) {
+    const isDuplicateId = seenIds.has(photo.id);
+    const isDuplicateHash = photo.contentHash && seenHashes.has(photo.contentHash);
+    if (!isDuplicateId && !isDuplicateHash) {
+      seenIds.add(photo.id);
+      if (photo.contentHash) seenHashes.add(photo.contentHash);
+      merged.push(photo);
+    }
+  }
+
+  return merged;
+}
+
 export const STORAGE_KEYS = {
   PROFILE: "meerah_birthday_profile_v1",
   PHOTOS: "meerah_birthday_photos_v1",
@@ -93,7 +127,7 @@ export const DEFAULT_PROFILE: ProfileData = {
   externalInstagramUrl: null,
 };
 
-export const INITIAL_PRELOADED_PHOTOS: PhotoAsset[] = [
+export const SAMPLE_PRELOADED_PHOTOS: PhotoAsset[] = [
   {
     id: "photo-mem-1",
     storagePath: "curated/polaroid-1.jpg",
@@ -151,6 +185,11 @@ export const INITIAL_PRELOADED_PHOTOS: PhotoAsset[] = [
     altText: "Four years celebration memories",
   },
 ];
+
+export const INITIAL_PRELOADED_PHOTOS: PhotoAsset[] = mergePhotoAssets(
+  SAMPLE_PRELOADED_PHOTOS,
+  GOOGLE_PHOTOS_DATA
+);
 
 export const INITIAL_PRELOADED_HIGHLIGHTS: HighlightCollection[] = [
   {
@@ -311,58 +350,7 @@ export interface LoadPhotosOptions {
  * Safely reads Google Photos manifest assets from disk when on server/node
  */
 export function getLocalManifestPhotos(): PhotoAsset[] {
-  if (typeof window === "undefined" && typeof process !== "undefined" && process.versions?.node) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { createRequire } = require("node:module");
-      const req = createRequire(import.meta.url);
-      const fs = req("node:fs");
-      const path = req("node:path");
-      const p = path.resolve(process.cwd(), "src", "data", "google-photos-manifest.json");
-      if (fs.existsSync(p)) {
-        const raw = fs.readFileSync(p, "utf-8");
-        const data = JSON.parse(raw);
-        if (data && Array.isArray(data.photos)) {
-          return data.photos;
-        }
-      }
-    } catch {
-      // Fallback gracefully
-    }
-  }
-  return [];
-}
-
-/**
- * Merges curated photos with Google Photos assets, deduplicating by ID and contentHash
- */
-export function mergePhotoAssets(
-  curated: PhotoAsset[],
-  googlePhotos: PhotoAsset[]
-): PhotoAsset[] {
-  const seenIds = new Set<string>();
-  const seenHashes = new Set<string>();
-  const merged: PhotoAsset[] = [];
-
-  for (const photo of curated) {
-    if (!seenIds.has(photo.id)) {
-      seenIds.add(photo.id);
-      if (photo.contentHash) seenHashes.add(photo.contentHash);
-      merged.push(photo);
-    }
-  }
-
-  for (const photo of googlePhotos) {
-    const isDuplicateId = seenIds.has(photo.id);
-    const isDuplicateHash = photo.contentHash && seenHashes.has(photo.contentHash);
-    if (!isDuplicateId && !isDuplicateHash) {
-      seenIds.add(photo.id);
-      if (photo.contentHash) seenHashes.add(photo.contentHash);
-      merged.push(photo);
-    }
-  }
-
-  return merged;
+  return GOOGLE_PHOTOS_DATA;
 }
 
 export function loadPhotos(
@@ -386,6 +374,10 @@ export function loadPhotos(
           Array.isArray(parsed) && parsed.length > 0
             ? parsed
             : [...INITIAL_PRELOADED_PHOTOS];
+        // If production browser storage had legacy 4 sample photos, upgrade with Google Photos
+        if (!storage && Array.isArray(parsed) && parsed.length <= 4 && parsed.every((p: PhotoAsset) => p.id?.startsWith("photo-mem-"))) {
+          basePhotos = mergePhotoAssets(basePhotos, GOOGLE_PHOTOS_DATA);
+        }
       }
     } catch {
       basePhotos = [...INITIAL_PRELOADED_PHOTOS];

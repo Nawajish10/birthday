@@ -107,6 +107,8 @@ export function HeroSection({
                     alt={`${activeRecipient}'s avatar`}
                     className="hero-avatar-real-photo"
                     decoding="async"
+                    loading="eager"
+                    fetchPriority="high"
                     onError={() => setAvatarError(true)}
                   />
                 ) : (

@@ -9,11 +9,13 @@ import {
   saveFavorites,
   toggleFavorite,
   INITIAL_PRELOADED_PHOTOS,
+  GOOGLE_PHOTOS_DATA,
   photoAssetToProfilePostItem,
   profilePostItemToPhotoAsset,
 } from "../src/lib/media-service.ts";
 import {
   groupPhotosChronologically,
+  groupPhotosOnThisDay,
   CHERISHED_MOMENTS_TITLE,
   SPECIAL_MEMORIES_TITLE,
 } from "../src/components/memories/memories-helpers.ts";
@@ -392,4 +394,100 @@ test("7. Music Continuity: Zero extra <audio> elements in Profile and Memories c
   assert.ok(!profileTsx.includes("<audio"), "ProfilePanel must NOT contain any <audio> elements");
   assert.ok(!memoriesTsx.includes("<audio"), "MemoriesPanel must NOT contain any <audio> elements");
   assert.ok(!storyViewerTsx.includes("<audio"), "StoryViewer must NOT contain any <audio> elements");
+});
+
+// ============================================================================
+// 8. GOOGLE PHOTOS MERGE IN PROFILE (effectivePosts)
+// ============================================================================
+
+test("8. Google Photos Integration in Profile: merging minimal database posts with all 145 Google Photos", () => {
+  assert.equal(GOOGLE_PHOTOS_DATA.length, 145, "Must have exactly 145 Google Photos in dataset");
+
+  // Minimal posts from database (e.g. 2 items)
+  const minimalDbPosts: ProfilePostItem[] = [
+    {
+      id: "db-post-1",
+      url: "/photos/db1.jpg",
+      media_kind: "image",
+      caption: "Special birthday letter",
+    },
+    {
+      id: "db-post-2",
+      url: "/videos/db2.mp4",
+      media_kind: "video",
+      caption: "Video greeting reel",
+    },
+  ];
+
+  const loadedPhotos = loadPhotos();
+  const photoPosts = loadedPhotos.map(photoAssetToProfilePostItem);
+
+  // Effective posts merge simulation (matching ProfilePanel.tsx logic)
+  const seenIds = new Set(minimalDbPosts.map((p) => p.id));
+  const seenUrls = new Set(minimalDbPosts.map((p) => p.url));
+  const merged = [...minimalDbPosts];
+  for (const item of photoPosts) {
+    if (!seenIds.has(item.id) && !seenUrls.has(item.url)) {
+      seenIds.add(item.id);
+      seenUrls.add(item.url);
+      merged.push(item);
+    }
+  }
+
+  // Merged posts must contain all 145 Google Photos + minimal db posts
+  assert.ok(merged.length >= 145, `Merged posts (${merged.length}) must include all 145 Google Photos`);
+  assert.ok(merged.some((p) => p.id === "db-post-1"));
+  assert.ok(merged.some((p) => p.id === "db-post-2"));
+  assert.ok(merged.some((p) => p.id === "gphoto_special_birthday_popup"));
+
+  // Verify filtering
+  const postsTab = filterProfileMedia(merged, "posts", []);
+  assert.ok(postsTab.length >= 144, "Posts tab must show images");
+  assert.ok(postsTab.every((p) => p.media_kind !== "video"));
+
+  const reelsTab = filterProfileMedia(merged, "reels", []);
+  assert.ok(reelsTab.some((p) => p.id === "db-post-2"));
+  assert.ok(reelsTab.every((p) => p.media_kind === "video"));
+
+  // Favorites filter with Google Photos
+  const favId = "gphoto_special_birthday_popup";
+  const favsTab = filterProfileMedia(merged, "favorites", [favId]);
+  assert.equal(favsTab.length, 1);
+  assert.equal(favsTab[0].id, favId);
+
+  // Inspect ProfilePanel.tsx implementation
+  const profileTsx = fs.readFileSync(path.resolve(process.cwd(), "src/components/profile/ProfilePanel.tsx"), "utf8");
+  assert.ok(profileTsx.includes("effectivePosts"), "ProfilePanel must calculate effectivePosts");
+  assert.ok(profileTsx.includes("photoAssetToProfilePostItem"), "ProfilePanel must map photos via photoAssetToProfilePostItem");
+  assert.ok(profileTsx.includes("effectivePosts.length"), "Profile counts must display effectivePosts.length");
+});
+
+// ============================================================================
+// 9. GOOGLE PHOTOS IN MEMORIES: DEFAULT TAB, SYNC & COLLECTIONS
+// ============================================================================
+
+test("9. Google Photos Integration in Memories: default tab, sync, chronological & albums", () => {
+  const memoriesTsx = fs.readFileSync(path.resolve(process.cwd(), "src/components/memories/MemoriesPanel.tsx"), "utf8");
+
+  // Default activeTab must be 'photos'
+  assert.ok(
+    memoriesTsx.includes('useState<MemoriesTab>("photos")'),
+    "MemoriesPanel must default activeTab to 'photos'"
+  );
+
+  // useEffect must sync photos when propPhotos updates
+  assert.ok(
+    memoriesTsx.includes("useEffect") && memoriesTsx.includes("[propPhotos]"),
+    "MemoriesPanel must use useEffect with [propPhotos] to sync photos"
+  );
+
+  // Chronological grouping with 145 Google Photos
+  const groups = groupPhotosChronologically(GOOGLE_PHOTOS_DATA);
+  assert.ok(groups.length > 0, "Must produce chronological timeline groups for Google Photos");
+  const totalPhotosInGroups = groups.reduce((acc, g) => acc + g.photos.length, 0);
+  assert.equal(totalPhotosInGroups, 145, "All 145 Google Photos must be grouped");
+
+  // On this day groups
+  const onThisDay = groupPhotosOnThisDay(GOOGLE_PHOTOS_DATA);
+  assert.ok(Array.isArray(onThisDay), "On this day must return an array of groups");
 });

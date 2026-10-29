@@ -47,7 +47,7 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
   storage,
   onNavigateToProfile,
 }) => {
-  const [activeTab, setActiveTab] = useState<MemoriesTab>("camera");
+  const [activeTab, setActiveTab] = useState<MemoriesTab>("photos"); // useState<MemoriesTab>("camera")
   const [photos, setPhotos] = useState<PhotoAsset[]>(() => {
     if (propPhotos && propPhotos.length > 0) return propPhotos;
     return loadPhotos(storage);
@@ -57,14 +57,12 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
   const [favorites, setFavorites] = useState<string[]>(() => loadFavorites(storage));
   const [shareToast, setShareToast] = useState<string | null>(null);
 
-  // Sync when propPhotos changes
-  const [prevPropPhotos, setPrevPropPhotos] = useState(propPhotos);
-  if (propPhotos !== prevPropPhotos) {
-    setPrevPropPhotos(propPhotos);
-    if (propPhotos) {
+  // Sync when propPhotos updates
+  useEffect(() => {
+    if (propPhotos && propPhotos.length > 0) {
       setPhotos(propPhotos);
     }
-  }
+  }, [propPhotos]);
 
   const isActuallyLoading = loading ?? isLoading ?? false;
 

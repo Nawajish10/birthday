@@ -5,6 +5,8 @@ import type { JSX } from "react";
 import "./midnight-reveal.css";
 
 export const DEFAULT_RECIPIENT_NAME = "Meerah";
+export const DEFAULT_RECIPIENT_PHOTO_URL =
+  "https://lh3.googleusercontent.com/pw/AP1GczMLasTHYPPFuDPfLPRSnH5tQ6mhgV3XNu-V5SBjy_maHYwLX5_Ej716nIoS7pipr9aPZrJObZTzo-QGHxKckSqpY6EtdiRb_qnVCyjw_1dU1tYIk3iF=w1200-h1200-no";
 export const DEFAULT_RECIPIENT_TIMEZONE = "Asia/Kolkata";
 export const DEFAULT_BIRTHDAY_MONTH = 10; // October
 export const DEFAULT_BIRTHDAY_DAY = 30; // 30th
@@ -212,6 +214,7 @@ export function playMusicBoxChime(): { stop: () => void; state: string } {
 
 export interface MidnightBirthdayRevealProps {
   recipientName?: string;
+  recipientPhotoUrl?: string;
   recipientTimezone?: string;
   birthdayMonth?: number;
   birthdayDay?: number;
@@ -224,6 +227,7 @@ export interface MidnightBirthdayRevealProps {
 
 export function MidnightBirthdayReveal({
   recipientName = DEFAULT_RECIPIENT_NAME,
+  recipientPhotoUrl = DEFAULT_RECIPIENT_PHOTO_URL,
   recipientTimezone = DEFAULT_RECIPIENT_TIMEZONE,
   birthdayMonth = DEFAULT_BIRTHDAY_MONTH,
   birthdayDay = DEFAULT_BIRTHDAY_DAY,
@@ -236,6 +240,11 @@ export function MidnightBirthdayReveal({
   const [isVisible, setIsVisible] = useState(false);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [recipientPhotoUrl]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chimeStopRef = useRef<(() => void) | null>(null);
@@ -444,7 +453,25 @@ export function MidnightBirthdayReveal({
           </p>
         </div>
 
-        {/* Celebratory Emblem */}
+        {/* Celebratory Portrait with Scrapbook Frame or Cake Emblem Fallback */}
+        {!imageError && recipientPhotoUrl ? (
+          <div className="midnight-portrait-wrapper" data-testid="midnight-portrait-wrapper">
+            <div className="midnight-portrait-frame">
+              <div className="washi-tape washi-tape-sage midnight-portrait-tape" aria-hidden="true" />
+              <img
+                src={recipientPhotoUrl}
+                alt={`${activeName}'s birthday portrait`}
+                className="midnight-portrait-img"
+                data-testid="midnight-portrait-img"
+                onError={() => setImageError(true)}
+                loading="eager"
+              />
+              <div className="midnight-portrait-badge" aria-hidden="true">
+                <span>✿</span>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="midnight-emblem-wrapper" aria-hidden="true">
           <svg className="midnight-emblem-svg" viewBox="0 0 48 48">
             {/* Candle & Flame */}
@@ -459,6 +486,8 @@ export function MidnightBirthdayReveal({
             <circle cx="30" cy="28" r="1.5" fill="#F1C75B" />
           </svg>
         </div>
+
+        )}
 
         {/* Personalized Headline */}
         <h2 id="midnight-reveal-title" className="midnight-title" data-testid="midnight-title">
