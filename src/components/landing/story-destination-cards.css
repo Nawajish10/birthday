@@ -1,0 +1,653 @@
+/* Story Destination Cards: Section 4 (Birthday Book) & Section 5 (Memories Preview) */
+@import "./landing-tokens.css";
+
+/* Container Layout */
+.story-destinations-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  box-sizing: border-box;
+}
+
+.story-destinations-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .story-destinations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.25rem;
+    align-items: stretch;
+  }
+}
+
+/* Base Scrapbook Destination Card */
+.destination-card {
+  position: relative;
+  background: var(--scrapbook-paper, #FBF4E6);
+  border: 1px solid var(--scrapbook-border, #EADBCE);
+  border-radius: 16px;
+  padding: 2.25rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--scrapbook-shadow, 0 10px 30px rgba(98, 71, 82, 0.08));
+  overflow: visible;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.destination-card:hover {
+  box-shadow: var(--scrapbook-shadow-hover, 0 16px 40px rgba(98, 71, 82, 0.14));
+}
+
+/* Washi tape accents on card corners */
+.destination-card-tape-left {
+  top: -10px;
+  left: 24px;
+  transform: rotate(-3deg);
+}
+
+.destination-card-tape-right {
+  top: -10px;
+  right: 24px;
+  transform: rotate(4deg);
+}
+
+/* Card Header Section */
+.card-header-group {
+  margin-bottom: 1.5rem;
+}
+
+.card-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--scrapbook-rose-deep, #D4798D);
+  margin-bottom: 0.5rem;
+}
+
+.card-kicker-symbol {
+  font-size: 0.85rem;
+}
+
+.destination-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  line-height: 1.25;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 600;
+}
+
+.destination-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--scrapbook-muted, #846F77);
+}
+
+/* ==========================================================================
+   SECTION 4: Birthday Book Entry Card
+   ========================================================================== */
+.book-destination-card {
+  background: linear-gradient(175deg, #FCF7EE 0%, #F8EFE2 100%);
+  border: 1px solid #E4D5C5;
+}
+
+/* Vintage Book Illustration Container */
+.book-cover-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem 0 1.75rem;
+  perspective: 900px;
+}
+
+.vintage-book-cover {
+  position: relative;
+  width: 260px;
+  min-height: 330px;
+  background: linear-gradient(145deg, #4A232E 0%, #30141D 60%, #240E15 100%);
+  border-radius: 6px 14px 14px 6px;
+  padding: 1.5rem 1.25rem 2rem 1.75rem;
+  box-shadow:
+    -6px 4px 12px rgba(0, 0, 0, 0.25),
+    0 16px 36px rgba(48, 20, 29, 0.35),
+    inset -1px 0 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  transform: rotate(-1.5deg);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+  user-select: none;
+}
+
+.vintage-book-cover:hover {
+  transform: rotate(0deg) translateY(-4px) scale(1.02);
+  box-shadow:
+    -8px 8px 18px rgba(0, 0, 0, 0.3),
+    0 22px 44px rgba(48, 20, 29, 0.42);
+}
+
+/* Book Spine crease effect */
+.book-spine-crease {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 14px;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(0, 0, 0, 0.28) 45%,
+    rgba(255, 255, 255, 0.08) 75%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+  border-radius: 6px 0 0 6px;
+}
+
+.book-spine-stitch {
+  position: absolute;
+  left: 17px;
+  top: 12px;
+  bottom: 12px;
+  width: 1px;
+  border-left: 1.5px dashed rgba(241, 199, 91, 0.35);
+}
+
+/* Bookmark ribbon */
+.book-bookmark-ribbon {
+  position: absolute;
+  top: -6px;
+  right: 28px;
+  width: 20px;
+  height: 52px;
+  background: linear-gradient(to bottom, #C69325, #DFAD32);
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 50% 82%, 0% 100%);
+}
+
+/* Book Cover Gold Foil Frame */
+.book-gold-frame {
+  position: relative;
+  border: 1.5px solid rgba(241, 199, 91, 0.55);
+  border-radius: 6px;
+  padding: 1.25rem 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.book-gold-corners {
+  position: absolute;
+  font-size: 0.75rem;
+  color: #F1C75B;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.corner-tl { top: 4px; left: 6px; }
+.corner-tr { top: 4px; right: 6px; }
+.corner-bl { bottom: 4px; left: 6px; }
+.corner-br { bottom: 4px; right: 6px; }
+
+/* Gold Foil Lettering */
+.book-gold-foil-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+}
+
+.book-gold-english {
+  font-family: Georgia, "Playfair Display", "Times New Roman", serif;
+  font-style: italic;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: linear-gradient(135deg, #FFF4D0 0%, #F1C75B 45%, #FFE285 75%, #D49B28 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+}
+
+.book-gold-divider {
+  font-size: 0.85rem;
+  color: #F1C75B;
+  opacity: 0.75;
+}
+
+.book-gold-urdu {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", "Arabic Typesetting", serif;
+  font-size: 1.6rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #FFF4D0 0%, #F1C75B 45%, #FFE285 75%, #DFAD32 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+}
+
+.book-emblem {
+  font-size: 1.5rem;
+  color: #F1C75B;
+  opacity: 0.9;
+  margin: 0.75rem 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Page count badge on book cover */
+.book-page-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  align-self: center;
+  background: rgba(241, 199, 91, 0.15);
+  border: 1px solid rgba(241, 199, 91, 0.5);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #FFEBB3;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(2px);
+}
+
+/* Book Teaser & Actions */
+.book-details-group {
+  margin-top: 1.25rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.book-teaser-text {
+  margin: 0;
+  font-size: 0.925rem;
+  line-height: 1.6;
+  color: var(--scrapbook-plum, #624752);
+  max-width: 420px;
+}
+
+/* ==========================================================================
+   SECTION 5: Memories & Photographs Preview
+   ========================================================================== */
+.memories-destination-card {
+  background: linear-gradient(175deg, #FBF4E8 0%, #F7EFE2 100%);
+  border: 1px solid #EADBCE;
+}
+
+/* Layered Polaroid Deck Stage */
+.memories-deck-stage {
+  position: relative;
+  min-height: 310px;
+  margin: 1rem 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.memories-polaroid-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
+  max-width: 440px;
+}
+
+/* Polaroid Card Button wrapper */
+.polaroid-card-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  outline-offset: 4px;
+}
+
+.polaroid-card-button:focus-visible {
+  outline: 2px solid var(--scrapbook-plum, #624752);
+  border-radius: 6px;
+}
+
+/* Layered tilt variations */
+.polaroid-tilt-0 {
+  transform: rotate(-3deg);
+}
+
+.polaroid-tilt-1 {
+  transform: rotate(2.5deg);
+}
+
+.polaroid-tilt-2 {
+  transform: rotate(-1.5deg);
+}
+
+.polaroid-tilt-3 {
+  transform: rotate(3deg);
+}
+
+.polaroid-card-button:hover .polaroid-frame {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 16px 32px rgba(98, 71, 82, 0.2);
+  z-index: 5;
+}
+
+/* Individual Polaroid item */
+.scrapbook-polaroid {
+  position: relative;
+  background: #FFFFFF;
+  padding: 9px 9px 24px 9px;
+  border-radius: 3px;
+  box-shadow: 0 8px 20px rgba(98, 71, 82, 0.1);
+  border: 1px solid rgba(234, 219, 206, 0.7);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Individual Washi Tape on Polaroid top */
+.polaroid-washi {
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(1deg);
+  width: 64px;
+  height: 18px;
+}
+
+.polaroid-media-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #F4ECE1;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.polaroid-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.polaroid-card-button:hover .polaroid-image {
+  transform: scale(1.04);
+}
+
+/* Video badge overlay */
+.polaroid-video-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(48, 20, 29, 0.75);
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Handwritten Polaroid caption */
+.polaroid-caption {
+  margin-top: 8px;
+  font-family: "Caveat", "Dancing Script", "Bradley Hand", "Comic Sans MS", cursive;
+  font-size: 0.925rem;
+  line-height: 1.25;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+/* Empty State */
+.memories-empty-state {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border: 2px dashed rgba(212, 121, 141, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  box-sizing: border-box;
+}
+
+.empty-state-polaroid-frame {
+  width: 110px;
+  height: 125px;
+  border: 1.5px dashed rgba(132, 111, 119, 0.4);
+  border-radius: 4px;
+  background: #FFFDFC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  transform: rotate(-2deg);
+  box-shadow: 0 4px 12px rgba(98, 71, 82, 0.05);
+}
+
+.empty-icon-flower {
+  font-size: 2rem;
+  color: var(--scrapbook-rose-deep, #D4798D);
+  margin-bottom: 0.25rem;
+}
+
+.empty-state-title {
+  margin: 0 0 0.5rem 0;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+}
+
+.empty-state-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--scrapbook-muted, #846F77);
+  max-width: 340px;
+}
+
+/* Loading Skeletons */
+.memories-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
+  max-width: 440px;
+}
+
+.polaroid-skeleton {
+  background: #FFFFFF;
+  padding: 9px 9px 24px 9px;
+  border-radius: 3px;
+  box-shadow: 0 6px 16px rgba(98, 71, 82, 0.06);
+  border: 1px solid rgba(234, 219, 206, 0.5);
+}
+
+.skeleton-media-box {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(90deg, #EADBCE 25%, #F4ECE1 50%, #EADBCE 75%);
+  background-size: 200% 100%;
+  animation: scrapbookSkeletonShimmer 1.8s infinite;
+  border-radius: 2px;
+}
+
+.skeleton-caption-line {
+  height: 12px;
+  width: 75%;
+  margin: 10px auto 0;
+  background: #EDE1D4;
+  border-radius: 4px;
+}
+
+@keyframes scrapbookSkeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ==========================================================================
+   Primary Action Buttons
+   ========================================================================== */
+.scrapbook-cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  padding: 0.75rem 1.75rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(98, 71, 82, 0.15);
+  outline-offset: 3px;
+}
+
+.scrapbook-cta-button:focus-visible {
+  outline: 2px solid var(--scrapbook-plum, #624752);
+}
+
+.book-cta-button {
+  background: linear-gradient(135deg, #4A232E 0%, #351720 100%);
+  color: #FFF6E5;
+  border: 1px solid rgba(241, 199, 91, 0.4);
+}
+
+.book-cta-button:hover {
+  background: linear-gradient(135deg, #5C2C39 0%, #441E29 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(74, 35, 46, 0.3);
+  color: #FFFFFF;
+}
+
+.memories-cta-button {
+  background: linear-gradient(135deg, #D4798D 0%, #B8596E 100%);
+  color: #FFFFFF;
+}
+
+.memories-cta-button:hover {
+  background: linear-gradient(135deg, #DE869A 0%, #C36479 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(212, 121, 141, 0.35);
+}
+
+.cta-icon {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.scrapbook-cta-button:hover .cta-icon {
+  transform: translateX(3px);
+}
+
+.book-cta-button:hover .cta-icon {
+  transform: scale(1.15) rotate(15deg);
+}
+
+/* ==========================================================================
+   Responsive & Accessibility Adaptations
+   ========================================================================== */
+@media (max-width: 640px) {
+  .story-destinations-wrapper {
+    padding: 1rem 0.75rem;
+    gap: 2rem;
+  }
+
+  .destination-card {
+    padding: 1.75rem 1.25rem;
+    border-radius: 12px;
+  }
+
+  .vintage-book-cover {
+    width: 220px;
+    min-height: 290px;
+    padding: 1.25rem 1rem 1.5rem 1.5rem;
+  }
+
+  .book-gold-english {
+    font-size: 1.25rem;
+  }
+
+  .book-gold-urdu {
+    font-size: 1.4rem;
+  }
+
+  .memories-polaroid-grid,
+  .memories-loading-grid {
+    gap: 0.75rem;
+    max-width: 100%;
+  }
+
+  .scrapbook-polaroid {
+    padding: 7px 7px 18px 7px;
+  }
+
+  .polaroid-caption {
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .destination-card,
+  .vintage-book-cover,
+  .polaroid-card-button,
+  .scrapbook-polaroid,
+  .polaroid-image,
+  .scrapbook-cta-button,
+  .cta-icon,
+  .skeleton-media-box {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .vintage-book-cover,
+  .destination-card:hover,
+  .vintage-book-cover:hover,
+  .polaroid-tilt-0,
+  .polaroid-tilt-1,
+  .polaroid-tilt-2,
+  .polaroid-tilt-3,
+  .polaroid-card-button:hover .polaroid-frame {
+    transform: none !important;
+  }
+}

@@ -1,0 +1,1279 @@
+/* Camera Panel & Photo Ingestion Styles
+ * Theme: Love Theme tokens from design.md
+ * Deep Plum (#1A0F1F), Dark Purple (#26132B), Muted Rose (#3A1F3B),
+ * Blush Pink (#F7A8B8), Soft Pink (#FFC6D4), Warm Gold (#D4A47C), Ivory (#F8F1E9).
+ * Mobile-first responsive layouts (320px–1024px+), min 44x44px touch targets.
+ * Safe-area insets and keyboard avoidance support.
+ */
+
+:root {
+  --cam-bg: #1A0F1F;
+  --cam-surface: #26132B;
+  --cam-surface-alt: #3A1F3B;
+  --cam-surface-raised: #2A1A32;
+  --cam-border: rgba(255, 214, 230, 0.16);
+  --cam-border-hover: rgba(247, 168, 184, 0.35);
+
+  --cam-primary: #F7A8B8;
+  --cam-primary-strong: #F27A98;
+  --cam-secondary: #FFC6D4;
+  --cam-accent: #D4A47C;
+  --cam-text: #F8F1E9;
+  --cam-text-muted: #C5B3C9;
+  --cam-text-subtle: #A994B0;
+  --cam-lavender: #B894BC;
+  --cam-success: #9DC6AD;
+  --cam-warning: #E6C38A;
+  --cam-danger: #F28A9A;
+
+  --cam-gradient-card: linear-gradient(135deg, rgba(74, 43, 73, 0.92), rgba(38, 19, 43, 0.96));
+  --cam-gradient-accent: linear-gradient(110deg, #F7A8B8 0%, #FFB7C8 55%, #F8D0C4 100%);
+  --cam-gradient-gold: linear-gradient(110deg, #D4A47C 0%, #F2D8A9 100%);
+
+  --cam-shadow-card: 0 18px 50px rgba(0, 0, 0, 0.28);
+  --cam-shadow-glow: 0 0 28px rgba(247, 168, 184, 0.14);
+  --cam-focus-ring: 0 0 0 3px rgba(247, 168, 184, 0.38);
+
+  --cam-font-display: "Playfair Display", Georgia, serif;
+  --cam-font-body: "Inter", "DM Sans", system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="love"],
+.cameraPanel {
+  box-sizing: border-box;
+  font-family: var(--cam-font-body);
+}
+
+/* ==========================================================================
+   Main Camera Container
+   ========================================================================== */
+
+.cameraPanel {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 24px auto 0;
+  padding: 24px;
+  background: var(--cam-surface);
+  background-image: var(--cam-gradient-card);
+  border: 1px solid var(--cam-border);
+  border-radius: 20px;
+  box-shadow: var(--cam-shadow-card);
+  color: var(--cam-text);
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+}
+
+.cameraPanel.isModalView {
+  margin: 0;
+  max-width: 100%;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* ==========================================================================
+   Header & Metadata Bar
+   ========================================================================== */
+
+.cameraHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.cameraTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cameraBadge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  color: var(--cam-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cameraHeading,
+.cameraPanel h3 {
+  font-family: var(--cam-font-display);
+  font-size: clamp(20px, 4vw, 24px);
+  font-weight: 500;
+  margin: 0;
+  color: var(--cam-text);
+  letter-spacing: -0.01em;
+}
+
+.cameraHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cameraPrivacyChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(247, 168, 184, 0.08);
+  border: 1px solid var(--cam-border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cam-secondary);
+}
+
+.cameraPrivacyDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cam-success);
+  box-shadow: 0 0 8px rgba(157, 198, 173, 0.6);
+}
+
+.cameraHeaderCloseBtn {
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 1px solid var(--cam-border);
+  border-radius: 50%;
+  color: var(--cam-text-muted);
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cameraHeaderCloseBtn:hover {
+  background: rgba(247, 168, 184, 0.15);
+  color: var(--cam-text);
+  border-color: var(--cam-primary);
+}
+
+/* ==========================================================================
+   Dual Ingestion Mode Switcher
+   ========================================================================== */
+
+.cameraModeSwitcher {
+  display: flex;
+  background: rgba(26, 15, 31, 0.6);
+  border: 1px solid var(--cam-border);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.cameraModeBtn {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  color: var(--cam-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.cameraModeBtn:hover {
+  color: var(--cam-text);
+  background: rgba(247, 168, 184, 0.06);
+}
+
+.cameraModeBtn.isActive {
+  background: var(--cam-surface-alt);
+  color: var(--cam-primary);
+  border: 1px solid rgba(247, 168, 184, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ==========================================================================
+   Privacy Notice Banner
+   ========================================================================== */
+
+.cameraPrivacyNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(58, 31, 59, 0.5);
+  border: 1px solid var(--cam-border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  color: var(--cam-text-muted);
+}
+
+.cameraPrivacyIcon {
+  flex-shrink: 0;
+  color: var(--cam-accent);
+  margin-top: 2px;
+}
+
+.cameraPrivacyNotice p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cam-text-muted);
+}
+
+/* ==========================================================================
+   Feedback Alert Banners
+   ========================================================================== */
+
+.cameraAlert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  animation: cameraFadeIn 0.25s ease-out;
+}
+
+.cameraAlertIcon {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.cameraAlertContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.cameraAlert.error {
+  background: rgba(242, 138, 154, 0.12);
+  border: 1px solid rgba(242, 138, 154, 0.35);
+  color: var(--cam-danger);
+}
+
+.cameraAlert.success {
+  background: rgba(157, 198, 173, 0.14);
+  border: 1px solid rgba(157, 198, 173, 0.35);
+  color: var(--cam-success);
+}
+
+.cameraInlineActionBtn {
+  background: transparent;
+  border: 0;
+  color: var(--cam-primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  align-self: flex-start;
+  min-height: 28px;
+}
+
+.cameraInlineActionBtn:hover {
+  color: var(--cam-secondary);
+}
+
+.cameraSuccessContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cameraLinkBtn {
+  background: transparent;
+  border: 0;
+  color: var(--cam-primary);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cameraLinkBtn:hover {
+  color: var(--cam-secondary);
+}
+
+/* ==========================================================================
+   Live Camera Viewfinder
+   ========================================================================== */
+
+.cameraVideoContainer {
+  position: relative;
+  width: 100%;
+  height: clamp(520px, 84vh, 880px);
+  min-height: 500px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #140b17;
+  border: 1px solid var(--cam-border);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4), var(--cam-shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.cameraVideoContainer.isActive {
+  border-color: var(--cam-primary);
+  box-shadow: 0 0 20px rgba(247, 168, 184, 0.25);
+}
+
+.cameraVideoContainer.isIdle {
+  background: radial-gradient(circle at center, #26132B 0%, #1A0F1F 100%);
+  cursor: pointer;
+}
+
+.cameraVideo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cameraVideo.isMirrored {
+  transform: scaleX(-1);
+}
+
+.cameraIdlePlaceholder {
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--cam-text-muted);
+}
+
+.cameraIdleIcon {
+  font-size: 44px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 12px rgba(247, 168, 184, 0.25));
+}
+
+.cameraIdlePlaceholder h4 {
+  font-family: var(--cam-font-display);
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 6px;
+  color: var(--cam-text);
+}
+
+.cameraIdlePlaceholder p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 320px;
+  color: var(--cam-text-muted);
+}
+
+.cameraLoadingOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 15, 31, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--cam-text);
+  font-size: 13px;
+  z-index: 2;
+}
+
+/* ==========================================================================
+   File Drag & Drop Zone
+   ========================================================================== */
+
+.cameraDropZone {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  border: 2px dashed rgba(247, 168, 184, 0.35);
+  border-radius: 16px;
+  background: rgba(58, 31, 59, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px 20px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cameraDropZone:hover,
+.cameraDropZone:focus-visible {
+  border-color: var(--cam-primary);
+  background: rgba(58, 31, 59, 0.55);
+  box-shadow: var(--cam-shadow-glow);
+  outline: none;
+}
+
+.cameraDropZone.isDragging {
+  border-color: var(--cam-secondary);
+  background: rgba(247, 168, 184, 0.15);
+  transform: scale(1.01);
+  box-shadow: 0 0 24px rgba(247, 168, 184, 0.3);
+}
+
+.cameraDropIcon {
+  font-size: 44px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 12px rgba(247, 168, 184, 0.25));
+}
+
+.cameraDropZone h4 {
+  font-family: var(--cam-font-display);
+  font-size: 19px;
+  font-weight: 500;
+  margin: 0 0 6px;
+  color: var(--cam-text);
+}
+
+.cameraDropZone p {
+  font-size: 13px;
+  color: var(--cam-text-muted);
+  margin: 0 0 10px;
+}
+
+.cameraDropFormatHint {
+  font-size: 11px;
+  color: var(--cam-text-subtle);
+  background: rgba(26, 15, 31, 0.5);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--cam-border);
+}
+
+/* ==========================================================================
+   Captured Photo Preview & Metadata Form
+   ========================================================================== */
+
+.cameraCapturedWrap {
+  margin-bottom: 16px;
+  animation: cameraFadeIn 0.3s ease-out;
+}
+
+.cameraFrame {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 214, 230, 0.25);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  background: #140b17;
+  max-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cameraPreviewImg {
+  display: block;
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  margin: 0;
+  background: #140b17;
+}
+
+.cameraWatermark {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  padding: 5px 12px;
+  background: rgba(26, 15, 31, 0.75);
+  backdrop-filter: blur(6px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 214, 230, 0.2);
+  color: var(--cam-secondary);
+  font-family: var(--cam-font-display);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+/* Metadata Form Area */
+.cameraMetadataForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 16px 0;
+  background: rgba(58, 31, 59, 0.3);
+  border: 1px solid var(--cam-border);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.cameraFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cameraFieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cameraFieldLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cam-secondary);
+}
+
+.cameraCharCounter {
+  font-size: 11px;
+  color: var(--cam-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.cameraCheckboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--cam-text-muted);
+  cursor: pointer;
+}
+
+.cameraCheckbox {
+  accent-color: var(--cam-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.cameraCaptionInput,
+.cameraDateInput {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--cam-border);
+  border-radius: 10px;
+  background: rgba(26, 15, 31, 0.7);
+  color: var(--cam-text);
+  font-size: 13.5px;
+  font-family: var(--cam-font-body);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cameraCaptionInput:focus,
+.cameraDateInput:focus {
+  border-color: var(--cam-primary);
+  box-shadow: var(--cam-focus-ring);
+}
+
+.cameraCaptionInput:disabled,
+.cameraDateInput:disabled {
+  opacity: 0.55;
+  background: rgba(26, 15, 31, 0.4);
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Action Buttons (Min 44x44px touch targets)
+   ========================================================================== */
+
+.cameraActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.cameraBtn {
+  min-height: 44px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
+
+.cameraBtn:focus-visible {
+  outline: 2px solid var(--cam-primary);
+  outline-offset: 2px;
+}
+
+/* Button Variants */
+.cameraBtn.secondary {
+  background: var(--cam-surface-alt);
+  border: 1px solid var(--cam-border);
+  color: var(--cam-text);
+}
+
+.cameraBtn.secondary:hover:not(:disabled) {
+  background: rgba(74, 43, 73, 0.85);
+  border-color: var(--cam-border-hover);
+}
+
+.cameraBtn.rose,
+.cameraUploadBtn,
+.cameraPrimaryAction,
+.cameraCaptureBtn {
+  background: var(--cam-primary);
+  background-image: var(--cam-gradient-accent);
+  color: #1A0F1F;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(247, 168, 184, 0.3);
+}
+
+.cameraBtn.rose:hover:not(:disabled),
+.cameraUploadBtn:hover:not(:disabled),
+.cameraPrimaryAction:hover:not(:disabled),
+.cameraCaptureBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(247, 168, 184, 0.45);
+}
+
+.cameraBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.cameraFilePickLabel {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.cameraFileInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   PhotoUploadModal Overlay & Dialog
+   ========================================================================== */
+
+.photoModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 5, 12, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  animation: cameraFadeIn 0.25s ease-out;
+}
+
+.photoModalDialog {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--cam-surface);
+  background-image: var(--cam-gradient-card);
+  border: 1px solid var(--cam-border);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  padding: 24px;
+  box-sizing: border-box;
+  animation: cameraModalScale 0.25s ease-out;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+}
+
+.photoModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--cam-border);
+}
+
+.photoModalTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.photoModalTitle {
+  font-family: var(--cam-font-display);
+  font-size: clamp(20px, 3.5vw, 24px);
+  font-weight: 500;
+  margin: 0;
+  color: var(--cam-text);
+}
+
+.photoModalCloseBtn {
+  min-width: 44px;
+  min-height: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--cam-border);
+  border-radius: 50%;
+  color: var(--cam-text);
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.photoModalCloseBtn:hover {
+  background: rgba(247, 168, 184, 0.2);
+  border-color: var(--cam-primary);
+}
+
+/* ==========================================================================
+   Animations & Spinners
+   ========================================================================== */
+
+.cameraSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(26, 15, 31, 0.35);
+  border-top-color: #1A0F1F;
+  border-radius: 50%;
+  animation: cameraSpin 0.75s linear infinite;
+  display: inline-block;
+}
+
+@keyframes cameraSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cameraFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cameraModalScale {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Mobile-First Responsive Rules (320px–1024px+)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .cameraPanel {
+    padding: 16px;
+    margin-top: 14px;
+    border-radius: 18px;
+  }
+
+  .photoModalDialog {
+    padding: 16px;
+    border-radius: 20px;
+    max-height: 95vh;
+  }
+
+  .cameraHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .cameraHeaderRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cameraActions:not(.cameraBottomControls) {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .cameraBottomControls {
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .cameraBtn:not(.cameraShutterBtn):not(.cameraTopActionBtn):not(.cameraFilterChip) {
+    width: 100%;
+    min-height: 48px; /* Extra spacious for mobile thumbs */
+    font-size: 14px;
+  }
+
+  .cameraVideoContainer {
+    height: 85vh;
+    min-height: 80vh;
+    border-radius: 20px;
+  }
+
+  .cameraDropZone {
+    min-height: 200px;
+    padding: 20px 14px;
+  }
+
+  .cameraMetadataForm {
+    padding: 12px;
+  }
+}
+
+/* ==========================================================================
+   Snapchat-Inspired UI Additions (Filters, Flash, Notifications, Gallery)
+   ========================================================================== */
+
+.cameraTopActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(42, 26, 50, 0.85);
+  border: 1px solid var(--cam-border);
+  color: var(--cam-text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+  transition: all 0.2s ease;
+}
+
+.cameraTopActionBtn:hover,
+.cameraTopActionBtn.isActive {
+  background: var(--cam-primary-strong);
+  color: #1A0F1F;
+  border-color: var(--cam-primary-strong);
+}
+
+.cameraFlashBtn {
+  min-width: 64px;
+}
+
+.cameraFlipBtn {
+  min-width: 70px;
+}
+
+.cameraNotifBtn {
+  position: relative;
+}
+
+.cameraNotifBadge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cam-primary-strong);
+  box-shadow: 0 0 6px var(--cam-primary);
+}
+
+.cameraNotifDropdown {
+  background: rgba(38, 19, 43, 0.96);
+  border: 1px solid var(--cam-border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+}
+
+.cameraNotifHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--cam-border);
+  padding-bottom: 8px;
+}
+
+.cameraNotifHeader h4 {
+  margin: 0;
+  font-family: var(--cam-font-display);
+  font-size: 14px;
+  color: var(--cam-primary);
+}
+
+.cameraNotifClearBtn {
+  background: none;
+  border: none;
+  color: var(--cam-text-muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.cameraNotifClearBtn:hover {
+  color: var(--cam-text);
+  text-decoration: underline;
+}
+
+.cameraNotifList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.cameraNotifItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(42, 26, 50, 0.6);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 214, 230, 0.08);
+}
+
+.cameraNotifItem.isUnread {
+  border-color: var(--cam-primary);
+  background: rgba(58, 31, 59, 0.7);
+}
+
+.cameraNotifText p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--cam-text);
+}
+
+.cameraNotifText small {
+  font-size: 9px;
+  color: var(--cam-text-subtle);
+}
+
+/* Horizontally Scrollable Filter Carousel */
+.cameraFilterCarousel {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px 4px 6px;
+  margin: 10px 0 16px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cameraFilterChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  min-width: 72px;
+  padding: 8px 10px;
+  background: rgba(42, 26, 50, 0.85);
+  border: 1.5px solid var(--cam-border);
+  border-radius: 14px;
+  color: var(--cam-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cameraFilterChip:hover {
+  border-color: var(--cam-primary);
+  color: var(--cam-text);
+}
+
+.cameraFilterChip.isActive {
+  background: linear-gradient(135deg, rgba(247, 168, 184, 0.22), rgba(242, 122, 152, 0.28));
+  border-color: var(--cam-primary);
+  color: var(--cam-primary);
+  box-shadow: 0 0 12px rgba(247, 168, 184, 0.25);
+  transform: translateY(-2px);
+}
+
+.cameraFilterIcon {
+  font-size: 18px;
+}
+
+.cameraGalleryShortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(42, 26, 50, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid var(--cam-border);
+  border-radius: 999px;
+  padding: 4px 14px 4px 5px;
+  color: var(--cam-text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.cameraGalleryShortcut:hover {
+  background: rgba(58, 31, 59, 0.95);
+  border-color: var(--cam-primary);
+  transform: translateY(-1px);
+}
+
+.cameraGalleryThumbWrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--cam-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1A0F1F;
+  flex-shrink: 0;
+}
+
+.cameraGalleryThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cameraGalleryIconWrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(247, 168, 184, 0.18);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.cameraGalleryText {
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Top Floating Bar & Bottom Overlays for Snapchat-Style Viewfinder
+   ========================================================================== */
+
+.cameraTopFloatingBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 20;
+  background: linear-gradient(to bottom, rgba(16, 8, 20, 0.85) 0%, rgba(16, 8, 20, 0.4) 65%, transparent 100%);
+  pointer-events: auto;
+}
+
+.cameraTopFloatingLeft,
+.cameraTopFloatingRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cameraTopActionBtn.cameraCloseBtn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.cameraBottomOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px max(18px, env(safe-area-inset-bottom, 18px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 20;
+  background: linear-gradient(to top, rgba(16, 8, 20, 0.9) 0%, rgba(16, 8, 20, 0.5) 60%, transparent 100%);
+  pointer-events: auto;
+}
+
+.cameraBottomControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.cameraGalleryShortcutWrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* 72px Prominent Shutter Button with Love Theme Pulse Ring */
+.cameraShutterSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cameraShutterContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+}
+
+.cameraPulseRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--cam-primary);
+  box-shadow: 0 0 16px rgba(247, 168, 184, 0.45);
+  animation: cameraLovePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes cameraLovePulse {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(247, 168, 184, 0.75);
+    opacity: 0.95;
+  }
+  70% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 14px rgba(247, 168, 184, 0);
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(247, 168, 184, 0);
+    opacity: 0.95;
+  }
+}
+
+.cameraShutterBtn {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  min-height: 72px;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+  background: linear-gradient(135deg, #F7A8B8 0%, #FFC6D4 45%, #F27A98 100%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(247, 168, 184, 0.55);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  padding: 0;
+  z-index: 2;
+  touch-action: manipulation;
+}
+
+.cameraShutterBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 26px rgba(247, 168, 184, 0.75);
+}
+
+.cameraShutterBtn:active {
+  transform: scale(0.92);
+}
+
+.cameraShutterInner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.25);
+  display: block;
+}
+
+.cameraRightActionWrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.cameraRightActionWrap .cameraFilePickLabel {
+  background: rgba(42, 26, 50, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid var(--cam-border);
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: var(--cam-text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.cameraRightActionWrap .cameraFilePickLabel:hover {
+  border-color: var(--cam-primary);
+  background: rgba(58, 31, 59, 0.95);
+}

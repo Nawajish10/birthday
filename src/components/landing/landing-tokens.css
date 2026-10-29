@@ -1,0 +1,64 @@
+/**
+ * Landing Page 2D Scrapbook Design Tokens
+ * Rose pink, warm ivory, sunflower gold, soft sage, white, plum ink.
+ */
+:root {
+  --scrapbook-rose: #F8E8EC;
+  --scrapbook-rose-deep: #D4798D;
+  --scrapbook-ivory: #FFF9EF;
+  --scrapbook-paper: #FBF4E6;
+  --scrapbook-sunflower: #F1C75B;
+  --scrapbook-sunflower-dark: #C69325;
+  --scrapbook-sage: #E5EDE2;
+  --scrapbook-sage-dark: #376E58;
+  --scrapbook-white: #FFFFFF;
+  --scrapbook-plum: #624752;
+  --scrapbook-plum-dark: #3D2B33;
+  --scrapbook-muted: #846F77;
+  --scrapbook-border: #EADBCE;
+  --scrapbook-shadow: 0 10px 30px rgba(98, 71, 82, 0.08);
+  --scrapbook-shadow-hover: 0 16px 40px rgba(98, 71, 82, 0.14);
+}
+
+/* Washi tape decorative styles */
+.washi-tape {
+  position: absolute;
+  height: 22px;
+  width: 90px;
+  background: rgba(241, 199, 91, 0.55);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  z-index: 3;
+  pointer-events: none;
+  backdrop-filter: blur(1px);
+}
+
+.washi-tape-pink {
+  background: rgba(212, 121, 141, 0.45);
+}
+
+.washi-tape-sage {
+  background: rgba(85, 129, 105, 0.4);
+}
+
+/* Polaroid frame aesthetic */
+.polaroid-frame {
+  background: #FFFFFF;
+  padding: 10px 10px 32px 10px;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(98, 71, 82, 0.12);
+  border: 1px solid rgba(234, 219, 206, 0.6);
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.polaroid-frame:hover {
+  transform: translateY(-4px) rotate(-0.5deg);
+  box-shadow: var(--scrapbook-shadow-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polaroid-frame:hover {
+    transform: none;
+  }
+}
+

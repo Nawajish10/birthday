@@ -1,0 +1,2117 @@
+/**
+ * Read & Study Panel Styles
+ * Scrapbook Ivory, Rose Pink, Sunflower Gold, Sage & Deep Plum Palette.
+ * Responsive, accessible, supporting reduced motion and high-contrast focus.
+ */
+
+:root {
+  --sb-bg-ivory: #FFF9EF;
+  --sb-paper-cream: #FBF4E6;
+  --sb-accent-rose: #F8E8EC;
+  --sb-accent-rose-deep: #D4798D;
+  --sb-accent-sunflower: #F1C75B;
+  --sb-accent-sunflower-dark: #C69325;
+  --sb-accent-sage: #E5EDE2;
+  --sb-accent-sage-dark: #376E58;
+  --sb-text-primary: #624752;
+  --sb-text-muted: #846F77;
+  --sb-card-white: #FFFFFF;
+  --sb-border-warm: #EADBCE;
+  --sb-shadow-book: 0 12px 28px rgba(98, 71, 82, 0.16);
+  --sb-shadow-hover: 0 18px 36px rgba(98, 71, 82, 0.22);
+  --sb-shadow-modal: 0 24px 60px rgba(98, 71, 82, 0.32);
+  --sb-radius-sm: 6px;
+  --sb-radius-md: 12px;
+  --sb-radius-lg: 20px;
+}
+
+/* ============================================================================
+   Container & Typography
+   ============================================================================ */
+
+.study-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem 1.25rem;
+  color: var(--sb-text-primary);
+  box-sizing: border-box;
+  position: relative;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.study-header {
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto 2.5rem auto;
+  position: relative;
+}
+
+.study-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sb-accent-rose-deep);
+  background: var(--sb-accent-rose);
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 2px 6px rgba(212, 121, 141, 0.15);
+}
+
+.study-title {
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--sb-text-primary);
+  margin: 0 0 0.75rem 0;
+  letter-spacing: -0.02em;
+}
+
+.study-subtitle {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--sb-text-muted);
+  margin: 0 auto;
+  max-width: 620px;
+}
+
+/* ============================================================================
+   Curated Recommendations Section
+   ============================================================================ */
+
+.study-recommendations-section {
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, rgba(255, 249, 239, 0.8), rgba(248, 232, 236, 0.6));
+  border: 1px solid var(--sb-border-warm);
+  border-radius: var(--sb-radius-lg);
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 8px 24px rgba(98, 71, 82, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.study-recommendations-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 2rem;
+  width: 90px;
+  height: 14px;
+  background: rgba(241, 199, 91, 0.6);
+  transform: rotate(-1deg);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.study-recommendations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.study-recommendations-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--sb-text-primary);
+  margin: 0;
+}
+
+.study-recommendations-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sb-accent-sage-dark);
+  background: var(--sb-accent-sage);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
+
+.study-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.study-rec-card {
+  background: var(--sb-card-white);
+  border: 1px solid var(--sb-border-warm);
+  border-radius: var(--sb-radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 14px rgba(98, 71, 82, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  text-align: left;
+}
+
+.study-rec-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sb-shadow-hover);
+}
+
+.study-rec-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #794d07;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  align-self: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.study-rec-card-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--sb-text-primary);
+}
+
+.study-rec-card-author {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--sb-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.study-rec-card-rationale {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--sb-text-primary);
+  background: var(--sb-bg-ivory);
+  border-left: 3px solid var(--sb-accent-rose-deep);
+  padding: 0.6rem 0.75rem;
+  border-radius: 0 var(--sb-radius-sm) var(--sb-radius-sm) 0;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.study-rec-inspect-btn {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--sb-accent-rose-deep);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.study-rec-inspect-btn:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   Controls: Search & Genre Filter Bar
+   ============================================================================ */
+
+.study-controls {
+  margin-bottom: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.study-search-bar {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.study-search-input {
+  width: 100%;
+  padding: 0.85rem 2.8rem 0.85rem 2.8rem;
+  background: var(--sb-card-white);
+  border: 1.5px solid var(--sb-border-warm);
+  border-radius: 999px;
+  font-size: 1rem;
+  color: var(--sb-text-primary);
+  box-shadow: 0 4px 12px rgba(98, 71, 82, 0.05);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.study-search-input:focus {
+  outline: none;
+  border-color: var(--sb-accent-rose-deep);
+  box-shadow: 0 0 0 3px rgba(212, 121, 141, 0.2);
+}
+
+.study-search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.study-search-clear {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(98, 71, 82, 0.08);
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--sb-text-primary);
+}
+
+.study-search-clear:hover {
+  background: rgba(98, 71, 82, 0.16);
+}
+
+/* Genre Pill Navigation */
+.study-genre-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.study-genre-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: var(--sb-card-white);
+  color: var(--sb-text-primary);
+  border: 1px solid var(--sb-border-warm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.study-genre-pill:hover {
+  border-color: var(--sb-accent-rose-deep);
+  background: var(--sb-accent-rose);
+}
+
+.study-genre-pill.is-active {
+  background: var(--sb-accent-rose-deep);
+  color: #ffffff;
+  border-color: var(--sb-accent-rose-deep);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(212, 121, 141, 0.28);
+}
+
+.study-genre-pill-count {
+  font-size: 0.78rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.study-genre-pill.is-active .study-genre-pill-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* ============================================================================
+   Bookshelf Grid & Book Cards
+   ============================================================================ */
+
+.study-shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 2rem 1.5rem;
+  margin-top: 1rem;
+}
+
+/* 3D-styled Book Card */
+.study-book-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--sb-card-white);
+  border: 1px solid var(--sb-border-warm);
+  border-radius: var(--sb-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--sb-shadow-book);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease;
+  overflow: visible;
+  outline: none;
+}
+
+.study-book-card:hover {
+  transform: translateY(-8px) rotate(-0.5deg);
+  box-shadow: var(--sb-shadow-hover);
+}
+
+/* Book Cover Simulation */
+.study-book-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 4px 8px 8px 4px;
+  overflow: hidden;
+  box-shadow: -4px 6px 16px rgba(0, 0, 0, 0.25), inset 3px 0 6px rgba(255, 255, 255, 0.15);
+  margin-bottom: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem 1rem;
+  box-sizing: border-box;
+}
+
+/* Spine Crease on Left */
+.study-book-cover::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 18px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(0, 0, 0, 0.4) 65%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Layered Paper Edge on Right */
+.study-book-cover::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 0;
+  bottom: 4px;
+  width: 4px;
+  background: repeating-linear-gradient(
+    180deg,
+    #fbf4e6,
+    #fbf4e6 2px,
+    #eadbce 2px,
+    #eadbce 4px
+  );
+  box-shadow: -1px 0 2px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Bookmark Ribbon */
+.study-bookmark-ribbon {
+  position: absolute;
+  top: 0;
+  right: 1.25rem;
+  width: 14px;
+  height: 38px;
+  background: var(--sb-accent-rose-deep);
+  box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.25);
+  z-index: 3;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  transition: transform 0.2s ease;
+}
+
+.study-book-card:hover .study-bookmark-ribbon {
+  transform: translateY(4px);
+}
+
+.study-cover-top {
+  position: relative;
+  z-index: 1;
+}
+
+.study-cover-symbol {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.study-cover-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  margin: 0 0 0.35rem 0;
+}
+
+.study-cover-author {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.02em;
+}
+
+.study-cover-bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.study-cover-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.5rem;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  border-radius: 4px;
+}
+
+.study-cover-pages {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Card Bottom Metadata */
+.study-book-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.study-book-meta-header {
+  margin-bottom: 0.6rem;
+}
+
+.study-book-card-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--sb-text-primary);
+}
+
+.study-book-card-author {
+  font-size: 0.85rem;
+  color: var(--sb-text-muted);
+  margin: 0;
+}
+
+.study-book-synopsis {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--sb-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.study-book-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--sb-border-warm);
+  font-size: 0.82rem;
+}
+
+.study-book-tag {
+  color: var(--sb-accent-sage-dark);
+  font-weight: 600;
+}
+
+.study-book-cta {
+  color: var(--sb-accent-rose-deep);
+  font-weight: 600;
+}
+
+/* Empty State */
+.study-empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: var(--sb-card-white);
+  border: 1px dashed var(--sb-border-warm);
+  border-radius: var(--sb-radius-lg);
+  max-width: 500px;
+  margin: 2rem auto;
+}
+
+.study-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.study-empty-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--sb-text-primary);
+}
+
+.study-empty-desc {
+  font-size: 0.95rem;
+  color: var(--sb-text-muted);
+  margin: 0 0 1.25rem 0;
+}
+
+.study-empty-btn {
+  background: var(--sb-accent-rose);
+  color: var(--sb-accent-rose-deep);
+  border: 1px solid var(--sb-accent-rose-deep);
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ============================================================================
+   Book Detail Modal
+   ============================================================================ */
+
+.study-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(61, 43, 51, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.study-modal-content {
+  background: var(--sb-bg-ivory);
+  width: 100%;
+  max-width: 820px;
+  max-height: 90vh;
+  border-radius: var(--sb-radius-lg);
+  border: 1px solid var(--sb-border-warm);
+  box-shadow: var(--sb-shadow-modal);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: studyModalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes studyModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.study-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--sb-border-warm);
+  background: var(--sb-card-white);
+}
+
+.study-modal-genre-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sb-accent-rose-deep);
+  background: var(--sb-accent-rose);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+}
+
+.study-modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--sb-text-muted);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50%;
+  line-height: 1;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.study-modal-close-btn:hover {
+  color: var(--sb-text-primary);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.study-modal-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  padding: 1.75rem;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Modal Left: Book Cover Showcase */
+.study-modal-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.study-modal-cover-wrap {
+  width: 100%;
+  max-width: 220px;
+}
+
+.study-modal-meta-pills {
+  margin-top: 1rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.study-modal-pill {
+  font-size: 0.8rem;
+  color: var(--sb-text-primary);
+  background: var(--sb-card-white);
+  border: 1px solid var(--sb-border-warm);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--sb-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Modal Right: Details & Tabs */
+.study-modal-right {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.study-modal-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--sb-text-primary);
+  margin: 0 0 0.35rem 0;
+  line-height: 1.2;
+}
+
+.study-modal-author {
+  font-size: 1.05rem;
+  color: var(--sb-accent-rose-deep);
+  font-weight: 600;
+  margin: 0 0 1.25rem 0;
+}
+
+/* Editorial Rationale Note (Why Picked for Meerah) */
+.study-modal-rationale-box {
+  background: linear-gradient(135deg, #FFF9EF, #FBF4E6);
+  border: 1.5px solid #F1C75B;
+  border-radius: var(--sb-radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  box-shadow: 0 3px 10px rgba(241, 199, 91, 0.15);
+}
+
+.study-modal-rationale-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #92580c;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.study-modal-rationale-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--sb-text-primary);
+  margin: 0;
+  font-style: italic;
+}
+
+/* Tab Bar */
+.study-modal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--sb-border-warm);
+  margin-bottom: 1.25rem;
+}
+
+.study-modal-tab-btn {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--sb-text-muted);
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.study-modal-tab-btn:hover {
+  color: var(--sb-text-primary);
+}
+
+.study-modal-tab-btn.is-active {
+  color: var(--sb-accent-rose-deep);
+}
+
+.study-modal-tab-btn.is-active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--sb-accent-rose-deep);
+}
+
+/* Tab Content: About */
+.study-modal-desc {
+  font-size: 0.96rem;
+  line-height: 1.65;
+  color: var(--sb-text-primary);
+  margin: 0 0 1.25rem 0;
+}
+
+.study-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.study-detail-tag {
+  font-size: 0.78rem;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--sb-text-muted);
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--sb-border-warm);
+}
+
+/* Tab Content: Excerpt Reader */
+.study-excerpt-reader {
+  background: #FFFBF5;
+  border: 1px solid #EFE4D6;
+  border-radius: var(--sb-radius-md);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.02);
+  position: relative;
+}
+
+.study-excerpt-quote-mark {
+  font-family: Georgia, serif;
+  font-size: 3rem;
+  line-height: 0.8;
+  color: var(--sb-accent-sunflower);
+  opacity: 0.6;
+  margin-bottom: 0.5rem;
+  user-select: none;
+}
+
+.study-excerpt-body {
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--sb-text-primary);
+  white-space: pre-line;
+  margin: 0;
+}
+
+/* Reading Source Action & Honest Physical Library Badge */
+.study-source-container {
+  margin-top: auto;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--sb-border-warm);
+}
+
+.study-source-external-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--sb-accent-rose-deep);
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(212, 121, 141, 0.3);
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.study-source-external-btn:hover {
+  background: #bf667a;
+  transform: translateY(-2px);
+}
+
+.study-source-physical-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--sb-accent-sage);
+  border: 1px solid #c9d8c4;
+  border-radius: var(--sb-radius-md);
+  padding: 0.85rem 1rem;
+}
+
+.study-source-physical-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.study-source-physical-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--sb-accent-sage-dark);
+  margin: 0 0 0.15rem 0;
+}
+
+.study-source-physical-desc {
+  font-size: 0.82rem;
+  color: #4b6657;
+  margin: 0;
+}
+
+/* ============================================================================
+   Accessibility: Focus-Visible & Reduced Motion
+   ============================================================================ */
+
+:focus-visible {
+  outline: 2.5px solid var(--sb-accent-rose-deep) !important;
+  outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .study-book-card:hover,
+  .study-rec-card:hover,
+  .study-source-external-btn:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================================
+   Responsive Layout (Mobile-first polish)
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .study-container {
+    padding: 1.75rem 1rem 3rem 1rem;
+  }
+
+  .study-shelf-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem 1rem;
+  }
+
+  .study-modal-body {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .study-modal-left {
+    flex-direction: row;
+    gap: 1.25rem;
+    align-items: flex-start;
+  }
+
+  .study-modal-cover-wrap {
+    max-width: 130px;
+    flex-shrink: 0;
+  }
+
+  .study-modal-meta-pills {
+    margin-top: 0;
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .study-header {
+    margin-bottom: 1.75rem;
+  }
+
+  .study-genre-bar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .study-shelf-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .study-modal-left {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .study-modal-cover-wrap {
+    max-width: 160px;
+  }
+
+  .study-modal-meta-pills {
+    width: 100%;
+  }
+}
+
+
+/* ============================================================================
+   8 Reading Presentation Templates & Interactive Reader Styles
+   ============================================================================ */
+
+.study-modal-enhanced {
+  max-width: 960px;
+}
+
+.study-modal-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.study-modal-reading-time {
+  font-size: 0.8rem;
+  color: var(--sb-text-muted);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.study-bookmark-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(247, 168, 184, 0.4);
+  color: var(--color-primary, #F7A8B8);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.study-bookmark-btn:hover {
+  background: rgba(247, 168, 184, 0.15);
+  border-color: var(--color-primary, #F7A8B8);
+}
+
+.study-bookmark-btn.is-bookmarked {
+  background: var(--color-primary-strong, #F27A98);
+  color: #fff;
+  border-style: solid;
+}
+
+.study-bookmark-ribbon.is-bookmarked {
+  background: #E53935;
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.4);
+}
+
+.study-quotes-preview {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid var(--color-accent, #D4A47C);
+}
+
+.study-quotes-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: var(--color-accent, #D4A47C);
+}
+
+.study-quotes-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--color-text-secondary, #D9C3CE);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.study-quote-item {
+  margin-bottom: 0.4rem;
+  font-style: italic;
+}
+
+/* Reader container */
+.study-reader-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Templates selection pill bar */
+.study-templates-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.study-templates-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #A88D9B);
+  font-weight: 600;
+}
+
+.study-templates-list {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.study-template-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text-secondary, #D9C3CE);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.study-template-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(247, 168, 184, 0.4);
+}
+
+.study-template-chip.is-active {
+  background: var(--color-primary-strong, #F27A98);
+  color: #fff;
+  border-color: var(--color-primary-strong, #F27A98);
+  font-weight: 600;
+}
+
+/* Reader Toolbar: Chapter Controls, Chapter Picker & Font Sizing */
+.study-reader-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Chapter Controls */
+.study-chapter-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.study-chapter-nav-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-text-primary, #FFF5F7);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.study-chapter-nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-primary, #F7A8B8);
+}
+
+.study-chapter-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.study-chapter-indicator {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary, #F7A8B8);
+  white-space: nowrap;
+}
+
+/* Chapter Picker */
+.study-chapter-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.study-chapter-picker-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #A88D9B);
+}
+
+.study-chapter-select {
+  background: rgba(0, 0, 0, 0.4);
+  color: #FFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  max-width: 200px;
+}
+
+.study-chapter-select:focus {
+  outline: none;
+  border-color: var(--color-primary, #F7A8B8);
+}
+
+/* Font Sizing Controls */
+.study-font-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.study-font-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #A88D9B);
+}
+
+.study-font-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-text-primary, #FFF5F7);
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.study-font-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--color-primary, #F7A8B8);
+}
+
+.study-font-btn.is-active {
+  background: var(--color-primary-strong, #F27A98);
+  border-color: var(--color-primary-strong, #F27A98);
+  color: #FFF;
+}
+
+/* Font size adjustments in templates */
+.study-template-viewport.reader-font-sm {
+  font-size: 0.92rem;
+}
+
+.study-template-viewport.reader-font-sm p,
+.study-template-viewport.reader-font-sm blockquote,
+.study-template-viewport.reader-font-sm div {
+  font-size: 0.92rem !important;
+  line-height: 1.6 !important;
+}
+
+.study-template-viewport.reader-font-md {
+  font-size: 1.05rem;
+}
+
+.study-template-viewport.reader-font-lg {
+  font-size: 1.25rem;
+}
+
+.study-template-viewport.reader-font-lg p,
+.study-template-viewport.reader-font-lg blockquote,
+.study-template-viewport.reader-font-lg div {
+  font-size: 1.22rem !important;
+  line-height: 1.95 !important;
+}
+
+/* Viewport for Templates */
+.study-template-viewport {
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-height: 280px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* 1. Minimal */
+.template-minimal {
+  background: #FFFFFF;
+  color: #2D3748;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.reader-minimal-title {
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+  margin: 0 0 1rem 0;
+  color: #1A202C;
+}
+
+.reader-minimal-body {
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #2D3748;
+  white-space: pre-line;
+}
+
+/* 2. Romantic Journal */
+.template-romantic-journal {
+  background: #FAF5EB;
+  color: #4A3525;
+  border: 2px solid #E2D3B8;
+  box-shadow: inset 0 0 30px rgba(184, 134, 11, 0.08);
+}
+
+.romantic-journal-flourish {
+  text-align: center;
+  color: #B8860B;
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.romantic-journal-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.4rem;
+  text-align: center;
+  color: #632B3B;
+  margin: 0 0 1rem 0;
+}
+
+.romantic-journal-body {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.85;
+  margin: 0;
+  padding: 0 1rem;
+  white-space: pre-line;
+  font-style: normal;
+}
+
+.romantic-journal-footer {
+  margin-top: 1.25rem;
+  text-align: right;
+  font-style: italic;
+  color: #8C5362;
+  font-size: 0.95rem;
+}
+
+/* 3. Manga Panels */
+.template-manga-panels {
+  background: #111116;
+  color: #EEEEEE;
+  border: 2px solid #33333E;
+}
+
+.manga-panel-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 1rem;
+  letter-spacing: 0.1em;
+}
+
+.manga-panel-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.manga-panel {
+  border: 3px solid #FFFFFF;
+  background: #18181E;
+  padding: 1.25rem;
+  position: relative;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.manga-speech-bubble {
+  background: #FFFFFF;
+  color: #111;
+  padding: 1rem 1.25rem;
+  border-radius: 20px;
+  position: relative;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.manga-speaker {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #E53935;
+  margin-bottom: 0.35rem;
+}
+
+.manga-bubble-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.manga-action-burst {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #FFF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem;
+  border: 2px dashed #FFF;
+}
+
+/* 4. Anime Story */
+.template-anime-story {
+  background: linear-gradient(135deg, #1A173B, #2E193C);
+  color: #F8F4F9;
+  border: 1px solid rgba(247, 168, 184, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.anime-nameplate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(90deg, #F27A98, #9B51E0);
+  padding: 0.25rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #FFFFFF;
+  margin-bottom: 0.75rem;
+}
+
+.anime-scene-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  color: #FFD1DC;
+}
+
+.anime-dialogue-text {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  margin: 0 0 1rem 0;
+  white-space: pre-line;
+}
+
+.anime-voice-line {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-left: 3px solid #F7A8B8;
+  border-radius: 4px;
+  font-style: italic;
+  color: #FCEADE;
+}
+
+/* 5. Graphic Novel */
+.template-graphic-novel {
+  background: #FFFDF0;
+  color: #1A1A1A;
+  border: 4px solid #111111;
+  box-shadow: 6px 6px 0 #111111;
+}
+
+.graphic-novel-frame {
+  border: 3px solid #111;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  position: relative;
+  background: #FFFFFF;
+}
+
+.graphic-novel-frame.frame-red {
+  border-color: #D32F2F;
+}
+
+.graphic-novel-frame.frame-gold {
+  border-color: #F57F17;
+  background: #FFFDE7;
+}
+
+.graphic-sfx-badge {
+  display: inline-block;
+  background: #111;
+  color: #FFF;
+  font-weight: 900;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.1em;
+}
+
+.sfx-burst {
+  background: #F57F17;
+  color: #111;
+}
+
+.graphic-frame-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.graphic-frame-text {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.graphic-frame-quote {
+  margin: 0;
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* 6. Bookshelf */
+.template-bookshelf {
+  background: linear-gradient(180deg, #3D2619, #2A180E);
+  color: #FFF8E7;
+  border: 3px solid #5C3826;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.bookshelf-wood-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #D4A47C;
+  border-bottom: 1px solid rgba(212, 164, 124, 0.3);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.bookshelf-book-open {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+  background: #FDFBF7;
+  color: #332211;
+  padding: 1.25rem;
+  border-radius: 4px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.bookshelf-page-left {
+  border-right: 1px solid #D5C7B5;
+  padding-right: 1rem;
+}
+
+.bookshelf-page-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: #5C2434;
+}
+
+.bookshelf-page-author {
+  font-size: 0.85rem;
+  color: #665544;
+  margin: 0 0 1rem 0;
+}
+
+.bookshelf-chapter-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.15rem;
+  color: #332211;
+}
+
+.bookshelf-chapter-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+/* 7. Notes Workspace */
+.template-notes-workspace {
+  background: #1E1724;
+  color: #F0E6ED;
+  border: 1px solid rgba(247, 168, 184, 0.2);
+}
+
+.reader-view-notes-workspace {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.25rem;
+}
+
+.workspace-chapter-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.2rem;
+  color: var(--color-primary, #F7A8B8);
+}
+
+.workspace-chapter-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary, #D9C3CE);
+}
+
+.workspace-notes-heading {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  color: var(--color-accent, #D4A47C);
+}
+
+.workspace-add-note-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.workspace-note-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFF;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.workspace-note-submit {
+  background: var(--color-primary-strong, #F27A98);
+  border: none;
+  color: #FFF;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.workspace-notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.workspace-note-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  border-left: 2px solid var(--color-accent, #D4A47C);
+}
+
+.workspace-note-empty {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #A88D9B);
+  font-style: italic;
+}
+
+/* 8. Study Cards */
+.template-study-cards {
+  background: #17111D;
+  color: #FFF;
+  border: 1px solid rgba(247, 168, 184, 0.2);
+}
+
+.study-card-deck-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #A88D9B);
+}
+
+.study-flip-card {
+  perspective: 1000px;
+  min-height: 220px;
+  cursor: pointer;
+}
+
+.study-flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.study-flip-card.is-flipped .study-flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.study-flip-card-front,
+.study-flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.study-flip-card-front {
+  background: linear-gradient(135deg, #2A172D, #3D1C38);
+  border: 2px solid var(--color-primary, #F7A8B8);
+}
+
+.study-flip-card-back {
+  background: linear-gradient(135deg, #381E2E, #4A2828);
+  border: 2px solid var(--color-accent, #D4A47C);
+  transform: rotateY(180deg);
+}
+
+.study-card-kicker {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary, #F7A8B8);
+  margin-bottom: 0.5rem;
+}
+
+.study-card-front-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.study-card-front-prompt {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary, #D9C3CE);
+  margin: 0 0 1rem 0;
+}
+
+.study-card-tap-indicator {
+  font-size: 0.8rem;
+  color: var(--color-accent, #D4A47C);
+  font-weight: 600;
+}
+
+.study-card-back-text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #FFF;
+  margin: 0;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .reader-view-notes-workspace {
+    grid-template-columns: 1fr;
+  }
+  .bookshelf-book-open {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ============================================================================
+   Continue Reading Card
+   ============================================================================ */
+
+.study-continue-section {
+  max-width: 860px;
+  margin: 0 auto 2.5rem auto;
+}
+
+.study-continue-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, rgba(251, 244, 230, 0.95), rgba(248, 232, 236, 0.95));
+  border: 1.5px solid var(--sb-border-warm);
+  border-radius: var(--sb-radius-lg);
+  padding: 1.5rem 2rem;
+  box-shadow: 0 8px 24px rgba(98, 71, 82, 0.08);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.study-continue-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.study-continue-badge {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sb-accent-rose-deep);
+  margin-bottom: 0.35rem;
+}
+
+.study-continue-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--sb-text-primary);
+  margin: 0 0 0.25rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.study-continue-meta {
+  font-size: 0.9rem;
+  color: var(--sb-text-muted);
+  margin: 0 0 0.75rem 0;
+}
+
+.study-continue-bar-wrap {
+  width: 100%;
+  max-width: 320px;
+  height: 6px;
+  background: rgba(98, 71, 82, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+}
+
+.study-continue-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--sb-accent-rose-deep), var(--sb-accent-sunflower));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.study-continue-percent {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sb-text-muted);
+}
+
+.study-continue-resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--sb-text-primary);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.study-continue-resume-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(98, 71, 82, 0.25);
+  background: #4a343d;
+}
+
+@media (max-width: 640px) {
+  .study-continue-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.25rem;
+  }
+  .study-continue-resume-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* --- Secondary Template & Decorative Helpers --- */
+.reader-view-minimal,
+.reader-view-romantic-journal,
+.reader-view-manga,
+.reader-view-anime,
+.reader-view-graphic-novel,
+.reader-view-bookshelf,
+.reader-view-study-cards {
+  width: 100%;
+  position: relative;
+}
+
+/* Manga Elements */
+.manga-screentone-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(#1a1a24 1px, transparent 1px);
+  background-size: 8px 8px;
+  opacity: 0.12;
+  z-index: 0;
+}
+
+.manga-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  background: #1a1a24;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+}
+
+.manga-read-direction {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.manga-panel-large {
+  position: relative;
+  border: 3px solid #1a1a24;
+  padding: 1.25rem;
+  background: #ffffff;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  box-shadow: 4px 4px 0 #1a1a24;
+  z-index: 1;
+}
+
+.manga-panel-small {
+  border: 2px dashed #1a1a24;
+  padding: 0.85rem;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+/* Anime Story Elements */
+.anime-backdrop-glow {
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(247, 168, 184, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.anime-dialogue-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(247, 168, 184, 0.4);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+.anime-star {
+  display: inline-block;
+  margin-right: 0.35rem;
+  color: #e5a93b;
+}
+
+/* Bookshelf Elements */
+.bookshelf-spine-crease {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05));
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.bookshelf-wood-grain {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: #5d4037;
+  opacity: 0.25;
+}
+
+.bookshelf-ribbon-tag {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  background: #8c3b50;
+  color: #fff;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.bookshelf-page-right {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Notes Workspace Elements */
+.workspace-reading-column {
+  flex: 3;
+  min-width: 280px;
+}
+
+.workspace-notes-column {
+  flex: 2;
+  min-width: 220px;
+}
+
+.workspace-note-pin {
+  display: inline-block;
+  margin-right: 0.25rem;
+}
+
+/* Study Cards Nav Controls */
+.study-card-nav-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.study-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text-primary, #FFF5F7);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.study-nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--sb-accent-rose-deep, #D4798D);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.study-nav-btn-primary {
+  background: var(--sb-accent-rose-deep, #D4798D);
+  border-color: var(--sb-accent-rose-deep, #D4798D);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(212, 121, 141, 0.3);
+}
+
+.study-nav-btn-primary:hover:not(:disabled) {
+  background: #C3687C;
+  border-color: #C3687C;
+  box-shadow: 0 4px 12px rgba(212, 121, 141, 0.4);
+}
+
+.study-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.study-nav-btn:focus-visible {
+  outline: 2px solid var(--sb-accent-sunflower, #F1C75B);
+  outline-offset: 2px;
+}
+
+.study-deck-counter {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--sb-accent-rose-deep);
+}
+
+.study-card-hint {
+  font-size: 0.8rem;
+  color: var(--sb-text-muted);
+}

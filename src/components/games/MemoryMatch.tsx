@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 
 const SYMBOLS = ["🌷","🎂","✿","🎁","♡","🌙","☀","🦋","🌸","💌","🎵","🌺"];
 
@@ -19,7 +19,12 @@ function buildDeck(count = 6): Tile[] {
   return shuffle([...symbols, ...symbols].map((symbol, id) => ({ id, symbol, flipped: false, matched: false })));
 }
 
-export function MemoryMatch() {
+export interface MemoryMatchProps {
+  onComplete?: () => void;
+  onRestart?: () => void;
+}
+
+export function MemoryMatch({ onComplete, onRestart }: MemoryMatchProps = {}) {
   const [tiles, setTiles] = useState<Tile[]>(() => buildDeck(6));
   const [flipped, setFlipped] = useState<number[]>([]);
   const [locked, setLocked] = useState(false);
@@ -29,12 +34,19 @@ export function MemoryMatch() {
   const matched = tiles.filter(t => t.matched).length / 2;
   const total = tiles.length / 2;
 
+  useEffect(() => {
+    if (won) {
+      onComplete?.();
+    }
+  }, [won, onComplete]);
+
   const reset = useCallback(() => {
     setTiles(buildDeck(6));
     setFlipped([]);
     setLocked(false);
     setMoves(0);
-  }, []);
+    onRestart?.();
+  }, [onRestart]);
 
   function flip(id: number) {
     if (locked) return;

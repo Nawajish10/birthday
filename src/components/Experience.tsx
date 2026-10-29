@@ -3,14 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { Card, Post, Story, Game } from "@/lib/types";
-import { GiftGrid } from "./gifts/GiftGrid";
 import { EternalusVault } from "./eternalus/EternalusVault";
+import { ProfilePanel } from "./profile/ProfilePanel";
+import { MemoriesPanel } from "./memories/MemoriesPanel";
+import { HeroSection } from "./landing/HeroSection";
+import { ScrapbookCardWall, type ScrapbookDestination } from "./landing/ScrapbookCardWall";
+import { LandingMusicCard } from "./landing/LandingMusicCard";
+import { StoryDestinationCards } from "./landing/StoryDestinationCards";
+import { StudyPanel } from "./study/StudyPanel";
+import { GamesPanel } from "./games/GamesPanel";
+import { VideoPanel } from "./video/VideoPanel";
+import { ChatPanel } from "./chat/ChatPanel";
+import { MusicRoom } from "./music/MusicRoom";
 
 const BookCanvas = dynamic(() => import("./book/BookCanvas").then(mod => mod.BookCanvas), { ssr: false });
 
 type Payload = { cards: Card[]; posts: (Post & { url: string })[]; stories: (Story & { url: string })[]; games: Game[] };
-type Tab = "home" | "profile" | "stories" | "chat" | "games" | "songs" | "eternalus";
-type ProfileMode = "posts" | "reels" | "favorites";
+type Tab = "home" | "profile" | "stories" | "songs" | "study" | "games" | "chat" | "eternalus";
 type MusicTrack = { id: string; title: string; artist: string; media_path: string; duration_seconds: number | null; sort_order: number; url: string };
 type MusicPlaylist = { id: string; name: string; created_by: string; tracks: MusicTrack[] };
 type BookPage = { id: string; title: string; accent: string; body: string; urdu?: string; type: "note" | "photo" | "gallery" | "video" | "song"; url?: string; poster?: string; images?: { url: string; caption: string; kind: "image" | "video" }[]; caption?: string };
@@ -99,95 +108,38 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
   const [tab, setTab] = useState<Tab>("home");
   const [data, setData] = useState<Payload>({ cards: [], posts: [], stories: [], games: [] });
   const [loading, setLoading] = useState(unlocked);
-  const [chat, setChat] = useState<{ role: string; text: string }[]>([
-    { role: "Noah", text: "Hi Meerah! I’m Noah, your AI birthday guide. I can help you explore the birthday pages or find a creator-approved note." }
-  ]);
-  const [creatorMode, setCreatorMode] = useState(false);
-  const [creatorMessages, setCreatorMessages] = useState<{ id: string; sender: string; body: string; created_at: string }[]>([]);
-  const [msg, setMsg] = useState("");
-  const [slide, setSlide] = useState(0);
   const [bookPage, setBookPage] = useState(0);
   const [bookView, setBookView] = useState<0 | 45 | 90>(0);
   const [turning, setTurning] = useState<"next" | "prev" | null>(null);
-  const [profileMode, setProfileMode] = useState<ProfileMode>("posts");
   const [favorites, setFavorites] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(localStorage.getItem("birthday-favorites") || "[]");
+      const stored = localStorage.getItem("birthday-favorites") || localStorage.getItem("birthday_favorites") || "[]";
+      return JSON.parse(stored);
     } catch {
       return [];
     }
   });
-  const [capture, setCapture] = useState<string | undefined>();
   const [selected, setSelected] = useState<{ url: string; caption: string; kind?: string } | null>(null);
-  const [gameReveal, setGameReveal] = useState(false);
   const [useWebGLBook, setUseWebGLBook] = useState(true);
+  const [showFullBook, setShowFullBook] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
   const playerRef = useRef<HTMLAudioElement | null>(null);
   const [musicData, setMusicData] = useState<{ tracks: MusicTrack[]; playlists: MusicPlaylist[] }>({ tracks: [], playlists: [] });
-  const [playlistName, setPlaylistName] = useState("");
-  const [playlistId, setPlaylistId] = useState("");
   const [activeTrack, setActiveTrack] = useState<MusicTrack | null>(null);
   const [musicPlaying, setMusicPlaying] = useState(false);
-  const [musicNotice, setMusicNotice] = useState("");
 
   useEffect(() => {
-    if (open && tab === "songs") {
+    if (open && (tab === "songs" || tab === "home")) {
       fetch("/api/music")
         .then(async r => {
           const d = await r.json().catch(() => ({}));
-          if (!r.ok) throw new Error(d.error || "Could not load songs.");
-          setMusicData(d);
-          if (d.playlists?.[0]) setPlaylistId(curr => curr || d.playlists[0].id);
+          if (r.ok) setMusicData(d);
         })
-        .catch(e => setMusicNotice(e.message));
+        .catch(() => {});
     }
   }, [open, tab]);
-
-  const selectedPlaylist = musicData.playlists.find(p => p.id === playlistId);
-
-  async function musicAction(payload: Record<string, string>) {
-    setMusicNotice("");
-    const r = await fetch("/api/music", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      setMusicNotice(d.error || "Music update failed.");
-      return false;
-    }
-    const updated = await fetch("/api/music").then(x => x.json()).catch(() => null);
-    if (updated?.playlists) {
-      setMusicData(updated);
-      if (updated.playlists[0]) setPlaylistId(curr => curr || updated.playlists[0].id);
-    }
-    return true;
-  }
-
-  async function createPlaylist(e: React.FormEvent) {
-    e.preventDefault();
-    const name = playlistName.trim();
-    if (!name) return;
-    if (await musicAction({ action: "create_playlist", name })) {
-      setPlaylistName("");
-      const d = await fetch("/api/music").then(r => r.json()).catch(() => null);
-      if (d?.playlists) {
-        setMusicData(d);
-        const created = d.playlists.find((p: MusicPlaylist) => p.name === name);
-        if (created) setPlaylistId(created.id);
-      }
-    }
-  }
-
-  async function addSong(trackId: string) {
-    if (!playlistId) {
-      setMusicNotice("Create or choose a playlist first.");
-      return;
-    }
-    await musicAction({ action: "add_track", playlist_id: playlistId, track_id: trackId });
-  }
-
-  async function removeSong(trackId: string) {
-    await musicAction({ action: "remove_track", playlist_id: playlistId, track_id: trackId });
-  }
 
   function playTrack(track: MusicTrack) {
     setActiveTrack(track);
@@ -201,6 +153,10 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
   function togglePlayer() {
     const audio = playerRef.current;
     if (!audio) return;
+    if (!activeTrack && musicData.tracks.length > 0) {
+      playTrack(musicData.tracks[0]);
+      return;
+    }
     if (audio.paused) audio.play().then(() => setMusicPlaying(true)).catch(() => setMusicPlaying(false));
     else {
       audio.pause();
@@ -208,12 +164,13 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
     }
   }
 
-  const visiblePosts = data.posts.filter(p => profileMode === "reels" ? p.media_kind === "video" : profileMode === "favorites" ? favorites.includes(p.id) : p.media_kind !== "video");
-
   function toggleFavorite(id: string) {
     setFavorites(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      localStorage.setItem("birthday-favorites", JSON.stringify(next));
+      try {
+        localStorage.setItem("birthday-favorites", JSON.stringify(next));
+        localStorage.setItem("birthday_favorites", JSON.stringify(next));
+      } catch {}
       return next;
     });
   }
@@ -271,21 +228,6 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
     };
   }, [open]);
 
-  useEffect(() => {
-    if (open && tab === "chat" && creatorMode) {
-      let ignore = false;
-      fetch("/api/creator-messages")
-        .then(r => (r.ok ? r.json() : null))
-        .then(d => {
-          if (!ignore && d) setCreatorMessages(d.messages ?? []);
-        })
-        .catch(() => {});
-      return () => {
-        ignore = true;
-      };
-    }
-  }, [open, tab, creatorMode]);
-
   async function unlock(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -297,66 +239,6 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
       const d = await r.json().catch(() => ({}));
       setError(d.error || "That code did not work.");
     }
-  }
-
-  async function sendChat(e: React.FormEvent) {
-    e.preventDefault();
-    const text = msg.trim();
-    if (!text) return;
-    setMsg("");
-    if (creatorMode) {
-      const r = await fetch("/api/creator-messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: text }) });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok) setCreatorMessages(m => [...m, d.message]);
-      else setError(d.error || "Could not send your message.");
-      return;
-    }
-    setChat(c => [...c, { role: "You", text }]);
-    const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text }) });
-    const d = await r.json().catch(() => ({}));
-    setChat(c => [...c, { role: "Noah", text: d.reply || d.error || "I couldn’t answer right now." }]);
-  }
-
-  async function addCaptureToProfile() {
-    if (!capture) return;
-    setError("");
-    const blob = await fetch(capture).then(r => r.blob());
-    const body = new FormData();
-    body.set("file", blob, "birthday-memory.jpg");
-    body.set("caption", "A new birthday memory");
-    const r = await fetch("/api/captures", { method: "POST", body });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      setError(d.error || "Could not add this photo.");
-      return;
-    }
-    setData(v => ({ ...v, posts: [d.post, ...v.posts] }));
-    setTab("profile");
-    setCapture(undefined);
-  }
-
-  async function openCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-      const video = document.querySelector("video#capture") as HTMLVideoElement | null;
-      if (video) {
-        video.srcObject = stream;
-        await video.play();
-      }
-    } catch {
-      setError("Camera permission was not granted or a camera is unavailable. You can still view the birthday stories.");
-    }
-  }
-
-  function takePhoto() {
-    const v = document.querySelector("video#capture") as HTMLVideoElement | null;
-    if (!v) return;
-    const c = document.createElement("canvas");
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-    c.getContext("2d")?.drawImage(v, 0, 0);
-    setCapture(c.toDataURL("image/jpeg", 0.88));
-    (v.srcObject as MediaStream | null)?.getTracks().forEach(t => t.stop());
   }
 
   if (open && !welcomeDone) return <WelcomeCard onContinue={() => setWelcomeDone(true)} photo={data.posts.find(post => post.media_kind === "image")?.url} />;
@@ -453,7 +335,7 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
   );
 
   return (
-    <main className="shell">
+    <main className="shell" data-theme="love">
       <header className="appheader">
         <a className="wordmark" onClick={() => setTab("home")}>Meerah <span>✿</span></a>
         <div className="headernote">a little world for you</div>
@@ -465,310 +347,168 @@ export function Experience({ unlocked }: { unlocked: boolean }) {
         <Avatar />
       </div>
       <nav className="tabs" aria-label="Birthday sections">
-        {([["home", "⌂", "Home"], ["profile", "▦", "Profile"], ["stories", "◎", "Memories"], ["songs", "♫", "Songs"], ["chat", "☏", "Chat"], ["games", "♧", "Gifts"]] as [Tab, string, string][]).map(([id, icon, label]) => (
+        {([["home", "⌂", "Home"], ["stories", "◎", "Memories"], ["profile", "▦", "Profile"], ["songs", "♫", "Songs"], ["study", "📖", "Study"], ["games", "🎮", "Games"], ["chat", "☏", "Chat"]] as [Tab, string, string][]).map(([id, icon, label]) => (
           <button key={id} className={tab === id ? "selected" : ""} onClick={() => setTab(id)}><b>{icon}</b>{label}</button>
         ))}
       </nav>
       <section className="content">
         {tab === "home" && (
-          <>
-            <div className="sectionhead bookHeading">
-              <div>
-                <span className="kicker">Your birthday book · تمہاری سالگرہ</span>
-                <h2>For my <i>baba</i></h2>
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <button type="button" className="button secondary" style={{ padding: "5px 12px", fontSize: "10px" }} onClick={() => setUseWebGLBook(v => !v)}>
-                  {useWebGLBook ? "Classic Book ▦" : "3D Book View ✿"}
+          showFullBook ? (
+            <>
+              <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => setShowFullBook(false)}
+                  style={{ display: "inline-flex", gap: "6px", alignItems: "center", fontSize: "12px" }}
+                >
+                  <span aria-hidden="true">←</span>
+                  <span>Back to Scrapbook Landing Page</span>
                 </button>
-                <span className="chip" aria-live="polite">
-                  {String(activeBookPage + 1).padStart(2, "0")} / {String(bookPages.length).padStart(2, "0")}
-                </span>
-              </div>
-            </div>
-            {useWebGLBook ? (
-              <BookCanvas pages={bookPages.map((p, idx) => ({ id: p.id, type: p.type, title: p.title, accent: p.accent, body: p.body, urdu: p.urdu, pageNumber: idx + 1 }))} currentPage={activeBookPage} onPageChange={setBookPage} cssFallback={cssBookSpread} />
-            ) : (
-              cssBookSpread
-            )}
-            <section className="soundtrack">
-              <div>
-                <span className="kicker">Songs we love · ہمارا گیت</span>
-                <h3>Your shared birthday playlist</h3>
-                <p>Make a playlist together, add a song, and keep the music close.</p>
-              </div>
-              <button className="button secondary" onClick={() => setTab("songs")}>Open the songbook ♫</button>
-            </section>
-            <section className="greetingClips">
-              <div className="sectionhead">
-                <div>
-                  <span className="kicker">Birthday wishes, on video</span>
-                  <h2>Little birthday hellos</h2>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button type="button" className="button secondary" style={{ padding: "5px 12px", fontSize: "10px" }} onClick={() => setUseWebGLBook(v => !v)}>
+                    {useWebGLBook ? "Classic Book ▦" : "3D Book View ✿"}
+                  </button>
+                  <span className="chip" aria-live="polite">
+                    {String(activeBookPage + 1).padStart(2, "0")} / {String(bookPages.length).padStart(2, "0")}
+                  </span>
                 </div>
-                <span className="chip">3 video spots</span>
               </div>
-              {data.stories.filter(x => x.media_kind === "video").slice(0, 3).map(v => (
-                <article className="greetingClip" key={v.id}>
-                  <video controls playsInline preload="metadata" src={v.url} />
-                  <p>{v.caption || "Happy birthday, Honey!"}</p>
-                </article>
-              ))}
-              {data.stories.filter(x => x.media_kind === "video").length === 0 && (
-                <p className="clipHint">Add up to three greeting videos under Creator → Memories. The birthday page will show them here.</p>
+              <div className="sectionhead bookHeading">
+                <div>
+                  <span className="kicker">Your birthday book · تمہاری سالگرہ</span>
+                  <h2>For my <i>baba</i></h2>
+                </div>
+              </div>
+              {useWebGLBook ? (
+                <BookCanvas pages={bookPages.map((p, idx) => ({ id: p.id, type: p.type, title: p.title, accent: p.accent, body: p.body, urdu: p.urdu, pageNumber: idx + 1 }))} currentPage={activeBookPage} onPageChange={setBookPage} cssFallback={cssBookSpread} />
+              ) : (
+                cssBookSpread
               )}
-            </section>
-          </>
+            </>
+          ) : (
+            <>
+              {/* Section 1: Welcome Hero */}
+              <HeroSection
+                recipientName="Meerah"
+                birthdayDate="October 30"
+                onOpenWorld={() => {
+                  const el = document.getElementById("scrapbook-card-wall");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+              />
+
+              {/* Section 2: Interactive Scrapbook Card Wall */}
+              <div style={{ marginTop: "32px" }}>
+                <ScrapbookCardWall
+                  onSelectDestination={(dest: ScrapbookDestination) => {
+                    if (dest === "birthday-book") {
+                      setShowFullBook(true);
+                    } else if (dest === "letter") {
+                      const idx = bookPages.findIndex(p => p.id === "letter");
+                      setBookPage(idx >= 0 ? idx : 0);
+                      setShowFullBook(true);
+                    } else if (dest === "songs") {
+                      setTab("songs");
+                    } else if (dest === "our-memories" || dest === "camera") {
+                      setTab("stories");
+                    } else if (dest === "study") {
+                      setTab("study");
+                    } else if (dest === "games") {
+                      setTab("games");
+                    } else if (dest === "video") {
+                      setShowVideoModal(true);
+                    }
+                  }}
+                  unlockedSurprisesCount={data.games.length}
+                  favoriteSongsCount={favorites.length}
+                />
+              </div>
+
+              {/* Section 3: Prominent Music Card */}
+              <div style={{ marginTop: "36px" }}>
+                <LandingMusicCard
+                  tracks={musicData.tracks.map(t => ({ id: t.id, title: t.title, artist: t.artist, url: t.url }))}
+                  activeTrack={activeTrack ? { id: activeTrack.id, title: activeTrack.title, artist: activeTrack.artist, url: activeTrack.url } : null}
+                  isPlaying={musicPlaying}
+                  onTogglePlay={togglePlayer}
+                  onPlayTrack={(track) => {
+                    const full = musicData.tracks.find(t => t.id === track.id);
+                    if (full) playTrack(full);
+                  }}
+                  onOpenSongbook={() => setTab("songs")}
+                  personalNote="A song for every memory we've made so far..."
+                />
+              </div>
+
+              {/* Section 4 & 5: Story Destination Cards (Book Entry & Memories Preview) */}
+              <div style={{ marginTop: "36px" }}>
+                <StoryDestinationCards
+                  onOpenBook={() => setShowFullBook(true)}
+                  onOpenMemories={() => setTab("stories")}
+                  onSelectPhoto={(photo) => setSelected(photo)}
+                  memories={data.posts.map(p => ({
+                    id: p.id,
+                    url: p.url,
+                    caption: p.caption,
+                    alt_text: p.alt_text,
+                    media_kind: p.media_kind,
+                  }))}
+                  totalPagesCount={bookPages.length}
+                  loading={loading}
+                />
+              </div>
+            </>
+          )
         )}
         {tab === "profile" && (
-          <>
-            <div className="profile">
-              <div className="avatar">✿</div>
-              <div>
-                <h2>Meerah</h2>
-                <p>birthday girl · main character today</p>
-              </div>
-            </div>
-            <div className="profilecounts">
-              <span><b>{data.posts.length}</b> little moments</span>
-              <span><b>05</b> birthday pages</span>
-              <span><b>{favorites.length}</b> favourites</span>
-            </div>
-            <div className="profileModes">
-              {([["posts", "▦", "Posts"], ["reels", "▶", "Reels"], ["favorites", "♡", "Favorites"]] as [ProfileMode, string, string][]).map(([id, icon, label]) => (
-                <button key={id} className={profileMode === id ? "active" : ""} onClick={() => setProfileMode(id)}><span>{icon}</span>{label}</button>
-              ))}
-            </div>
-            <div className="gallery">
-              {loading && <p>Loading your photos…</p>}
-              {visiblePosts.map(p => (
-                <div key={p.id} className="mediaTile">
-                  <button className="photoTile" onClick={() => setSelected({ url: p.url, caption: p.caption, kind: p.media_kind })}>
-                    {p.media_kind === "video" ? <video src={p.url} muted playsInline /> : <img src={p.url} alt={p.alt_text || p.caption} />}
-                    <span className="tileCaption">{p.media_kind === "video" ? "▶" : ""}</span>
-                  </button>
-                  <button className={`favoriteToggle ${favorites.includes(p.id) ? "isFavorite" : ""}`} aria-label={favorites.includes(p.id) ? "Remove from favorites" : "Add to favorites"} onClick={() => toggleFavorite(p.id)}>
-                    {favorites.includes(p.id) ? "♥" : "♡"}
-                  </button>
-                </div>
-              ))}
-              {!loading && !visiblePosts.length && (
-                <p className="empty">
-                  {profileMode === "favorites" ? "Tap the heart on a post or reel to save it here." : profileMode === "reels" ? "No reels yet. Add videos in the creator workspace." : "Your birthday photos will appear here once the creator adds them."}
-                </p>
-              )}
-            </div>
-            <section className="eternalusProfileLink">
-              <div>
-                <span className="kicker">A private chapter</span>
-                <h3>Eternalus ♡</h3>
-                <p>Your private album stays tucked away here.</p>
-              </div>
-              <button className="button secondary" onClick={() => setTab("eternalus")}>Open private folder →</button>
-            </section>
-          </>
+          <ProfilePanel
+            posts={data.posts}
+            loading={loading}
+            favorites={favorites}
+            onToggleFavorite={toggleFavorite}
+            onSelectMedia={setSelected}
+            onOpenEternalus={() => setTab("eternalus")}
+            recipientName="Meerah"
+          />
         )}
         {tab === "songs" && (
-          <>
-            <div className="sectionhead">
-              <div>
-                <span className="kicker">Songs we love · ہمارا گیت</span>
-                <h2>Our little songbook</h2>
-              </div>
-              <span className="chip">{musicData.tracks.length} songs</span>
-            </div>
-            <p className="musicIntro">A shared playlist for songs that feel like us. Choose a song to play, or add it to a playlist to save it for later.</p>
-            <div className="musicWorkspace">
-              <section className="musicPanel">
-                <div className="sectionhead">
-                  <div>
-                    <span className="kicker">Your collection</span>
-                    <h3>Playlists</h3>
-                  </div>
-                </div>
-                <form className="playlistCreate" onSubmit={createPlaylist}>
-                  <input value={playlistName} maxLength={60} onChange={e => setPlaylistName(e.target.value)} placeholder="Name a new playlist" aria-label="Name a new playlist" required />
-                  <button className="button rose">Create</button>
-                </form>
-                <label className="playlistSelectLabel">
-                  Current playlist
-                  <select value={playlistId} onChange={e => setPlaylistId(e.target.value)}>
-                    <option value="">Choose a playlist</option>
-                    {musicData.playlists.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </label>
-                {selectedPlaylist ? (
-                  <div className="playlistTracks">
-                    {selectedPlaylist.tracks.map((track, i) => (
-                      <div className="trackRow" key={track.id}>
-                        <button className="trackPlay" onClick={() => playTrack(track)} aria-label={`Play ${track.title}`}>{activeTrack?.id === track.id && musicPlaying ? "♫" : "▶"}</button>
-                        <div className="trackDetails">
-                          <b>{String(i + 1).padStart(2, "0")} · {track.title}</b>
-                          <small>{track.artist || "A song for this little world"}</small>
-                        </div>
-                        <button className="removeTrack" onClick={() => void removeSong(track.id)} aria-label={`Remove ${track.title} from playlist`}>×</button>
-                      </div>
-                    ))}
-                    {!selectedPlaylist.tracks.length && <p className="empty">Add a song from the library to start this playlist.</p>}
-                  </div>
-                ) : (
-                  <p className="empty">Create or select a playlist to see its songs.</p>
-                )}
-              </section>
-              <section className="musicPanel">
-                <div className="sectionhead">
-                  <div>
-                    <span className="kicker">Creator-added music</span>
-                    <h3>Song library</h3>
-                  </div>
-                </div>
-                {musicData.tracks.map(track => (
-                  <div className="trackRow libraryTrack" key={track.id}>
-                    <button className="trackPlay" onClick={() => playTrack(track)} aria-label={`Play ${track.title}`}>{activeTrack?.id === track.id && musicPlaying ? "♫" : "▶"}</button>
-                    <button className="trackDetails trackTitleButton" onClick={() => playTrack(track)}>
-                      <b>{track.title}</b>
-                      <small>{track.artist || "Birthday soundtrack"}</small>
-                    </button>
-                    <button className="button secondary addTrack" onClick={() => void addSong(track.id)}>+ Add</button>
-                  </div>
-                ))}
-                {!musicData.tracks.length && !musicNotice && (
-                  <p className="empty">The song library is waiting for the creator to add music in Creator → Songs.</p>
-                )}
-              </section>
-            </div>
-            {musicNotice && (
-              <div className={musicNotice.includes("migration") ? "privacyline" : "error"}>
-                {musicNotice}
-                {musicNotice.includes("migration") && <> Open <Link href="/admin">Creator workspace</Link> after applying the songs migration.</>}
-              </div>
-            )}
-            <section className="nowPlaying">
-              <audio className="audioElement" ref={playerRef} onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} onEnded={() => setMusicPlaying(false)} />
-              <button className="nowPlayButton" disabled={!activeTrack} onClick={togglePlayer}>{musicPlaying ? "Ⅱ" : "▶"}</button>
-              <div className="nowPlayDetails">
-                <small>NOW PLAYING</small>
-                <b>{activeTrack?.title || "Pick a song to begin"}</b>
-                <span>{activeTrack?.artist || "Your song will play here"}</span>
-              </div>
-              {activeTrack && <span className="nowPlayNote">♫</span>}
-            </section>
-          </>
+          <MusicRoom externalAudioRef={playerRef} />
         )}
         {tab === "stories" && (
-          <>
-            <div className="sectionhead">
-              <div>
-                <span className="kicker">A day in your world</span>
-                <h2>Memories & camera</h2>
-              </div>
-              <span className="chip">{data.stories.length ? `${slide % data.stories.length + 1} / ${data.stories.length}` : "Your memories"}</span>
-            </div>
-            {data.stories.length > 0 ? (
-              <article className="story" onClick={() => setSlide(s => s + 1)}>
-                {data.stories[slide % data.stories.length].media_kind === "video" ? (
-                  <video src={data.stories[slide % data.stories.length].url} controls playsInline preload="metadata" poster={data.posts.find(post => post.media_kind === "image")?.url || undefined} />
-                ) : (
-                  <img src={data.stories[slide % data.stories.length].url} alt="" />
-                )}
-                <div className="storycaption">
-                  {data.stories[slide % data.stories.length].caption}
-                  <small>Tap for next →</small>
-                </div>
-              </article>
-            ) : (
-              <p className="empty">Your preloaded birthday memories will appear here.</p>
-            )}
-            <div className="cameraBox">
-              <h3>Make a new little memory</h3>
-              <p>Captures stay on this device until you choose “Add to profile.” Adding one uploads it to the birthday profile for this experience.</p>
-              {capture ? (
-                <>
-                  <img className="captured" src={capture} alt="Your captured moment" />
-                  <div className="actions">
-                    <button className="button secondary" onClick={() => setCapture(undefined)}>Retake</button>
-                    <a className="button secondary" download="meera-birthday-memory.jpg" href={capture}>Save to device</a>
-                    <button className="button rose" onClick={addCaptureToProfile}>Add to profile</button>
-                  </div>
-                  {error && <div className="error">{error}</div>}
-                </>
-              ) : (
-                <>
-                  <video id="capture" playsInline muted />
-                  <div className="actions">
-                    <button className="button secondary" onClick={openCamera}>Open camera</button>
-                    <button className="button rose" onClick={takePhoto}>Take photo</button>
-                    <label className="button secondary filepick">Choose photo<input type="file" accept="image/*" capture="user" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => setCapture(String(r.result)); r.readAsDataURL(f); } }} /></label>
-                  </div>
-                </>
-              )}
-            </div>
-          </>
+          <MemoriesPanel
+            externalAudioRef={playerRef}
+            onNavigateToProfile={() => setTab("profile")}
+          />
         )}
         {tab === "chat" && (
-          <>
-            <div className="sectionhead">
-              <div>
-                <span className="kicker">A little help or a hello</span>
-                <h2>{creatorMode ? "Chat with the creator" : "Chat with Noah"}</h2>
-              </div>
-              <button className="button secondary" onClick={() => setCreatorMode(v => !v)}>{creatorMode ? "Switch to Noah" : "Message the creator"}</button>
-            </div>
-            {!creatorMode && (
-              <p className="privacyline">Noah is an AI birthday guide. He uses only creator-approved birthday notes and cannot see camera captures or Eternalus.</p>
-            )}
-            <div className="chatlog">
-              {creatorMode ? creatorMessages.map(m => (
-                <div key={m.id} className={`bubble ${m.sender === "recipient" ? "mine" : "theirs"}`}>
-                  <b>{m.sender === "recipient" ? "You" : "Creator"}</b>
-                  <p>{m.body}</p>
-                </div>
-              )) : chat.map((m, i) => (
-                <div key={i} className={`bubble ${m.role === "You" ? "mine" : "theirs"}`}>
-                  <b>{m.role}</b>
-                  <p>{m.text}</p>
-                </div>
-              ))}
-            </div>
-            <form className="chatform" onSubmit={sendChat}>
-              <input value={msg} maxLength={1000} onChange={e => setMsg(e.target.value)} placeholder={creatorMode ? "Write to the creator…" : "Message Noah…"} />
-              <button className="button">Send</button>
-            </form>
-            {creatorMode && <div className="privacyline">Messages are stored so the creator can reply. Don’t include anything you don’t want shared.</div>}
-          </>
+          <ChatPanel />
         )}
         {tab === "games" && (
-          <>
-            <GiftGrid />
-            <div style={{ marginTop: "36px", paddingTop: "24px", borderTop: "1px solid var(--line)" }}>
-              <div className="sectionhead">
-                <div>
-                  <span className="kicker">Play a little · چھوٹی سی گیم</span>
-                  <h2>{data.games[0]?.title || "Find the birthday star"}</h2>
-                </div>
-                <span className="chip">Bonus Reveal</span>
-              </div>
-              <p>{data.games[0]?.instructions || "Tap a square. Maybe a tiny surprise is hiding there."}</p>
-              <div className="gamegrid">
-                {["✿", "♡", "☀", "🎁", "✧", "🌷", "✿", "☁", "♡"].map((v, i) => (
-                  <button key={i} onClick={() => setGameReveal(true)} aria-label="Reveal square">{gameReveal ? v : "?"}</button>
-                ))}
-              </div>
-              {gameReveal && (
-                <div className="reward">
-                  <span>🎁</span>
-                  <h3>A little birthday note</h3>
-                  <p>{data.games[0]?.reward_text || "Ordinary days feel golden because you are in them. Happy birthday, baba."}</p>
-                </div>
-              )}
-              <button className="button secondary" onClick={() => setGameReveal(true)}>Skip game · show the note</button>
-            </div>
-          </>
+          <GamesPanel />
+        )}
+        {tab === "study" && (
+          <StudyPanel
+            onOpenBook={() => {
+              setTab("home");
+              setShowFullBook(true);
+            }}
+          />
         )}
         {tab === "eternalus" && <EternalusVault onSelectPhoto={p => setSelected({ url: p.url, caption: p.caption, kind: "image" })} />}
       </section>
+      {/* Persistent Audio Engine for Home & Songs Tabs */}
+      <audio
+        className="audioElement"
+        ref={playerRef}
+        onPlay={() => setMusicPlaying(true)}
+        onPause={() => setMusicPlaying(false)}
+        onEnded={() => setMusicPlaying(false)}
+      />
       <footer>Made with love · Built for Meerah · <Link href="/admin">Creator workspace</Link></footer>
+      {showVideoModal && (
+        <VideoPanel isModal={true} onClose={() => setShowVideoModal(false)} />
+      )}
       {selected && (
         <div className="modal" role="dialog" aria-modal="true" onClick={() => setSelected(null)}>
           <button className="close">×</button>

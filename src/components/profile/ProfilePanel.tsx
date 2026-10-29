@@ -1,0 +1,1249 @@
+"use client";
+
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { calculateAge, calculateNextBirthdayCountdown } from "../../lib/birthday-dates.ts";
+import {
+  loadProfile,
+  saveProfile,
+  loadHighlights,
+  createHighlight,
+  deleteHighlight,
+  loadPhotos,
+} from "../../lib/media-service.ts";
+import type { BirthdayCountdownResult, ProfileData, HighlightCollection } from "../../types/media-contracts.ts";
+import "./profile.css";
+
+export type ProfileMode = "posts" | "reels" | "favorites";
+
+export interface ProfilePostItem {
+  id: string;
+  url: string;
+  media_path?: string;
+  media_kind: "image" | "video";
+  caption?: string;
+  alt_text?: string;
+  sort_order?: number;
+  is_published?: boolean;
+}
+
+export interface ProfileHighlight {
+  id: string;
+  title: string;
+  coverUrl?: string;
+  photoIds?: string[];
+}
+
+export interface ProfilePanelProps {
+  posts: ProfilePostItem[];
+  loading?: boolean;
+  isLoading?: boolean;
+  favorites: string[];
+  onToggleFavorite: (id: string) => void;
+  onSelectMedia?: (item: { url: string; caption: string; kind?: "image" | "video" }) => void;
+  onOpenEternalus?: () => void;
+  instagramUrl?: string;
+  externalInstagramUrl?: string | null;
+  recipientName?: string;
+  bio?: string;
+  highlights?: ProfileHighlight[];
+  profileMode?: ProfileMode;
+  onModeChange?: (mode: ProfileMode) => void;
+}
+
+/**
+ * Filter profile media based on the active tab mode.
+ * - "posts": all items where media_kind !== "video"
+ * - "reels": all items where media_kind === "video"
+ * - "favorites": all items whose id is in favorites
+ */
+export function filterProfileMedia(
+  items: ProfilePostItem[],
+  mode: ProfileMode,
+  favorites: string[]
+): ProfilePostItem[] {
+  if (!items || !Array.isArray(items)) return [];
+  if (mode === "reels") {
+    return items.filter((p) => p.media_kind === "video");
+  }
+  if (mode === "favorites") {
+    const favSet = new Set(favorites || []);
+    return items.filter((p) => favSet.has(p.id));
+  }
+  return items.filter((p) => p.media_kind !== "video");
+}
+
+/**
+ * Helper to get user-friendly empty state guidance for each mode.
+ */
+export function getEmptyStateMessage(mode: ProfileMode): string {
+  switch (mode) {
+    case "favorites":
+      return "Tap the heart on a post or reel to save it here.";
+    case "reels":
+      return "No reels yet. Add videos in the creator workspace.";
+    case "posts":
+    default:
+      return "Your birthday photos will appear here once the creator adds them.";
+  }
+}
+
+/**
+ * Validate and sanitize external URL (e.g. Instagram link).
+ * Prevents javascript: or data: injection.
+ */
+export function sanitizeExternalUrl(rawUrl: unknown): { isSafe: boolean; sanitizedUrl: string | null } {
+  if (typeof rawUrl !== "string") {
+    return { isSafe: false, sanitizedUrl: null };
+  }
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return { isSafe: false, sanitizedUrl: null };
+  }
+  try {
+    const parsed = new URL(trimmed);
+    const safeProtocols = ["https:", "http:"];
+    if (safeProtocols.includes(parsed.protocol.toLowerCase())) {
+      return { isSafe: true, sanitizedUrl: parsed.toString() };
+    }
+    return { isSafe: false, sanitizedUrl: null };
+  } catch {
+    return { isSafe: false, sanitizedUrl: null };
+  }
+}
+
+/**
+ * Default story highlights shown when none are provided.
+ */
+export const DEFAULT_HIGHLIGHTS: ProfileHighlight[] = [
+  { id: "hl-memories", title: "Memories ✿" },
+  { id: "hl-golden", title: "Golden Days ✨" },
+  { id: "hl-laughter", title: "Laughter ♡" },
+  { id: "hl-wishes", title: "Wishes 🎂" },
+  { id: "hl-forever", title: "Eternal 🕊️" },
+];
+
+/**
+ * Resolve highlight circles, gracefully falling back to defaults if empty or omitted.
+ */
+export function resolveHighlights(highlights?: ProfileHighlight[]): ProfileHighlight[] {
+  if (highlights && highlights.length > 0) {
+    return highlights;
+  }
+  return DEFAULT_HIGHLIGHTS;
+}
+
+/**
+ * Helper to resolve appropriate glyph for default highlights.
+ */
+export function getHighlightGlyph(id: string, title: string): string {
+  const t = (title || "").toLowerCase();
+  if (t.includes("memory") || t.includes("memories")) return "✿";
+  if (t.includes("gold") || t.includes("shine") || t.includes("star")) return "✨";
+  if (t.includes("laugh") || t.includes("smile") || t.includes("love") || t.includes("heart")) return "♡";
+  if (t.includes("wish") || t.includes("cake") || t.includes("celebrat") || t.includes("birthday")) return "🎂";
+  if (t.includes("eternal") || t.includes("forever") || t.includes("chapter") || t.includes("vault")) return "🕊️";
+  if (t.includes("song") || t.includes("music")) return "♪";
+  return "❀";
+}
+
+/**
+ * Helper to safely toggle a favorite ID.
+ */
+export function toggleFavoriteId(current: string[], id: string): string[] {
+  if (!Array.isArray(current)) return [id];
+  return current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+}
+
+export const FAVORITES_STORAGE_KEY = "birthday_favorites";
+export const FAVORITES_STORAGE_ALT_KEY = "birthday-favorites";
+
+export function loadFavoritesFromStorage(storage?: Storage): string[] {
+  try {
+    const s = storage || (typeof window !== "undefined" ? window.localStorage : undefined);
+    if (!s) return [];
+    const raw = s.getItem(FAVORITES_STORAGE_KEY) || s.getItem(FAVORITES_STORAGE_ALT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function saveFavoritesToStorage(nextFavorites: string[], storage?: Storage): boolean {
+  try {
+    const s = storage || (typeof window !== "undefined" ? window.localStorage : undefined);
+    if (!s) return false;
+    const serialized = JSON.stringify(nextFavorites);
+    s.setItem(FAVORITES_STORAGE_KEY, serialized);
+    s.setItem(FAVORITES_STORAGE_ALT_KEY, serialized);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function ProfilePanel({
+  posts = [],
+  loading,
+  isLoading,
+  favorites = [],
+  onToggleFavorite,
+  onSelectMedia,
+  onOpenEternalus,
+  instagramUrl,
+  externalInstagramUrl,
+  recipientName = "Meerah",
+  bio = "birthday girl · main character today",
+  highlights: propHighlights,
+  profileMode,
+  onModeChange,
+}: ProfilePanelProps) {
+  const [internalMode, setInternalMode] = useState<ProfileMode>("posts");
+  const mode = profileMode ?? internalMode;
+
+  const handleModeChange = (newMode: ProfileMode) => {
+    setInternalMode(newMode);
+    if (onModeChange) {
+      onModeChange(newMode);
+    }
+  };
+
+  const isActuallyLoading = loading ?? isLoading ?? false;
+
+  // 1. Profile State & Persistence
+  const [profile, setProfile] = useState<ProfileData>(() => {
+    const saved = loadProfile();
+    return {
+      ...saved,
+      displayName: saved.displayName || recipientName || "Meerah",
+      bio: saved.bio || bio || "birthday girl · main character today",
+      interests: saved.interests && saved.interests.length > 0
+        ? saved.interests
+        : ["Reading", "Poetry", "Music", "Photography"],
+      birthDate: saved.birthDate || "2002-10-29",
+    };
+  });
+
+  // 2. Authoritative Dynamic Age & Countdown
+  const birthDateStr = profile.birthDate || "2002-10-29";
+  const [countdown, setCountdown] = useState<BirthdayCountdownResult>(() =>
+    calculateNextBirthdayCountdown(birthDateStr)
+  );
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(calculateNextBirthdayCountdown(birthDateStr));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [birthDateStr]);
+
+  const currentAge = useMemo(() => calculateAge(birthDateStr), [birthDateStr]);
+
+  // 3. User-Created Highlights State
+  const [highlightsList, setHighlightsList] = useState<HighlightCollection[]>(() => {
+    return loadHighlights();
+  });
+
+  // Effective highlights for display
+  const effectiveHighlights: ProfileHighlight[] = useMemo(() => {
+    if (highlightsList && highlightsList.length > 0) {
+      return highlightsList.map((hl) => ({
+        id: hl.id,
+        title: hl.title,
+        coverUrl: hl.coverPhotoUrl || (hl.coverPhotoId ? posts.find(p => p.id === hl.coverPhotoId)?.url : undefined),
+        photoIds: hl.photoIds,
+      }));
+    }
+    return resolveHighlights(propHighlights);
+  }, [highlightsList, propHighlights, posts]);
+
+  // 4. Modal States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateHighlightOpen, setIsCreateHighlightOpen] = useState(false);
+  const [activeHighlight, setActiveHighlight] = useState<ProfileHighlight | null>(null);
+  const [detailItem, setDetailItem] = useState<ProfilePostItem | null>(null);
+
+  // Edit Profile Form State
+  const [editName, setEditName] = useState(profile.displayName);
+  const [editBio, setEditBio] = useState(profile.bio);
+  const [editAvatarUrl, setEditAvatarUrl] = useState(profile.avatarUrl || "");
+  const [editInterests, setEditInterests] = useState<string[]>(profile.interests || []);
+  const [newInterestTag, setNewInterestTag] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Create Highlight Form State
+  const [newHighlightTitle, setNewHighlightTitle] = useState("");
+  const [selectedHighlightPhotoIds, setSelectedHighlightPhotoIds] = useState<string[]>([]);
+  const [selectedCoverPhotoId, setSelectedCoverPhotoId] = useState<string>("");
+
+  // Pool of all photos for highlight creation
+  const availablePhotosForHighlight = useMemo(() => {
+    if (posts && posts.length > 0) return posts;
+    const stored = loadPhotos();
+    return stored.map((p) => ({
+      id: p.id,
+      url: p.url,
+      media_kind: p.mediaKind,
+      caption: p.caption,
+      alt_text: p.altText,
+    }));
+  }, [posts]);
+
+  // Handle escape key to close modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsEditModalOpen(false);
+        setIsCreateHighlightOpen(false);
+        setActiveHighlight(null);
+        setDetailItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Instagram sanitization
+  const rawIgUrl = instagramUrl || externalInstagramUrl || profile.externalInstagramUrl || undefined;
+  const safeInstagram = useMemo(() => sanitizeExternalUrl(rawIgUrl), [rawIgUrl]);
+
+  // Filtered media for the active tab
+  const visiblePosts = useMemo(
+    () => filterProfileMedia(posts, mode, favorites),
+    [posts, mode, favorites]
+  );
+
+  const postsCount = useMemo(
+    () => posts.filter((p) => p.media_kind !== "video").length,
+    [posts]
+  );
+
+  const reelsCount = useMemo(
+    () => posts.filter((p) => p.media_kind === "video").length,
+    [posts]
+  );
+
+  // Edit Profile Handlers
+  const handleOpenEditModal = () => {
+    setEditName(profile.displayName);
+    setEditBio(profile.bio);
+    setEditAvatarUrl(profile.avatarUrl || "");
+    setEditInterests([...(profile.interests || [])]);
+    setNewInterestTag("");
+    setIsEditModalOpen(true);
+  };
+
+  const handleAddInterest = () => {
+    const tag = newInterestTag.trim();
+    if (tag && !editInterests.includes(tag)) {
+      setEditInterests([...editInterests, tag]);
+      setNewInterestTag("");
+    }
+  };
+
+  const handleRemoveInterest = (tagToRemove: string) => {
+    setEditInterests(editInterests.filter((t) => t !== tagToRemove));
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setEditAvatarUrl(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updated = saveProfile({
+      displayName: editName.trim() || profile.displayName,
+      bio: editBio.trim() || profile.bio,
+      avatarUrl: editAvatarUrl.trim() || undefined,
+      interests: editInterests,
+    });
+    setProfile(updated);
+    setIsEditModalOpen(false);
+  };
+
+  // Create Highlight Handlers
+  const handleOpenCreateHighlight = () => {
+    setNewHighlightTitle("");
+    setSelectedHighlightPhotoIds([]);
+    setSelectedCoverPhotoId("");
+    setIsCreateHighlightOpen(true);
+  };
+
+  const handleTogglePhotoForHighlight = (photoId: string) => {
+    setSelectedHighlightPhotoIds((prev) => {
+      const next = prev.includes(photoId)
+        ? prev.filter((id) => id !== photoId)
+        : [...prev, photoId];
+      if (!selectedCoverPhotoId && next.length > 0) {
+        setSelectedCoverPhotoId(next[0]);
+      } else if (!next.includes(selectedCoverPhotoId)) {
+        setSelectedCoverPhotoId(next[0] || "");
+      }
+      return next;
+    });
+  };
+
+  const handleSaveHighlight = (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = newHighlightTitle.trim() || "New Highlight";
+    const coverPhoto = availablePhotosForHighlight.find(p => p.id === selectedCoverPhotoId);
+    createHighlight(
+      title,
+      selectedHighlightPhotoIds,
+      selectedCoverPhotoId || selectedHighlightPhotoIds[0]
+    );
+    // Refresh highlight list from authoritative media service
+    const refreshed = loadHighlights();
+    // If coverPhoto has a URL, update the newly created highlight in state
+    if (coverPhoto && refreshed[0]) {
+      refreshed[0].coverPhotoUrl = coverPhoto.url;
+    }
+    setHighlightsList(refreshed);
+    setIsCreateHighlightOpen(false);
+  };
+
+  const handleDeleteHighlight = (highlightId: string) => {
+    const remaining = deleteHighlight(highlightId);
+    setHighlightsList(remaining);
+    setActiveHighlight(null);
+  };
+
+  return (
+    <div className="profilePanel" data-testid="profile-panel">
+      {/* 1. Dynamic Birthday Card & Live Countdown Banner */}
+      <section
+        className="profileBirthdayCard"
+        data-testid="profile-birthday-card"
+        aria-label="Authoritative Birthday Celebration Card"
+      >
+        <div className="profileBirthdayCardInner">
+          <div className="profileBirthdayCakeBadge" aria-hidden="true">
+            🎂
+          </div>
+          <div className="profileBirthdayInfo">
+            <span className="profileBirthdayKicker">
+              {countdown.isToday ? "Special Celebration" : "Birthday Milestone"}
+            </span>
+            <div className="profileBirthdayAgeDisplay">
+              <span className="profileBirthdayAgeNumber">{currentAge}</span>
+              <span className="profileBirthdayAgeLabel">
+                {countdown.isToday ? "years of grace today!" : "years young"}
+              </span>
+            </div>
+            {countdown.isToday ? (
+              <h3 className="profileBirthdayTodayNotice" data-testid="birthday-today-banner">
+                Today is {profile.displayName}&apos;s Birthday! 🎂✨
+              </h3>
+            ) : (
+              <div className="profileCountdownWrapper" aria-label="Countdown to next birthday">
+                <span className="profileCountdownIntro">Next birthday celebration in:</span>
+                <div className="profileCountdownBoxes">
+                  <div className="profileCountdownUnit">
+                    <b className="profileCountdownNum">{countdown.days}</b>
+                    <small>Days</small>
+                  </div>
+                  <span className="profileCountdownColon" aria-hidden="true">:</span>
+                  <div className="profileCountdownUnit">
+                    <b className="profileCountdownNum">{String(countdown.hours).padStart(2, "0")}</b>
+                    <small>Hours</small>
+                  </div>
+                  <span className="profileCountdownColon" aria-hidden="true">:</span>
+                  <div className="profileCountdownUnit">
+                    <b className="profileCountdownNum">{String(countdown.minutes).padStart(2, "0")}</b>
+                    <small>Mins</small>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Profile Header & Identity Info */}
+      <header className="profileHeader">
+        <div className="profileAvatarContainer">
+          <div className="profileAvatarRing">
+            <div className="profileAvatar">
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={`${profile.displayName}'s avatar`}
+                  className="profileAvatarImg"
+                />
+              ) : (
+                <span className="profileAvatarFlower" aria-hidden="true">
+                  ✿
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="profileAvatarEditBtn"
+            onClick={handleOpenEditModal}
+            aria-label="Edit Profile"
+            title="Edit Profile"
+          >
+            ✎
+          </button>
+        </div>
+
+        <div className="profileBioSection">
+          <div className="profileIdentityRow">
+            <h2 className="profileName">{profile.displayName}</h2>
+            <button
+              type="button"
+              className="profileEditBtn"
+              onClick={handleOpenEditModal}
+              aria-label="Edit Profile Details"
+            >
+              <span>Edit Profile</span>
+            </button>
+            {safeInstagram.isSafe && safeInstagram.sanitizedUrl ? (
+              <a
+                href={safeInstagram.sanitizedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="profileInstagramLink"
+                aria-label={`Visit ${profile.displayName}'s Instagram profile (opens in a new tab)`}
+              >
+                <svg
+                  className="profileIgIcon"
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+                <span>Instagram</span>
+                <span className="profileExternalArrow" aria-hidden="true">
+                  ↗
+                </span>
+              </a>
+            ) : (
+              <span className="profilePillBadge">Birthday Edition</span>
+            )}
+          </div>
+
+          <p className="profileBio">{profile.bio}</p>
+
+          {/* Interest Chips */}
+          {profile.interests && profile.interests.length > 0 && (
+            <div className="profileInterests" aria-label="Personal interests">
+              {profile.interests.map((interest, idx) => (
+                <span key={idx} className="profileInterestChip">
+                  {interest}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="profileBioAccent">
+            <span className="profileBioDate">A special chapter created with love</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Stats Counter Row */}
+      <section className="profileCounts" aria-label="Profile statistics">
+        <div className="profileCountItem">
+          <b>{posts.length}</b>
+          <span>little moments</span>
+        </div>
+        <div className="profileCountDivider" aria-hidden="true" />
+        <div className="profileCountItem">
+          <b>05</b>
+          <span>birthday pages</span>
+        </div>
+        <div className="profileCountDivider" aria-hidden="true" />
+        <div className="profileCountItem">
+          <b>{favorites.length}</b>
+          <span>favourites</span>
+        </div>
+      </section>
+
+      {/* 3. Story Highlights Section with "+ New" & Delete Capabilities */}
+      <section className="profileHighlightsContainer" aria-label="Story highlights">
+        <div className="profileHighlightsScroll" role="list">
+          {/* "+ New" Highlight Circle */}
+          <div className="profileHighlightItem" role="listitem">
+            <button
+              type="button"
+              className="profileHighlightCircle profileNewHighlightCircle"
+              aria-label="Create new story highlight"
+              onClick={handleOpenCreateHighlight}
+            >
+              <div className="profileHighlightInner profileNewHighlightInner">
+                <span className="profileNewHighlightPlus" aria-hidden="true">
+                  +
+                </span>
+              </div>
+            </button>
+            <span className="profileHighlightTitle">New</span>
+          </div>
+
+          {/* Story Highlights Circles */}
+          {effectiveHighlights.map((hl) => (
+            <div key={hl.id} className="profileHighlightItem" role="listitem">
+              <button
+                type="button"
+                className="profileHighlightCircle"
+                aria-label={`Highlight: ${hl.title}`}
+                onClick={() => {
+                  setActiveHighlight(hl);
+                  if (hl.coverUrl && onSelectMedia) {
+                    onSelectMedia({
+                      url: hl.coverUrl,
+                      caption: hl.title,
+                      kind: "image",
+                    });
+                  }
+                }}
+              >
+                <div className="profileHighlightInner">
+                  {hl.coverUrl ? (
+                    <img
+                      src={hl.coverUrl}
+                      alt={hl.title}
+                      className="profileHighlightImg"
+                    />
+                  ) : (
+                    <span className="profileHighlightGlyph" aria-hidden="true">
+                      {getHighlightGlyph(hl.id, hl.title)}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <span className="profileHighlightTitle" title={hl.title}>
+                {hl.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. Mode Navigation Tabs */}
+      <nav
+        className="profileModes"
+        role="tablist"
+        aria-label="Profile media views"
+      >
+        <button
+          type="button"
+          role="tab"
+          id="tab-posts"
+          aria-selected={mode === "posts"}
+          aria-controls="profile-media-panel"
+          className={`profileModeTab ${mode === "posts" ? "active" : ""}`}
+          onClick={() => handleModeChange("posts")}
+        >
+          <span className="profileModeIcon" aria-hidden="true">
+            ▦
+          </span>
+          <span className="profileModeLabel">Posts</span>
+          <span className="profileModeBadge" aria-label={`${postsCount} posts`}>
+            {postsCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-reels"
+          aria-selected={mode === "reels"}
+          aria-controls="profile-media-panel"
+          className={`profileModeTab ${mode === "reels" ? "active" : ""}`}
+          onClick={() => handleModeChange("reels")}
+        >
+          <span className="profileModeIcon" aria-hidden="true">
+            ▶
+          </span>
+          <span className="profileModeLabel">Reels</span>
+          <span className="profileModeBadge" aria-label={`${reelsCount} reels`}>
+            {reelsCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-favorites"
+          aria-selected={mode === "favorites"}
+          aria-controls="profile-media-panel"
+          className={`profileModeTab ${mode === "favorites" ? "active" : ""}`}
+          onClick={() => handleModeChange("favorites")}
+        >
+          <span className="profileModeIcon" aria-hidden="true">
+            {mode === "favorites" ? "♥" : "♡"}
+          </span>
+          <span className="profileModeLabel">Favorites</span>
+          <span
+            className="profileModeBadge"
+            aria-label={`${favorites.length} favorites`}
+          >
+            {favorites.length}
+          </span>
+        </button>
+      </nav>
+
+      {/* 5. Profile Media Gallery Grid */}
+      <section
+        id="profile-media-panel"
+        role="tabpanel"
+        aria-labelledby={`tab-${mode}`}
+        className="profileGallerySection"
+      >
+        {isActuallyLoading && (
+          <div className="profileLoadingGrid" aria-label="Loading your photos">
+            {[1, 2, 3, 4, 5, 6].map((idx) => (
+              <div key={idx} className="profileSkeletonTile">
+                <div className="profileSkeletonShimmer" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isActuallyLoading && visiblePosts.length > 0 && (
+          <div className="profileGalleryGrid">
+            {visiblePosts.map((p) => {
+              const isFav = favorites.includes(p.id);
+              const caption = p.caption || p.alt_text || "A birthday memory";
+
+              return (
+                <div key={p.id} className="profileMediaTile">
+                  {/* Media Open Button (Opens Detail Modal) */}
+                  <button
+                    type="button"
+                    className="profilePhotoTile"
+                    onClick={() => {
+                      setDetailItem(p);
+                      if (onSelectMedia) {
+                        onSelectMedia({
+                          url: p.url,
+                          caption,
+                          kind: p.media_kind,
+                        });
+                      }
+                    }}
+                    aria-label={`View ${caption}`}
+                  >
+                    {p.media_kind === "video" ? (
+                      <div className="profileVideoWrapper">
+                        <video
+                          src={p.url}
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                        <span
+                          className="profileReelPlayBadge"
+                          aria-label="Reel video"
+                        >
+                          ▶
+                        </span>
+                      </div>
+                    ) : (
+                      <img
+                        src={p.url}
+                        alt={p.alt_text || p.caption || "Birthday memory"}
+                        loading="lazy"
+                      />
+                    )}
+                    <span className="profileTileOverlay">
+                      <span className="profileTileHoverCaption">{caption}</span>
+                    </span>
+                  </button>
+
+                  {/* Favorite Toggle Button (Sibling to media button, NOT nested!) */}
+                  <button
+                    type="button"
+                    className={`profileFavoriteToggle ${
+                      isFav ? "isFavorite" : ""
+                    }`}
+                    aria-label={
+                      isFav
+                        ? `Remove "${caption}" from favorites`
+                        : `Add "${caption}" to favorites`
+                    }
+                    aria-pressed={isFav}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(p.id);
+                    }}
+                  >
+                    <span className="profileFavoriteIcon" aria-hidden="true">
+                      {isFav ? "♥" : "♡"}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!isActuallyLoading && visiblePosts.length === 0 && (
+          <div className="profileEmptyState" role="status">
+            <div className="profileEmptyIcon" aria-hidden="true">
+              {mode === "favorites" ? "♡" : mode === "reels" ? "▶" : "✿"}
+            </div>
+            <h4 className="profileEmptyTitle">
+              {mode === "favorites"
+                ? "No favourites saved yet"
+                : mode === "reels"
+                ? "No reels yet"
+                : "No moments yet"}
+            </h4>
+            <p className="profileEmptyMessage">{getEmptyStateMessage(mode)}</p>
+          </div>
+        )}
+      </section>
+
+      {/* 6. Eternal Us Navigation Bridge */}
+      <section
+        className="profileEternalusSection"
+        aria-label="Eternalus private folder"
+      >
+        <div className="profileEternalusDetails">
+          <div className="profileEternalusHeader">
+            <span className="profileEternalusKicker">A private chapter</span>
+            <span className="profileEternalusTag">Vault · خزانہ</span>
+          </div>
+          <h3 className="profileEternalusTitle">Eternalus ♡</h3>
+          <p className="profileEternalusText">
+            Your private album stays tucked away here. A sanctuary of sacred memories and whispers kept just for us.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="profileEternalusButton"
+          onClick={onOpenEternalus}
+          aria-label="Open private folder to view Eternalus"
+        >
+          <span>Open private folder</span>
+          <span className="profileEternalusArrow" aria-hidden="true">
+            →
+          </span>
+        </button>
+      </section>
+
+      {/* ======================================================================
+          7. Modals
+          ====================================================================== */}
+
+      {/* A. Edit Profile Modal */}
+      {isEditModalOpen && (
+        <div
+          className="profileModalBackdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-profile-title"
+          onClick={() => setIsEditModalOpen(false)}
+        >
+          <div
+            className="profileModalCard"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="profileModalHeader">
+              <h3 id="edit-profile-title" className="profileModalTitle">
+                Edit Profile
+              </h3>
+              <button
+                type="button"
+                className="profileModalClose"
+                onClick={() => setIsEditModalOpen(false)}
+                aria-label="Close edit profile modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="profileEditForm">
+              <div className="profileFormGroup">
+                <label htmlFor="edit-profile-name">Display Name</label>
+                <input
+                  type="text"
+                  id="edit-profile-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="e.g. Meerah"
+                  required
+                />
+              </div>
+
+              <div className="profileFormGroup">
+                <label htmlFor="edit-profile-bio">Bio</label>
+                <textarea
+                  id="edit-profile-bio"
+                  rows={2}
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder="Tell your story..."
+                />
+              </div>
+
+              <div className="profileFormGroup">
+                <label htmlFor="edit-profile-avatar">Avatar URL or File</label>
+                <input
+                  type="text"
+                  id="edit-profile-avatar"
+                  value={editAvatarUrl}
+                  onChange={(e) => setEditAvatarUrl(e.target.value)}
+                  placeholder="https://example.com/avatar.jpg"
+                />
+                <div className="profileFileUploadWrapper">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleAvatarFileChange}
+                    className="profileHiddenFileInput"
+                    id="profile-avatar-file"
+                  />
+                  <label
+                    htmlFor="profile-avatar-file"
+                    className="profileFileUploadBtn"
+                  >
+                    <span>Choose Image File</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="profileFormGroup">
+                <label>Interests & Passions</label>
+                <div className="profileEditTagsList">
+                  {editInterests.map((tag) => (
+                    <span key={tag} className="profileEditTagChip">
+                      {tag}
+                      <button
+                        type="button"
+                        className="profileRemoveTagBtn"
+                        onClick={() => handleRemoveInterest(tag)}
+                        aria-label={`Remove interest ${tag}`}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="profileAddTagRow">
+                  <input
+                    type="text"
+                    value={newInterestTag}
+                    onChange={(e) => setNewInterestTag(e.target.value)}
+                    placeholder="Add an interest..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddInterest();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="profileAddTagBtn"
+                    onClick={handleAddInterest}
+                    aria-label="Add interest tag"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="profileModalActions">
+                <button
+                  type="button"
+                  className="profileModalBtnSecondary"
+                  onClick={() => setIsEditModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="profileModalBtnPrimary"
+                >
+                  Save Profile
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* B. Create Highlight Modal */}
+      {isCreateHighlightOpen && (
+        <div
+          className="profileModalBackdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-highlight-title"
+          onClick={() => setIsCreateHighlightOpen(false)}
+        >
+          <div
+            className="profileModalCard profileHighlightModalCard"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="profileModalHeader">
+              <h3 id="create-highlight-title" className="profileModalTitle">
+                New Highlight
+              </h3>
+              <button
+                type="button"
+                className="profileModalClose"
+                onClick={() => setIsCreateHighlightOpen(false)}
+                aria-label="Close create highlight modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveHighlight} className="profileHighlightForm">
+              <div className="profileFormGroup">
+                <label htmlFor="highlight-title-input">Highlight Name</label>
+                <input
+                  type="text"
+                  id="highlight-title-input"
+                  value={newHighlightTitle}
+                  onChange={(e) => setNewHighlightTitle(e.target.value)}
+                  placeholder="e.g. Golden Days ✨"
+                  required
+                />
+              </div>
+
+              <div className="profileFormGroup">
+                <label>Select Photos ({selectedHighlightPhotoIds.length} selected)</label>
+                <div className="profilePhotoPickerGrid">
+                  {availablePhotosForHighlight.map((photo) => {
+                    const isSelected = selectedHighlightPhotoIds.includes(photo.id);
+                    const isCover = selectedCoverPhotoId === photo.id;
+                    return (
+                      <div
+                        key={photo.id}
+                        className={`profilePickerTile ${isSelected ? "selected" : ""}`}
+                        onClick={() => handleTogglePhotoForHighlight(photo.id)}
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === " " || e.key === "Enter") {
+                            e.preventDefault();
+                            handleTogglePhotoForHighlight(photo.id);
+                          }
+                        }}
+                      >
+                        <img
+                          src={photo.url}
+                          alt={photo.caption || "Photo option"}
+                          className="profilePickerImg"
+                        />
+                        {isSelected && (
+                          <span className="profilePickerCheck" aria-hidden="true">
+                            ✓
+                          </span>
+                        )}
+                        {isSelected && (
+                          <button
+                            type="button"
+                            className={`profilePickerCoverBtn ${isCover ? "activeCover" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCoverPhotoId(photo.id);
+                            }}
+                            title="Set as highlight cover"
+                            aria-label={`Set as cover`}
+                          >
+                            {isCover ? "Cover ★" : "Make Cover"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="profileModalActions">
+                <button
+                  type="button"
+                  className="profileModalBtnSecondary"
+                  onClick={() => setIsCreateHighlightOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="profileModalBtnPrimary"
+                  disabled={selectedHighlightPhotoIds.length === 0}
+                >
+                  Create Highlight
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* C. Highlight Viewer & Safe Deletion Modal */}
+      {activeHighlight && (
+        <div
+          className="profileModalBackdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="active-highlight-title"
+          onClick={() => setActiveHighlight(null)}
+        >
+          <div
+            className="profileModalCard"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="profileModalHeader">
+              <h3 id="active-highlight-title" className="profileModalTitle">
+                {activeHighlight.title}
+              </h3>
+              <button
+                type="button"
+                className="profileModalClose"
+                onClick={() => setActiveHighlight(null)}
+                aria-label="Close highlight viewer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="profileHighlightDetailBody">
+              {activeHighlight.coverUrl ? (
+                <div className="profileHighlightCoverPreview">
+                  <img
+                    src={activeHighlight.coverUrl}
+                    alt={activeHighlight.title}
+                    className="profileHighlightCoverBig"
+                  />
+                </div>
+              ) : (
+                <div className="profileHighlightGlyphBig" aria-hidden="true">
+                  {getHighlightGlyph(activeHighlight.id, activeHighlight.title)}
+                </div>
+              )}
+              <p className="profileHighlightDetailText">
+                Story highlight containing {activeHighlight.photoIds?.length || 1} moment(s).
+              </p>
+            </div>
+
+            <div className="profileModalActions">
+              <button
+                type="button"
+                className="profileDeleteHighlightBtn"
+                onClick={() => handleDeleteHighlight(activeHighlight.id)}
+                aria-label={`Delete highlight ${activeHighlight.title}`}
+              >
+                Delete Highlight
+              </button>
+              <button
+                type="button"
+                className="profileModalBtnPrimary"
+                onClick={() => setActiveHighlight(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* D. Media Detail Modal (with Caption, Alt Text, and Favorite Toggle) */}
+      {detailItem && (
+        <div
+          className="profileModalBackdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="media-detail-caption"
+          onClick={() => setDetailItem(null)}
+        >
+          <div
+            className="profileDetailModalCard"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="profileModalClose profileDetailCloseBtn"
+              onClick={() => setDetailItem(null)}
+              aria-label="Close detail view"
+            >
+              ✕
+            </button>
+
+            <div className="profileDetailMediaContainer">
+              {detailItem.media_kind === "video" ? (
+                <video
+                  src={detailItem.url}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="profileDetailVideo"
+                />
+              ) : (
+                <img
+                  src={detailItem.url}
+                  alt={detailItem.alt_text || detailItem.caption || "Birthday media detail"}
+                  className="profileDetailImage"
+                />
+              )}
+            </div>
+
+            <div className="profileDetailInfo">
+              <div className="profileDetailTopRow">
+                <h4 id="media-detail-caption" className="profileDetailCaption">
+                  {detailItem.caption || "A cherished birthday memory"}
+                </h4>
+                <button
+                  type="button"
+                  className={`profileDetailFavBtn ${
+                    favorites.includes(detailItem.id) ? "isFavorite" : ""
+                  }`}
+                  aria-label={
+                    favorites.includes(detailItem.id)
+                      ? "Remove from favorites"
+                      : "Add to favorites"
+                  }
+                  aria-pressed={favorites.includes(detailItem.id)}
+                  onClick={() => onToggleFavorite(detailItem.id)}
+                >
+                  <span className="profileFavoriteIcon" aria-hidden="true">
+                    {favorites.includes(detailItem.id) ? "♥" : "♡"}
+                  </span>
+                  <span>
+                    {favorites.includes(detailItem.id) ? "Favorited" : "Favorite"}
+                  </span>
+                </button>
+              </div>
+
+              {detailItem.alt_text && (
+                <p className="profileDetailAltText">
+                  <span className="profileDetailAltLabel">Description:</span>{" "}
+                  {detailItem.alt_text}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

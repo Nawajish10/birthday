@@ -1,0 +1,639 @@
+/**
+ * Landing Music Card Stylesheet
+ * 2D Scrapbook vinyl record & cassette aesthetic with gold sunflower & rose accents.
+ */
+
+.scrapbook-music-card {
+  position: relative;
+  background: var(--scrapbook-paper, #FBF4E6);
+  border: 1px solid var(--scrapbook-border, #EADBCE);
+  border-radius: 12px;
+  padding: 28px 24px 24px 24px;
+  box-shadow: var(--scrapbook-shadow, 0 10px 30px rgba(98, 71, 82, 0.08));
+  color: var(--scrapbook-plum, #624752);
+  margin: 0 auto;
+  max-width: 820px;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.scrapbook-music-card:hover {
+  box-shadow: var(--scrapbook-shadow-hover, 0 16px 40px rgba(98, 71, 82, 0.14));
+}
+
+/* Washi Tape Positioning */
+.scrapbook-music-tape-top {
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+}
+
+.scrapbook-music-tape-left {
+  top: -10px;
+  left: 28px;
+  transform: rotate(-3deg);
+}
+
+.scrapbook-music-tape-right {
+  top: -10px;
+  right: 28px;
+  transform: rotate(2.5deg);
+}
+
+/* Header Banner */
+.scrapbook-music-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.scrapbook-music-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--scrapbook-ivory, #FFF9EF);
+  border: 1px dashed var(--scrapbook-sunflower-dark, #C69325);
+  border-radius: 20px;
+  padding: 4px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  box-shadow: 0 2px 6px rgba(198, 147, 37, 0.15);
+}
+
+.sunflower-glyph,
+.rose-glyph {
+  font-size: 1rem;
+}
+
+.scrapbook-music-note {
+  margin: 8px 0 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.98rem;
+  color: var(--scrapbook-muted, #846F77);
+  letter-spacing: 0.02em;
+}
+
+/* Main Body Layout */
+.scrapbook-music-body {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+}
+
+@media (max-width: 680px) {
+  .scrapbook-music-body {
+    flex-direction: column;
+    gap: 24px;
+  }
+}
+
+/* Vinyl Player Container */
+.scrapbook-vinyl-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.scrapbook-vinyl-turntable {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle at 50% 50%, #FAF0E1 0%, #EDE1CE 100%);
+  border: 2px solid var(--scrapbook-border, #EADBCE);
+  border-radius: 18px;
+  box-shadow: inset 0 2px 8px rgba(98, 71, 82, 0.1), 0 6px 16px rgba(98, 71, 82, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Vinyl Disc */
+.scrapbook-vinyl-disc {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle at center,
+    #1d191c 0px,
+    #1d191c 2px,
+    #2c252a 3px,
+    #1d191c 4px
+  );
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 0 8px rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.scrapbook-vinyl-disc.is-spinning {
+  animation: vinyl-spin 4s linear infinite;
+}
+
+@keyframes vinyl-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vinylSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scrapbook-vinyl-groove-outer {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scrapbook-vinyl-groove-mid {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scrapbook-vinyl-groove-inner {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Vinyl Center Label (Gold Sunflower & Rose) */
+.scrapbook-vinyl-label {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--scrapbook-sunflower, #F1C75B) 0%, #D8A535 70%, var(--scrapbook-rose-deep, #D4798D) 100%);
+  border: 2px solid var(--scrapbook-sunflower-dark, #C69325);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.scrapbook-vinyl-label-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.scrapbook-vinyl-spindle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #FFF9EF;
+  border: 2px solid #58444e;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Tonearm */
+.scrapbook-tonearm {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  width: 20px;
+  height: 80px;
+  transform-origin: 10px 10px;
+  transform: rotate(-25deg);
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.scrapbook-tonearm.is-engaged {
+  transform: rotate(18deg);
+}
+
+.scrapbook-tonearm-base {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #C69325;
+  border: 2px solid #624752;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.scrapbook-tonearm-rod {
+  position: absolute;
+  top: 10px;
+  left: 7px;
+  width: 4px;
+  height: 65px;
+  background: linear-gradient(to right, #DFB148, #B8851E);
+  border-radius: 2px;
+}
+
+.scrapbook-tonearm-head {
+  position: absolute;
+  bottom: 0px;
+  left: 3px;
+  width: 12px;
+  height: 16px;
+  background: #4A353E;
+  border-radius: 2px;
+  transform: rotate(20deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Vinyl Controls */
+.scrapbook-vinyl-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scrapbook-play-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--scrapbook-sunflower, #F1C75B), #E3A932);
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  border: 1px solid var(--scrapbook-sunflower-dark, #C69325);
+  border-radius: 22px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(198, 147, 37, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.scrapbook-play-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(198, 147, 37, 0.35);
+  background: linear-gradient(135deg, #F8D272, #EAB23E);
+}
+
+.scrapbook-play-toggle-btn:active {
+  transform: translateY(1px);
+}
+
+.scrapbook-play-toggle-btn .btn-icon {
+  font-size: 1rem;
+}
+
+.scrapbook-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--scrapbook-muted, #846F77);
+  background: var(--scrapbook-white, #FFFFFF);
+  border: 1px solid var(--scrapbook-border, #EADBCE);
+  border-radius: 12px;
+  padding: 4px 10px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--scrapbook-rose-deep, #D4798D);
+  animation: pulse-dot-anim 1.5s ease-in-out infinite;
+}
+
+.paused-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #A8959C;
+}
+
+@keyframes pulse-dot-anim {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 6px rgba(212, 121, 141, 0.8);
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+}
+
+/* Right Details Section */
+.scrapbook-track-details {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scrapbook-active-track-banner {
+  background: var(--scrapbook-white, #FFFFFF);
+  border: 1px solid var(--scrapbook-border, #EADBCE);
+  border-left: 4px solid var(--scrapbook-rose-deep, #D4798D);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(98, 71, 82, 0.04);
+}
+
+.track-playing-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--scrapbook-rose-deep, #D4798D);
+  margin-bottom: 2px;
+}
+
+.scrapbook-track-title {
+  margin: 0;
+  font-size: 1.22rem;
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scrapbook-track-artist {
+  margin: 4px 0 0 0;
+  font-size: 0.9rem;
+  color: var(--scrapbook-muted, #846F77);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tracklist Selector */
+.scrapbook-tracklist-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scrapbook-tracklist-heading {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--scrapbook-muted, #846F77);
+}
+
+.scrapbook-tracklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Custom scrollbar */
+.scrapbook-tracklist::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrapbook-tracklist::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+}
+
+.scrapbook-tracklist::-webkit-scrollbar-thumb {
+  background: var(--scrapbook-border, #EADBCE);
+  border-radius: 4px;
+}
+
+.scrapbook-tracklist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--scrapbook-ivory, #FFF9EF);
+  border: 1px solid var(--scrapbook-border, #EADBCE);
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  color: var(--scrapbook-plum, #624752);
+  box-sizing: border-box;
+}
+
+.scrapbook-tracklist-item:hover {
+  background: var(--scrapbook-rose, #F8E8EC);
+  border-color: var(--scrapbook-rose-deep, #D4798D);
+  transform: translateX(2px);
+}
+
+.scrapbook-tracklist-item.is-selected {
+  background: var(--scrapbook-rose, #F8E8EC);
+  border-color: var(--scrapbook-rose-deep, #D4798D);
+  box-shadow: 0 2px 6px rgba(212, 121, 141, 0.12);
+}
+
+.scrapbook-tracklist-item.is-playing {
+  background: #FDF1D6;
+  border-color: var(--scrapbook-sunflower-dark, #C69325);
+}
+
+.track-item-index {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--scrapbook-muted, #846F77);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.track-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.track-item-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-item-artist {
+  font-size: 0.78rem;
+  color: var(--scrapbook-muted, #846F77);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-item-status-icon {
+  font-size: 0.75rem;
+  color: var(--scrapbook-rose-deep, #D4798D);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* Songbook CTA Button */
+.scrapbook-songbook-action {
+  margin-top: 4px;
+}
+
+.scrapbook-music-btn-songbook {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 18px;
+  background: var(--scrapbook-white, #FFFFFF);
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  border: 1px dashed var(--scrapbook-rose-deep, #D4798D);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(98, 71, 82, 0.05);
+}
+
+.scrapbook-music-btn-songbook:hover {
+  background: var(--scrapbook-rose, #F8E8EC);
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(212, 121, 141, 0.18);
+}
+
+.scrapbook-play-toggle-btn:focus-visible,
+.scrapbook-music-btn-play:focus-visible,
+.scrapbook-tracklist-item:focus-visible,
+.scrapbook-music-btn-songbook:focus-visible {
+  outline: 3px solid var(--scrapbook-sunflower-dark, #C69325);
+  outline-offset: 3px;
+}
+
+/* Empty State */
+.scrapbook-music-card.is-empty {
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.scrapbook-music-empty-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.scrapbook-music-empty-disc {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2D262B 0%, #161214 100%);
+  border: 3px dashed var(--scrapbook-border, #EADBCE);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(98, 71, 82, 0.12);
+}
+
+.scrapbook-music-disc-inner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--scrapbook-sunflower, #F1C75B);
+  border: 2px solid var(--scrapbook-sunflower-dark, #C69325);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scrapbook-music-empty-icon {
+  font-size: 1.3rem;
+}
+
+.scrapbook-music-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scrapbook-music-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--scrapbook-sunflower-dark, #C69325);
+}
+
+.scrapbook-music-empty-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+}
+
+.scrapbook-music-empty-note {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--scrapbook-muted, #846F77);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .scrapbook-music-card,
+  .scrapbook-play-toggle-btn,
+  .scrapbook-music-btn-songbook,
+  .scrapbook-tracklist-item {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .scrapbook-vinyl-disc.is-spinning {
+    animation: none !important;
+  }
+
+  .scrapbook-tonearm {
+    transition: none !important;
+  }
+
+  .pulse-dot {
+    animation: none !important;
+  }
+}
