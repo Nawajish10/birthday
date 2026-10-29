@@ -25,6 +25,7 @@ export interface PhotoAsset {
   altText?: string;
   ownerVisitorId?: string;
   isPrivate?: boolean;
+  galleryCategory?: "main" | "private";
   contentHash?: string;
   metadata?: Record<string, unknown>;
   status?: PhotoAssetStatus;
@@ -114,6 +115,7 @@ export interface ProfilePostItem {
   alt_text?: string;
   sort_order?: number;
   is_published?: boolean;
+  galleryCategory?: "main" | "private";
   effectiveCaptureDate?: string;
   hasKnownCaptureDate?: boolean;
   created_at?: string;
@@ -135,6 +137,7 @@ export function photoAssetToProfilePostItem(photo: PhotoAsset): ProfilePostItem 
     effectiveCaptureDate: photo.effectiveCaptureDate,
     hasKnownCaptureDate: photo.hasKnownCaptureDate,
     created_at: photo.uploadTimestamp,
+    galleryCategory: photo.galleryCategory ?? (photo.isPrivate ? "private" : "main"),
   };
 }
 
@@ -152,6 +155,8 @@ export function profilePostItemToPhotoAsset(item: ProfilePostItem): PhotoAsset {
     uploadTimestamp: item.created_at || new Date().toISOString(),
     caption: item.caption,
     altText: item.alt_text,
+    galleryCategory: item.galleryCategory ?? ((item as any).is_private ? "private" : "main"),
+    isPrivate: item.galleryCategory === "private" || (item as any).is_private === true,
   };
 }
 

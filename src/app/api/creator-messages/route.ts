@@ -148,7 +148,10 @@ export async function GET(req: NextRequest) {
   const limitParam = req.nextUrl.searchParams.get("limit");
   const limit = Math.min(Math.max(parseInt(limitParam || "100", 10) || 100, 1), 300);
 
-  if (isAdmin && req.nextUrl.searchParams.get("inbox") === "1") {
+  const isInbox = req.nextUrl.searchParams.get("inbox") === "1";
+  const hasBirthdayAccess = await readScope("birthday");
+
+  if ((isAdmin || hasBirthdayAccess) && isInbox) {
     if (db) {
       try {
         let query = db

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as crypto from "node:crypto";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { extractAudioDuration } from "@/lib/music/audio-importer";
 
 export const dynamic = "force-dynamic";
 
@@ -53,13 +55,13 @@ function detectAudioMime(buffer: Uint8Array, headerMime?: string): string | null
 
   // Validate allowed header MIME types
   const allowed = [
-    "audio/mpeg", "audio/mp3", "audio/mp4", "audio/m4a", "audio/x-m4a",
+    "audio/mpeg", "audio/mp3", "audio/mp4", "video/mp4", "audio/m4a", "audio/x-m4a",
     "audio/wav", "audio/x-wav", "audio/aac", "audio/ogg", "audio/webm", "audio/flac"
   ];
   if (headerMime && allowed.includes(headerMime.toLowerCase())) {
     const norm = headerMime.toLowerCase();
     if (norm === "audio/mp3") return "audio/mpeg";
-    if (norm === "audio/m4a" || norm === "audio/x-m4a") return "audio/mp4";
+    if (norm === "audio/m4a" || norm === "audio/x-m4a" || norm === "video/mp4") return "audio/mp4";
     if (norm === "audio/x-wav") return "audio/wav";
     return norm;
   }
@@ -134,20 +136,73 @@ export async function POST(req: NextRequest) {
     const playlist_id = typeof formData.get("playlist_id") === "string" ? (formData.get("playlist_id") as string).trim() : null;
 
     const rawDuration = formData.get("duration_seconds");
-    const duration_seconds = rawDuration !== null && !isNaN(Number(rawDuration))
+    let duration_seconds = rawDuration !== null && !isNaN(Number(rawDuration))
       ? Math.round(Number(rawDuration))
       : null;
 
-    // 5. Generate a unique storage key: audio/{track_id}/{sanitized-filename}
+    // 5. Read full file buffer, compute SHA-256 checksum for content deduplication
+    const arrayBuf = await file.arrayBuffer();
+    const fileBuf = Buffer.from(arrayBuf);
+    const checksum = crypto.createHash("sha256").update(fileBuf).digest("hex");
+
+    if (duration_seconds === null) {
+      duration_seconds = extractAudioDuration(fileBuf, file instanceof File ? file.name : undefined);
+    }
+
+    // Deduplication check: if track with identical content checksum already exists, return it
+    const { data: existingTrack } = await adminDb
+      .from("music_tracks")
+      .select("*")
+      .eq("checksum", checksum)
+      .maybeSingle();
+
+    if (existingTrack) {
+      // If playlist_id provided, link existing track to playlist if not already linked
+      if (playlist_id) {
+        const { data: adminPlaylist } = await adminDb
+          .from("music_playlists")
+          .select("id")
+          .eq("id", playlist_id)
+          .maybeSingle();
+
+        if (adminPlaylist) {
+          const { data: existingLink } = await adminDb
+            .from("music_playlist_tracks")
+            .select("id")
+            .eq("playlist_id", playlist_id)
+            .eq("track_id", existingTrack.id)
+            .maybeSingle();
+
+          if (!existingLink) {
+            const { data: maxOrder } = await adminDb
+              .from("music_playlist_tracks")
+              .select("sort_order")
+              .eq("playlist_id", playlist_id)
+              .order("sort_order", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            await adminDb.from("music_playlist_tracks").insert({
+              playlist_id,
+              track_id: existingTrack.id,
+              sort_order: (maxOrder?.sort_order ?? -1) + 1,
+            });
+          }
+        }
+      }
+      return NextResponse.json(existingTrack, { status: 200 });
+    }
+
+    // 6. Generate a unique storage key: audio/{track_id}/{sanitized-filename}
     const track_id = crypto.randomUUID();
     const rawFileName = file instanceof File ? file.name : "track.mp3";
     const sanitizedName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const storageKey = `audio/${track_id}/${sanitizedName}`;
 
-    // 6. Upload to birthday-audio bucket using admin client
+    // 7. Upload to birthday-audio bucket using admin client
     const { error: uploadError } = await adminDb.storage
       .from("birthday-audio")
-      .upload(storageKey, file, {
+      .upload(storageKey, fileBuf, {
         contentType: mimeType,
         upsert: false,
       });
@@ -159,7 +214,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 7. Insert record into music_tracks
+    // 8. Insert record into music_tracks
     const { data: track, error: trackError } = await adminDb
       .from("music_tracks")
       .insert({
@@ -173,6 +228,7 @@ export async function POST(req: NextRequest) {
         source_type: "imported",
         availability_status: "available",
         duration_seconds,
+        checksum,
         is_published: true,
         created_by: user.id,
       })

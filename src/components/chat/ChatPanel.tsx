@@ -124,9 +124,9 @@ export function ChatPanel({
     return (
       conversations.find((c) => c.id === activeThreadId) || {
         id: "meerah",
-        name: "Meerah ✿",
+        name: "him",
         avatar: "/images/sample-meerah-1.jpg",
-        avatarGlyph: "M",
+        avatarGlyph: "H",
         lastMessage: "Typing...",
         lastTime: "9:41 PM",
         isOnline: true,
@@ -138,7 +138,8 @@ export function ChatPanel({
   // Sync encrypted messages for Meerah thread from backend
   const syncMessages = useCallback(async () => {
     try {
-      const res = await fetch("/api/creator-messages");
+      const url = activeRole === "creator" ? "/api/creator-messages?inbox=1" : "/api/creator-messages";
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.messages) && data.messages.length > 0) {
@@ -210,7 +211,7 @@ export function ChatPanel({
     } catch {
       setIsLiveConnected(false);
     }
-  }, []);
+  }, [activeRole]);
 
   // Auto-flush offline queue upon reconnection
   const flushOfflineQueue = useCallback(async () => {
@@ -585,14 +586,14 @@ export function ChatPanel({
           <div className="sidebarHeaderUser">
             <div className="sidebarAvatar" title="Your Account">
               <span className="sidebarAvatarGlyph">
-                {activeRole === "recipient" ? "M" : "B"}
+                {activeRole === "recipient" ? "H" : "B"}
               </span>
               <span className="onlineBadgeDot" />
             </div>
             <div className="sidebarUserMeta">
               <h2 className="sidebarTitle">Chats</h2>
               <span className="sidebarRoleLabel">
-                {activeRole === "recipient" ? "Meerah ✿" : "Admin (BABA)"}
+                {activeRole === "recipient" ? "him" : "Admin (BABA)"}
               </span>
             </div>
           </div>
@@ -603,12 +604,12 @@ export function ChatPanel({
               type="button"
               className="roleTogglePill"
               onClick={() => setActiveRole((prev) => (prev === "recipient" ? "creator" : "recipient"))}
-              title={`Switch perspective (currently ${activeRole === "recipient" ? "Meerah ✿" : "Admin BABA"})`}
+              title={`Switch perspective (currently ${activeRole === "recipient" ? "him" : "Admin BABA"})`}
               aria-label={`Switch role perspective from ${activeRole}`}
             >
               <span className="roleSwitchIcon" aria-hidden="true">🔄</span>
               <span className="roleSwitchText">
-                {activeRole === "recipient" ? "Meerah" : "Admin"}
+                {activeRole === "recipient" ? "him" : "Admin"}
               </span>
             </button>
 
@@ -755,7 +756,7 @@ export function ChatPanel({
 
             <div className="chatTitleGroup">
               <h2 className="chatTitleHeading">
-                {activeConversation.name}
+                {activeConversation.id === "meerah" ? "him" : activeConversation.name}
               </h2>
               <div className="chatSubStatus">
                 <span className="chatOnlineStatusIndicator">
@@ -828,7 +829,7 @@ export function ChatPanel({
           placeholder={
             activeRole === "recipient"
               ? "Type a message to BABA... ♡"
-              : `Type a message to ${activeConversation.name}... ♡`
+              : `Type a message to ${activeConversation.id === "meerah" ? "him" : activeConversation.name}... ♡`
           }
         />
       </main>
@@ -858,7 +859,7 @@ export function ChatPanel({
             </p>
 
             <div className="callLoveNote">
-              🌸 Birthday hotline to Meerah ✿ is always open with unlimited love!
+              🌸 Birthday hotline to him is always open with unlimited love!
             </div>
 
             <div className="callControlsRow">
@@ -969,7 +970,7 @@ export function ChatPanel({
               <span className="securityShieldIcon" aria-hidden="true">🛡️</span>
               <h3 id="securityModalTitle">End-to-End Encrypted</h3>
               <p className="securitySubhead">
-                Strict 1-to-1 Private Channel between Meerah & Noah
+                Strict 1-to-1 Private Channel between him & Noah
               </p>
             </div>
 

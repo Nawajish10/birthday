@@ -11,13 +11,14 @@ const ALLOWED_EXTENSIONS = [
   ".mp3",
   ".wav",
   ".m4a",
+  ".mp4",
   ".aac",
   ".ogg",
   ".flac",
   ".webm",
 ];
 
-const ALLOWED_MIME_PREFIXES = ["audio/"];
+const ALLOWED_MIME_PREFIXES = ["audio/", "video/mp4"];
 
 export interface UploadQueueItem {
   id: string;
@@ -80,7 +81,7 @@ export function AdminMusicUpload({ onTrackUploaded }: AdminMusicUploadProps) {
     };
   }, []);
 
-  // Extract audio duration using browser Audio constructor
+  // Extract audio duration using browser Audio or video container fallback
   const extractDuration = (file: File): Promise<number | null> => {
     return new Promise((resolve) => {
       try {
@@ -93,6 +94,26 @@ export function AdminMusicUpload({ onTrackUploaded }: AdminMusicUploadProps) {
           resolve(isNaN(duration) ? null : duration);
         };
         audio.onerror = () => {
+          // If Audio element fails (e.g. video/mp4 container on some platforms), fallback to video element
+          if (typeof document !== "undefined") {
+            try {
+              const video = document.createElement("video");
+              video.preload = "metadata";
+              video.onloadedmetadata = () => {
+                const duration = Math.round(video.duration);
+                URL.revokeObjectURL(objectUrl);
+                resolve(isNaN(duration) ? null : duration);
+              };
+              video.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(null);
+              };
+              video.src = objectUrl;
+              return;
+            } catch {
+              // Ignore
+            }
+          }
           URL.revokeObjectURL(objectUrl);
           resolve(null);
         };
@@ -321,7 +342,7 @@ export function AdminMusicUpload({ onTrackUploaded }: AdminMusicUploadProps) {
             Drag & drop audio files here, or click to browse
           </div>
           <div className="musicDropzoneHint">
-            Supported formats: MP3, WAV, M4A, AAC, OGG, FLAC, WebM (Max 50MB per file).
+            Supported formats: MP3, AAC, MP4, WAV, M4A, OGG, FLAC, WebM (Max 50MB per file).
             Multiple files supported.
           </div>
         </div>
@@ -329,7 +350,7 @@ export function AdminMusicUpload({ onTrackUploaded }: AdminMusicUploadProps) {
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".mp3,.wav,.m4a,.aac,.ogg,.flac,.webm,audio/*"
+          accept=".mp3,.wav,.m4a,.mp4,.aac,.ogg,.flac,.webm,audio/*,video/mp4"
           className="musicDropzoneFileInput"
           onChange={handleFileInputChange}
           onClick={(e) => e.stopPropagation()}

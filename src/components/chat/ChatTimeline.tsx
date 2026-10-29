@@ -159,6 +159,16 @@ export function ChatTimeline({
     }
   }, [messages]);
 
+  useEffect(() => {
+    const handleFocusInput = () => {
+      if (bottomAnchorRef.current) {
+        bottomAnchorRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    };
+    window.addEventListener("chat:focus-input", handleFocusInput);
+    return () => window.removeEventListener("chat:focus-input", handleFocusInput);
+  }, []);
+
   const handleImageTap = (att: ChatAttachment) => {
     if (onImageClick) {
       onImageClick(att);

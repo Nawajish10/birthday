@@ -348,23 +348,17 @@ Batch-Import CLI Script for Birthday Music Library
 ==================================================
 
 Usage:
-  npx tsx scripts/import-music.ts --manifest <path> --audio-dir <path> [options]
-
-Required:
-  --manifest <path>    Path to CSV or JSON manifest file.
-  --audio-dir <path>   Directory containing the audio files.
+  npx tsx scripts/import-music.ts --audio-dir <path> [--manifest <path>] [--playlist <name>] [options]
 
 Options:
+  --audio-dir <path>   Directory containing local audio files (required).
+  --manifest <path>    Path to CSV or JSON manifest file (optional; scans directory if omitted).
+  --playlist <name>    Default playlist name to assign imported tracks (optional).
   --dry-run            Validate files & checksums without uploading to storage or DB.
   --help, -h           Show this help message.
 
-Manifest Fields:
-  title                Track title (required)
-  audio_filename       Audio file name in audio-dir (required)
-  artist               Artist name (optional)
-  album                Album name (optional)
-  playlist             Playlist name to associate or create (optional)
-  duration_seconds     Duration in seconds (optional)
+Supported Formats:
+  MP3, AAC, MP4, WAV, M4A, OGG, FLAC, WebM (Max 50MB per file).
 `);
 }
 
@@ -372,6 +366,7 @@ function parseArgs(args: string[]): ImportOptions {
   let manifestPath = "";
   let audioDir = "";
   let dryRun = false;
+  let playlist = "";
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -388,19 +383,24 @@ function parseArgs(args: string[]): ImportOptions {
       audioDir = args[++i] || "";
     } else if (arg.startsWith("--audio-dir=")) {
       audioDir = arg.slice("--audio-dir=".length);
+    } else if (arg === "--playlist") {
+      playlist = args[++i] || "";
+    } else if (arg.startsWith("--playlist=")) {
+      playlist = arg.slice("--playlist=".length);
     }
   }
 
-  if (!manifestPath || !audioDir) {
-    console.error("Error: Missing required arguments --manifest and --audio-dir.\n");
+  if (!audioDir) {
+    console.error("Error: Missing required argument --audio-dir.\n");
     printHelp();
     process.exit(1);
   }
 
   return {
-    manifestPath: path.resolve(process.cwd(), manifestPath),
+    manifestPath: manifestPath ? path.resolve(process.cwd(), manifestPath) : undefined,
     audioDir: path.resolve(process.cwd(), audioDir),
     dryRun,
+    playlist: playlist || undefined,
   };
 }
 
@@ -408,7 +408,7 @@ function parseArgs(args: string[]): ImportOptions {
 // Main Ingestion Workflow
 // ---------------------------------------------------------------------------
 export async function runImport(options: ImportOptions): Promise<ImportReport> {
-  const { manifestPath, audioDir, dryRun } = options;
+  const { manifestPath, audioDir, dryRun, playlist } = options;
   loadEnv();
 
   const report: ImportReport = {
@@ -422,8 +422,9 @@ export async function runImport(options: ImportOptions): Promise<ImportReport> {
   console.log("==================================================");
   console.log("             MUSIC BATCH IMPORT RUNNER             ");
   console.log("==================================================");
-  console.log(`Manifest:    ${manifestPath}`);
+  console.log(`Manifest:    ${manifestPath || "(None - directory auto-scan)"}`);
   console.log(`Audio Dir:   ${audioDir}`);
+  console.log(`Playlist:    ${playlist || "(From manifest or auto-assigned)"}`);
   console.log(`Mode:        ${dryRun ? "DRY-RUN (no storage or DB changes)" : "LIVE INGESTION"}`);
   console.log("--------------------------------------------------");
 
@@ -433,16 +434,27 @@ export async function runImport(options: ImportOptions): Promise<ImportReport> {
   }
 
   let items: ManifestItem[];
-  try {
-    items = loadManifest(manifestPath);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[FATAL] Failed to read manifest: ${msg}`);
-    process.exit(1);
+  if (manifestPath) {
+    try {
+      items = loadManifest(manifestPath);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[FATAL] Failed to read manifest: ${msg}`);
+      process.exit(1);
+    }
+  } else {
+    try {
+      console.log(`Scanning audio directory for local audio files: ${audioDir}`);
+      items = scanAudioDirectory(audioDir, playlist);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[FATAL] Failed to scan audio directory: ${msg}`);
+      process.exit(1);
+    }
   }
 
   report.scanned = items.length;
-  console.log(`Loaded ${items.length} track entry/entries from manifest.\n`);
+  console.log(`Loaded ${items.length} track entry/entries.\n`);
 
   // Supabase admin client initialization
   let adminDb: ReturnType<typeof getAdminClient> | null = null;
@@ -509,6 +521,14 @@ export async function runImport(options: ImportOptions): Promise<ImportReport> {
       );
       report.failed++;
       continue;
+    }
+
+    // Extract metadata and duration if missing
+    if (item.duration_seconds === undefined || item.duration_seconds === null) {
+      const extractedDur = extractAudioDuration(fileBuffer, item.audio_filename);
+      if (extractedDur !== null) {
+        item.duration_seconds = extractedDur;
+      }
     }
 
     // SHA-256 Checksum

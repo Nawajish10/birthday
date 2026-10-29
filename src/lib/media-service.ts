@@ -141,6 +141,7 @@ export const SAMPLE_PRELOADED_PHOTOS: PhotoAsset[] = [
     uploadTimestamp: "2026-10-20T10:00:00Z",
     caption: "Birthday smiles and laughter ✿",
     altText: "Meerah smiling on her birthday celebration",
+    galleryCategory: "main",
   },
   {
     id: "photo-mem-2",
@@ -155,6 +156,7 @@ export const SAMPLE_PRELOADED_PHOTOS: PhotoAsset[] = [
     uploadTimestamp: "2026-10-20T10:05:00Z",
     caption: "Golden hour sunset memory ✨",
     altText: "Golden hour glow during an evening stroll",
+    galleryCategory: "main",
   },
   {
     id: "photo-mem-3",
@@ -169,6 +171,7 @@ export const SAMPLE_PRELOADED_PHOTOS: PhotoAsset[] = [
     uploadTimestamp: "2026-10-20T10:10:00Z",
     caption: "Spring blossom afternoon ♡",
     altText: "Spring afternoon in the park",
+    galleryCategory: "main",
   },
   {
     id: "photo-mem-4",
@@ -183,6 +186,7 @@ export const SAMPLE_PRELOADED_PHOTOS: PhotoAsset[] = [
     uploadTimestamp: "2026-10-20T10:15:00Z",
     caption: "Four years of beautiful moments 🎂",
     altText: "Four years celebration memories",
+    galleryCategory: "main",
   },
 ];
 
@@ -427,6 +431,88 @@ export function addPhotoAsset(photo: PhotoAsset, storage?: Storage): PhotoAsset[
   const updated = [photo, ...photos.filter((p) => p.id !== photo.id)];
   savePhotos(updated, storage);
   return updated;
+}
+
+/**
+ * Classifies an individual photo asset as 'main' or 'private'.
+ * Synchronizes both `galleryCategory` and `isPrivate` boolean flag.
+ */
+export function classifyPhoto(
+  photoId: string,
+  category: "main" | "private",
+  storage?: Storage
+): PhotoAsset | null {
+  const photos = loadPhotos(storage);
+  let updatedPhoto: PhotoAsset | null = null;
+  const updated = photos.map((p) => {
+    if (p.id === photoId) {
+      updatedPhoto = {
+        ...p,
+        galleryCategory: category,
+        isPrivate: category === "private",
+      };
+      return updatedPhoto;
+    }
+    return p;
+  });
+
+  if (updatedPhoto) {
+    savePhotos(updated, storage);
+  }
+  return updatedPhoto;
+}
+
+/**
+ * Bulk classifies multiple photo assets as 'main' or 'private'.
+ */
+export function bulkClassifyPhotos(
+  photoIds: string[],
+  category: "main" | "private",
+  storage?: Storage
+): PhotoAsset[] {
+  if (!photoIds || photoIds.length === 0) return loadPhotos(storage);
+  const targetIds = new Set(photoIds);
+  const photos = loadPhotos(storage);
+  const updated = photos.map((p) => {
+    if (targetIds.has(p.id)) {
+      return {
+        ...p,
+        galleryCategory: category,
+        isPrivate: category === "private",
+      };
+    }
+    return p;
+  });
+
+  savePhotos(updated, storage);
+  return updated;
+}
+
+/**
+ * Filters photos to strictly include only those marked explicitly for Main Gallery.
+ * Enforces that private gallery photos are excluded.
+ */
+export function filterMainGallery(photos: PhotoAsset[]): PhotoAsset[] {
+  if (!photos || !Array.isArray(photos)) return [];
+  return photos.filter((p) => (p.galleryCategory === "main" || (!p.galleryCategory && !p.isPrivate)) && !p.isPrivate);
+}
+
+/**
+ * Filters photos to include only private gallery photos.
+ */
+export function filterPrivateGallery(photos: PhotoAsset[]): PhotoAsset[] {
+  if (!photos || !Array.isArray(photos)) return [];
+  return photos.filter((p) => p.galleryCategory === "private" || p.isPrivate === true);
+}
+
+/**
+ * Filters profile posts to strictly include only those marked explicitly for Main Gallery.
+ */
+export function filterMainGalleryPosts(posts: ProfilePostItem[]): ProfilePostItem[] {
+  if (!posts || !Array.isArray(posts)) return [];
+  return posts.filter(
+    (p) => (p.galleryCategory === "main" || (!p.galleryCategory && !(p as any).is_private)) && !(p as any).is_private
+  );
 }
 
 /**
