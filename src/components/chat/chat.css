@@ -1991,12 +1991,18 @@
   cursor: not-allowed;
 }
 
-/* Responsive Breakpoints for Mobile-first WhatsApp navigation */
+/* Responsive Breakpoints for Mobile-first WhatsApp navigation & Virtual Keyboard */
 @media (max-width: 768px) {
+  .chatPanelContainer,
   .chatPanelContainer.whatsappLayout {
-    height: 90vh;
-    min-height: 480px;
-    border-radius: 0px;
+    height: 100dvh;
+    max-height: calc(100dvh - 110px);
+    min-height: 380px;
+    border-radius: 12px;
+  }
+
+  .chatComposerWrapper {
+    padding: 0.6rem 0.75rem max(0.6rem, env(safe-area-inset-bottom));
   }
 
   .mobileShowList .chatSidebarPane {
@@ -2020,5 +2026,27 @@
 
   .chatMobileBackBtn {
     display: inline-flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatToolbarRow {
+    gap: 0.3rem;
+  }
+  .chatToolBtn .toolLabel {
+    display: none;
+  }
+  .chatToolBtn {
+    padding: 0.35rem 0.5rem;
+    min-width: 36px;
+    justify-content: center;
+  }
+  .chatSendButton .sendText {
+    display: none;
+  }
+  .chatSendButton {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem 0.65rem;
   }
 }

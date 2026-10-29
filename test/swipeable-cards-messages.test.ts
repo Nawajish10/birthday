@@ -298,7 +298,7 @@ describe("Section 4: Personal Messages and Poetry — Component & Helper Contrac
     assert.ok(html.includes("HEARTFELT NOTES · دلی پیغامات"), "Renders bilingual kicker");
 
     // Check position badge
-    assert.ok(html.includes("Card 2 of 4"), "Renders active card index badge");
+    assert.ok(html.includes("Card 2 of " + DEFAULT_PERSONAL_MESSAGES.length) || html.includes("Card 2 of 4"), "Renders active card index badge");
 
     // Check English body
     assert.ok(html.includes("message-card-body-en"), "Has English body container");

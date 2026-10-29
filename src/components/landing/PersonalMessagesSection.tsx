@@ -39,7 +39,7 @@ export const MESSAGE_SWIPE_THRESHOLD_PX = 45;
 
 /**
  * Curated default heartfelt birthday messages, personal notes, and blessings for Meerah.
- * Preserves the sincere, heartfelt tone in clear, beautiful English.
+ * Exactly ten (10) thoughtful notes matching the Birthday tone.
  */
 export const DEFAULT_PERSONAL_MESSAGES: readonly PersonalMessageCard[] = [
   {
@@ -88,6 +88,78 @@ export const DEFAULT_PERSONAL_MESSAGES: readonly PersonalMessageCard[] = [
       "تمہارا وجود ہماری زندگیوں میں ایک خوبصورت تحفہ ہے۔ تم جیسی ہو، ویسی ہی رہنا—بے لوث، سچی اور بے حد عزیز۔",
     date: "October 30",
     author: "Always in your corner",
+    sealColor: "pink",
+  },
+  {
+    id: "msg-5",
+    title: "The Beauty of Your Quiet Strength",
+    category: "Strength & Grace",
+    body_en:
+      "There is a rare kind of grace in the way you carry both softness and strength. Even on quiet days when you think no one notices, your patience, wisdom, and gentle resolve inspire everyone around you. Never forget how extraordinary you truly are.",
+    body_ur:
+      "تیری مسکراہٹ میں وہ روشنی ہے جو اداس شاموں کو بھی چراغاں کر دیتی ہے۔ تیرا صبر اور تیرا وقار تیری سب سے بڑی پہچان ہے۔",
+    date: "With endless admiration",
+    author: "Standing beside you",
+    sealColor: "gold",
+  },
+  {
+    id: "msg-6",
+    title: "Golden Memories & Warm Teacups",
+    category: "Cherished Moments",
+    body_en:
+      "From spontaneous laughter over steaming mugs of tea to conversations that stretch under starry skies, every simple moment spent with you turns into a treasured memory. Thank you for making ordinary days feel like poetry.",
+    body_ur:
+      "وہ باتوں کے سلسلے، وہ چائے کے کپ، اور وہ بے ساختہ ہنسی—یہ سب لمحات زندگی کے سب سے انمول موتی ہیں۔",
+    date: "Keepsake memories",
+    author: "For the shared moments",
+    sealColor: "sage",
+  },
+  {
+    id: "msg-7",
+    title: "Wishes for Your Wildest Dreams",
+    category: "Birthday Wishes",
+    body_en:
+      "May this upcoming year be the chapter where your boldest dreams step into reality. May every door you knock on open wide, every project flourish with success, and every risk you take blossom into a triumph. You deserve every ounce of magic this world has to offer.",
+    body_ur:
+      "خدا کرے تمہارے خواب اتنے اونچے ہوں جتنے آسمان کے تارے، اور تمہاری محنت انہیں حقیقت کا روپ بخشے۔",
+    date: "October 30",
+    author: "Cheering for you always",
+    sealColor: "pink",
+  },
+  {
+    id: "msg-8",
+    title: "A Harbor of Calm & Peace",
+    category: "Heartfelt Reflection",
+    body_en:
+      "In a noisy, rushing world, your presence is like a quiet harbor of warmth and peace. You bring a calming reassurance wherever you go, soothing worries with just a smile. May your heart receive back double the peace you generously give away.",
+    body_ur:
+      "خدا تمہارے دل کو ایسا سکون عطا کرے جس پر کبھی کسی فکر کا سایہ نہ پڑے۔",
+    date: "Blessings & serenity",
+    author: "With deepest care",
+    sealColor: "gold",
+  },
+  {
+    id: "msg-9",
+    title: "A Sister, A Friend, A Blessing",
+    category: "Endless Bonds",
+    body_en:
+      "Life is so much richer, kinder, and brighter because you are in it. Through every season, celebration, and turning of the wheel, knowing you are there makes every step sweeter. Here is to a bond that only grows deeper with every passing year.",
+    body_ur:
+      "رشتے وہ خوبصورت ہوتے ہیں جو دل کی گہرائیوں میں بستے ہیں۔ تمہارا ساتھ زندگی کا ایک بے مثل تحفہ ہے۔",
+    date: "Always & forever",
+    author: "Grateful for you",
+    sealColor: "sage",
+  },
+  {
+    id: "msg-10",
+    title: "A Radiant Year Ahead",
+    category: "Celebration & Tomorrow",
+    body_en:
+      "Blow out the candles with the biggest smile today, Meerah. Today belongs entirely to you, and tomorrow opens like a fresh, golden page waiting for your story. May health, happiness, profound contentment, and radiant love follow you wherever you go.",
+    body_ur:
+      "سالگرہ کی ڈھیروں مبارکباد! آنے والا ہر سال تمہارے لیے صحت، خوشیاں اور بے شمار برکتیں لے کر آئے۔",
+    date: "October 30",
+    author: "Happy Birthday, Meerah!",
     sealColor: "pink",
   },
 ] as const;
@@ -308,135 +380,163 @@ export function PersonalMessagesSection({
         <p className="personal-messages-supporting">{supportingText}</p>
       </div>
 
-      {/* Card Stack Deck Viewport */}
-      <div className="personal-card-deck-container">
-        {/* Decorative backdrop cards giving tactile stacked paper feel */}
-        <div className="deck-card-ghost deck-card-back" aria-hidden="true" />
-        <div className="deck-card-ghost deck-card-middle" aria-hidden="true" />
-
-        {/* Primary Interactive Message Card */}
-        <article
-          key={activeCard.id}
-          className="message-card-active"
-          aria-roledescription="card"
-          aria-label={`Message ${activeIndex + 1} of ${totalCards}: ${activeCard.title}`}
-        >
-          {/* Washi Tape Accent */}
-          <div
-            className={`washi-tape washi-tape-${sealColor} washi-pos-center message-card-tape`}
-            aria-hidden="true"
-          />
-
-          {/* Top category ribbon & seal */}
-          <div className="message-card-topbar">
-            {activeCard.category && (
-              <span className={`message-category-chip chip-${sealColor}`}>
-                <span className="category-symbol" aria-hidden="true">✦</span>
-                {activeCard.category}
-              </span>
-            )}
-            <div className="message-wax-seal" aria-hidden="true">
-              <span className="wax-seal-icon">❦</span>
-            </div>
-          </div>
-
-          {/* Title */}
-          <h3 className="message-card-title">{activeCard.title}</h3>
-
-          {/* English Message Body */}
-          <div className="message-card-body-en">
-            <p>{activeCard.body_en}</p>
-          </div>
-
-          {/* Urdu Message Body & Poetry (RTL with bidirectional isolation) */}
-          {activeCard.body_ur && (
-            <div className="message-card-urdu-container">
-              <div className="message-card-divider" aria-hidden="true">
-                <span className="divider-line" />
-                <span className="divider-ornament">✿</span>
-                <span className="divider-line" />
-              </div>
-              <blockquote
-                className="message-card-urdu-text"
-                lang="ur"
-                dir="rtl"
-              >
-                {activeCard.body_ur.split("\n").map((line, idx) => (
-                  <span key={idx} className="urdu-verse-line">
-                    {line}
-                  </span>
-                ))}
-              </blockquote>
-            </div>
-          )}
-
-          {/* Footer Metadata */}
-          <div className="message-card-footer">
-            {activeCard.author && (
-              <span className="message-author">
-                <span className="author-icon" aria-hidden="true">♡</span>
-                {activeCard.author}
-              </span>
-            )}
-            {activeCard.date && (
-              <span className="message-date">{activeCard.date}</span>
-            )}
-          </div>
-        </article>
-      </div>
-
-      {/* Navigation Controls with strict boundary disabling */}
-      <div className="messages-controls-bar">
+      {/* Card Stack Deck Viewport with Sleek Side Navigation Arrows */}
+      <div className="personal-card-deck-wrapper">
+        {/* Sleek Left Arrow Button */}
         <button
           type="button"
-          className="messages-nav-btn messages-nav-prev"
+          className="messages-nav-btn messages-side-nav-btn messages-nav-prev"
           onClick={goPrev}
           disabled={!wrap && isFirst}
-          aria-label="Previous message"
+          aria-label="Previous note"
+          title="Previous Note"
         >
-          <span aria-hidden="true">←</span>
-          <span className="btn-label">Previous Note</span>
+          <span className="sr-only" aria-label="Previous message">Previous Note</span>
+          <svg
+            className="messages-nav-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </button>
 
-        {/* Tab / Dot Indicator Pills */}
+        {/* Primary Card Stack Deck Container */}
         <div
-          className="messages-pills-row"
-          role="tablist"
-          aria-label="Select a personal note"
+          className="personal-card-deck-container"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
-          {resolvedCards.map((card, i) => (
-            <button
-              key={card.id || `msg-pill-${i}`}
-              type="button"
-              role="tab"
-              aria-selected={i === activeIndex}
-              aria-label={`Read note ${i + 1}: ${card.title}`}
-              className={`messages-pill ${i === activeIndex ? "active" : ""}`}
-              onClick={() => goTo(i)}
-            >
-              <span className="pill-dot" />
-              <span className="pill-text">
-                {card.title.length > 20 ? `${card.title.slice(0, 18)}...` : card.title}
-              </span>
-            </button>
-          ))}
+          {/* Decorative backdrop cards giving tactile stacked paper feel */}
+          <div className="deck-card-ghost deck-card-back" aria-hidden="true" />
+          <div className="deck-card-ghost deck-card-middle" aria-hidden="true" />
+
+          {/* Primary Interactive Message Card */}
+          <article
+            key={activeCard.id}
+            className="message-card-active"
+            aria-roledescription="card"
+            aria-label={`Message ${activeIndex + 1} of ${totalCards}: ${activeCard.title}`}
+          >
+            {/* Washi Tape Accent */}
+            <div
+              className={`washi-tape washi-tape-${sealColor} washi-pos-center message-card-tape`}
+              aria-hidden="true"
+            />
+
+            {/* Top category ribbon & seal */}
+            <div className="message-card-topbar">
+              {activeCard.category && (
+                <span className={`message-category-chip chip-${sealColor}`}>
+                  <span className="category-symbol" aria-hidden="true">✦</span>
+                  {activeCard.category}
+                </span>
+              )}
+              <div className="message-wax-seal" aria-hidden="true">
+                <span className="wax-seal-icon">❦</span>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="message-card-title">{activeCard.title}</h3>
+
+            {/* English Message Body */}
+            <div className="message-card-body-en">
+              <p>{activeCard.body_en}</p>
+            </div>
+
+            {/* Urdu Message Body & Poetry (RTL with bidirectional isolation) */}
+            {activeCard.body_ur && (
+              <div className="message-card-urdu-container">
+                <div className="message-card-divider" aria-hidden="true">
+                  <span className="divider-line" />
+                  <span className="divider-ornament">✿</span>
+                  <span className="divider-line" />
+                </div>
+                <blockquote
+                  className="message-card-urdu-text"
+                  lang="ur"
+                  dir="rtl"
+                >
+                  {activeCard.body_ur.split("\n").map((line, idx) => (
+                    <span key={idx} className="urdu-verse-line">
+                      {line}
+                    </span>
+                  ))}
+                </blockquote>
+              </div>
+            )}
+
+            {/* Footer Metadata */}
+            <div className="message-card-footer">
+              {activeCard.author && (
+                <span className="message-author">
+                  <span className="author-icon" aria-hidden="true">♡</span>
+                  {activeCard.author}
+                </span>
+              )}
+              {activeCard.date && (
+                <span className="message-date">{activeCard.date}</span>
+              )}
+            </div>
+          </article>
         </div>
 
+        {/* Sleek Right Arrow Button */}
         <button
           type="button"
-          className="messages-nav-btn messages-nav-next"
+          className="messages-nav-btn messages-side-nav-btn messages-nav-next"
           onClick={goNext}
           disabled={!wrap && isLast}
-          aria-label="Next message"
+          aria-label="Next note"
+          title="Next Note"
         >
-          <span className="btn-label">Next Note</span>
-          <span aria-hidden="true">→</span>
+          <span className="sr-only" aria-label="Next message">Next Note</span>
+          <svg
+            className="messages-nav-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
+      </div>
+
+      {/* Tab / Dot Indicator Pills Row (1 to 10) */}
+      <div
+        className="messages-pills-row"
+        role="tablist"
+        aria-label="Select a personal note"
+      >
+        {resolvedCards.map((card, i) => (
+          <button
+            key={card.id || `msg-pill-${i}`}
+            type="button"
+            role="tab"
+            aria-selected={i === activeIndex}
+            aria-label={`Read note ${i + 1} of ${totalCards}: ${card.title}`}
+            className={`messages-pill ${i === activeIndex ? "active" : ""}`}
+            onClick={() => goTo(i)}
+          >
+            <span className="pill-dot" />
+            <span className="pill-number">{i + 1}</span>
+          </button>
+        ))}
       </div>
 
       {/* Touch swipe guide for mobile users */}
       <div className="messages-swipe-hint" aria-hidden="true">
-        <span>← Swipe across the letter or use arrows to flip notes →</span>
+        <span>← Swipe across note or tap side arrows to flip →</span>
       </div>
     </section>
   );

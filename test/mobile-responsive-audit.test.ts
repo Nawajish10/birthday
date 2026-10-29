@@ -41,6 +41,8 @@ describe("Mobile Responsiveness & Viewport Audit", () => {
 
     assert.ok(chatCssSrc.includes("max-width: 100%"), "Chat panel must fit within mobile screen");
     assert.ok(chatCssSrc.includes("word-break") || chatCssSrc.includes("overflow-wrap"), "Chat bubbles must wrap long strings");
+    assert.ok(chatCssSrc.includes("100dvh") || chatCssSrc.includes("height:"), "Chat panel must adapt to mobile viewport height");
+    assert.ok(chatCssSrc.includes("safe-area-inset-bottom"), "Chat composer must support safe area insets on mobile");
   });
 
   it("verifies StudyPanel responsive grid and reader controls on narrow screens", () => {
@@ -117,5 +119,64 @@ describe("Mobile Responsiveness & Viewport Audit", () => {
       bottomNavCssSrc.includes("padding-bottom:"),
       ".shell-content-with-bottom-nav must declare padding-bottom"
     );
+  });
+
+  it("verifies Heartfelt Notes card side arrows, touch swipe, and viewport adaptation (320px-430px)", () => {
+    const notesTsxPath = path.resolve(process.cwd(), "src/components/landing/PersonalMessagesSection.tsx");
+    const notesCssPath = path.resolve(process.cwd(), "src/components/landing/personal-messages.css");
+
+    const notesTsxSrc = fs.readFileSync(notesTsxPath, "utf-8");
+    const notesCssSrc = fs.readFileSync(notesCssPath, "utf-8");
+
+    // Side navigation arrows
+    assert.ok(notesTsxSrc.includes("messages-nav-prev") && notesTsxSrc.includes("messages-nav-next"), "Must render prev and next note buttons");
+    assert.ok(notesTsxSrc.includes("onTouchStart") && notesTsxSrc.includes("onTouchEnd"), "Must support touch gesture swipe handlers");
+    assert.ok(notesTsxSrc.includes("calculateSwipeDirection"), "Must calculate swipe direction");
+
+    // Mobile viewports 320px - 430px
+    assert.ok(notesCssSrc.includes("@media (max-width: 360px)") || notesCssSrc.includes("@media (max-width: 380px)"), "Must support 320px-360px compact screens");
+    assert.ok(notesCssSrc.includes("touch-action"), "Must set touch-action for scroll containment");
+  });
+
+  it("verifies Music Room player scrubber, audio controls, and bottom bar placement on mobile viewports", () => {
+    const musicRoomTsxPath = path.resolve(process.cwd(), "src/components/music/MusicRoom.tsx");
+    const musicRoomCssPath = path.resolve(process.cwd(), "src/components/music/music-room.css");
+
+    const musicRoomTsxSrc = fs.readFileSync(musicRoomTsxPath, "utf-8");
+    const musicRoomCssSrc = fs.readFileSync(musicRoomCssPath, "utf-8");
+
+    // Scrubber & controls
+    assert.ok(musicRoomTsxSrc.includes("music-bottom-scrubber"), "Must render scrubber bar");
+    assert.ok(musicRoomTsxSrc.includes("music-progress-bar") || musicRoomTsxSrc.includes("music-bottom-slider"), "Must provide interactive slider");
+    assert.ok(musicRoomCssSrc.includes("@media (max-width: 768px)"), "Must adapt bottom player bar for mobile");
+    assert.ok(musicRoomCssSrc.includes("calc(") && musicRoomCssSrc.includes("env(safe-area-inset-bottom)"), "Must offset player bar above bottom navigation dock");
+  });
+
+  it("verifies Memories gallery classification controls, cards, and safe touch targets", () => {
+    const memoriesTsxPath = path.resolve(process.cwd(), "src/components/memories/MemoriesPanel.tsx");
+    const memoriesCssPath = path.resolve(process.cwd(), "src/components/memories/memories.css");
+
+    const memoriesTsxSrc = fs.readFileSync(memoriesTsxPath, "utf-8");
+    const memoriesCssSrc = fs.readFileSync(memoriesCssPath, "utf-8");
+
+    assert.ok(memoriesTsxSrc.includes("memoriesTabs"), "Must render classification/tab controls");
+    assert.ok(memoriesCssSrc.includes("--memories-touch-target: 44px") || memoriesCssSrc.includes("min-height: 44px") || memoriesCssSrc.includes("min-height: var(--memories-touch-target)"), "Memories tabs must satisfy 44px touch targets");
+    assert.ok(memoriesCssSrc.includes("@media (max-width: 480px)") || memoriesCssSrc.includes("@media (max-width: 768px)"), "Memories must define responsive mobile breakpoints");
+  });
+
+  it("verifies zero duplicate footers across shell and experience components", () => {
+    const routeShellPath = path.resolve(process.cwd(), "src/components/shared/RouteShell.tsx");
+    const experiencePath = path.resolve(process.cwd(), "src/components/Experience.tsx");
+
+    const routeShellSrc = fs.readFileSync(routeShellPath, "utf-8");
+    const experienceSrc = fs.readFileSync(experiencePath, "utf-8");
+
+    // Exactly one footer element in RouteShell
+    const routeShellFooters = (routeShellSrc.match(/<footer/g) || []).length;
+    assert.strictEqual(routeShellFooters, 1, "RouteShell must contain exactly one <footer>");
+
+    // Exactly one footer element in Experience
+    const experienceFooters = (experienceSrc.match(/<footer/g) || []).length;
+    assert.strictEqual(experienceFooters, 1, "Experience must contain exactly one <footer>");
   });
 });

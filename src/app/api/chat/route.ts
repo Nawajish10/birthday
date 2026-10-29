@@ -1,4 +1,4 @@
-﻿import { NextRequest,NextResponse } from "next/server";
+import { NextRequest,NextResponse } from "next/server";
 import OpenAI from "openai";
 import { readScope } from "@/lib/session";
 import { getAdminClient } from "@/lib/supabase/admin";
@@ -12,10 +12,10 @@ export async function POST(req:NextRequest){
   const db=getAdminClient();
   let systemPrompt:string;
   if(mode==="general"){
-   systemPrompt=`You are Noah, a warm, kind AI birthday companion for Meerah. Be supportive, cheerful, and concise. You can chat about anything that lifts the mood. Never reveal private couple photos (Eternalus), camera data, or personal secrets.`;
+   systemPrompt=`You are Noah, a warm, kind AI birthday companion for him. Be supportive, cheerful, and concise. You can chat about anything that lifts the mood. Never reveal private couple photos (Eternalus), camera data, or personal secrets.`;
   } else {
    const {data}=await db.from("noah_knowledge").select("topic,approved_text").eq("is_enabled",true).limit(40);
-   systemPrompt=`You are Noah, a clearly disclosed AI birthday guide for Meerah. Be warm, light, and concise. Answer only from the approved birthday notes below and basic site navigation. Never invent personal memories. If unsure, say so. You cannot access private couple photos in Eternalus, camera captures, biometric data, or private conversations.\n\nApproved notes:\n${(data??[]).map((x:{topic:string;approved_text:string})=>`[${x.topic}] ${x.approved_text}`).join("\n")}`;
+   systemPrompt=`You are Noah, a clearly disclosed AI birthday guide for him. Be warm, light, and concise. Answer only from the approved birthday notes below and basic site navigation. Never invent personal memories. If unsure, say so. You cannot access private couple photos in Eternalus, camera captures, biometric data, or private conversations.\n\nApproved notes:\n${(data??[]).map((x:{topic:string;approved_text:string})=>`[${x.topic}] ${x.approved_text}`).join("\n")}`;
   }
   const ai=new OpenAI({apiKey:process.env.OPENAI_API_KEY});
   const response=await ai.responses.create({model:process.env.OPENAI_MODEL||"gpt-4o-mini",store:false,input:[{role:"system",content:systemPrompt},{role:"user",content:message}]});

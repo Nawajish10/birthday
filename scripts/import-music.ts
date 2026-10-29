@@ -18,6 +18,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as crypto from "node:crypto";
 import { getAdminClient } from "../src/lib/supabase/admin.ts";
+import {
+  extractAudioDuration,
+  extractAudioMetadata,
+  scanAudioDirectory,
+} from "../src/lib/music/audio-importer.ts";
 
 // ---------------------------------------------------------------------------
 // Environment loader (loads .env.local / .env if not yet loaded)
@@ -66,9 +71,10 @@ export interface ManifestItem {
 }
 
 export interface ImportOptions {
-  manifestPath: string;
+  manifestPath?: string;
   audioDir: string;
-  dryRun: boolean;
+  dryRun?: boolean;
+  playlist?: string;
 }
 
 export interface ImportReport {
@@ -86,6 +92,7 @@ const EXT_TO_MIME: Record<string, string> = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
   ".m4a": "audio/mp4",
+  ".mp4": "audio/mp4",
   ".aac": "audio/aac",
   ".ogg": "audio/ogg",
   ".flac": "audio/flac",

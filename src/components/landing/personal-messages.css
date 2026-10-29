@@ -75,6 +75,31 @@
   color: var(--scrapbook-muted, #846F77);
 }
 
+/* Visually hidden screen reader utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Card Deck Wrapper with Side Arrow Controls */
+.personal-card-deck-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
 /* Interactive Card Deck Container */
 .personal-card-deck-container {
   position: relative;
@@ -87,6 +112,7 @@
   justify-content: center;
   user-select: none;
   touch-action: pan-y pinch-zoom;
+  flex: 1;
 }
 
 /* Ghost stacked cards behind primary card */
@@ -303,61 +329,90 @@
   font-size: 0.78rem;
 }
 
-/* Navigation Controls Bar */
-.messages-controls-bar {
-  display: flex;
+/* Navigation Controls & Sleek Side Arrows */
+.messages-side-nav-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 2rem;
-  flex-wrap: wrap;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: #FFF9EF;
+  border: 1.5px solid #EADBCE;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(98, 71, 82, 0.08);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.messages-side-nav-btn .messages-nav-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--scrapbook-plum-dark, #3D2B33);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.messages-side-nav-btn:hover:not(:disabled) {
+  background: #FFFFFF;
+  border-color: var(--scrapbook-rose-deep, #D4798D);
+  color: var(--scrapbook-rose-deep, #D4798D);
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 6px 18px rgba(212, 121, 141, 0.22);
+}
+
+.messages-side-nav-btn:hover:not(:disabled) .messages-nav-icon {
+  color: var(--scrapbook-rose-deep, #D4798D);
+}
+
+.messages-side-nav-btn.messages-nav-prev:hover:not(:disabled) .messages-nav-icon {
+  transform: translateX(-2px);
+}
+
+.messages-side-nav-btn.messages-nav-next:hover:not(:disabled) .messages-nav-icon {
+  transform: translateX(2px);
+}
+
+.messages-side-nav-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.96);
 }
 
 .messages-nav-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
   background: #FFF9EF;
   border: 1.5px solid #EADBCE;
-  border-radius: 999px;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.85rem;
   font-weight: 600;
   color: var(--scrapbook-plum-dark, #3D2B33);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(98, 71, 82, 0.06);
   transition: all 0.2s ease;
-  min-height: 44px;
-}
-
-.messages-nav-btn:hover:not(:disabled) {
-  background: #FFFFFF;
-  border-color: var(--scrapbook-rose-deep, #D4798D);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(98, 71, 82, 0.1);
-}
-
-.messages-nav-btn:active:not(:disabled) {
-  transform: translateY(0);
 }
 
 .messages-nav-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.32;
   cursor: not-allowed;
   border-color: #EADBCE;
   box-shadow: none;
+  transform: none !important;
 }
 
 .messages-nav-btn:focus-visible {
   outline: 2px solid var(--scrapbook-rose-deep, #D4798D);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-/* Pills row */
+/* Pills / Dots Indicator Row */
 .messages-pills-row {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
+  margin-top: 2rem;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -368,13 +423,15 @@
   gap: 0.35rem;
   background: #FBF4E6;
   border: 1px solid #EADBCE;
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--scrapbook-muted, #846F77);
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 36px;
+  min-height: 32px;
+  min-width: 32px;
 }
 
 .messages-pill .pill-dot {
@@ -386,12 +443,17 @@
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.messages-pill .pill-number {
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 .messages-pill.active {
   background: #FFFFFF;
   border-color: var(--scrapbook-rose-deep, #D4798D);
   color: var(--scrapbook-plum-dark, #3D2B33);
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(212, 121, 141, 0.12);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(212, 121, 141, 0.16);
 }
 
 .messages-pill.active .pill-dot {
@@ -447,6 +509,19 @@
 
 /* Responsive queries */
 @media (max-width: 640px) {
+  .personal-card-deck-wrapper {
+    gap: 0.5rem;
+  }
+  .messages-side-nav-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .messages-side-nav-btn .messages-nav-icon {
+    width: 18px;
+    height: 18px;
+  }
   .message-card-active {
     padding: 1.75rem 1.25rem 1.5rem 1.25rem;
   }
@@ -456,20 +531,56 @@
   .message-card-title {
     font-size: 1.35rem;
   }
-  .messages-pill .pill-text {
-    display: none;
+  .messages-pill {
+    padding: 0.3rem 0.5rem;
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 0.72rem;
+  }
+  .messages-pills-row {
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .personal-messages-section {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .personal-card-deck-wrapper {
+    gap: 0.3rem;
+  }
+  .messages-side-nav-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .message-card-active {
+    padding: 1.5rem 0.9rem 1.25rem 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .personal-messages-section {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  .message-card-active {
+    padding: 1.25rem 0.75rem 1rem 0.75rem;
+  }
+  .personal-messages-heading {
+    font-size: 1.35rem;
+  }
+  .message-card-title {
+    font-size: 1.15rem;
+  }
+  .messages-pills-row {
+    gap: 0.2rem;
   }
   .messages-pill {
-    padding: 0.4rem;
-    min-width: 32px;
-    justify-content: center;
-  }
-  .messages-controls-bar {
-    justify-content: center;
-  }
-  .messages-nav-btn {
-    padding: 0.55rem 0.9rem;
-    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
   }
 }
 

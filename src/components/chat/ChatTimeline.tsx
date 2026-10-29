@@ -135,13 +135,16 @@ export function ChatTimeline({
 
   const [activeReactionMessageId, setActiveReactionMessageId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<ChatAttachment | null>(null);
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
 
   // Monitor scroll position to avoid forcing bottom scroll when user is reading older messages
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const distanceToBottom = scrollHeight - (scrollTop + clientHeight);
-    userScrolledUpRef.current = distanceToBottom > 80;
+    const isScrolledUp = distanceToBottom > 80;
+    userScrolledUpRef.current = isScrolledUp;
+    setShowScrollBottomBtn(isScrolledUp);
   }, []);
 
   // Pins to bottom on initial load or if user hasn't scrolled far up
@@ -211,7 +214,7 @@ export function ChatTimeline({
                   <span className="chatSenderName">
                     {msg.sender === "creator"
     ? (currentUserRole === "creator" ? "BABA (You)" : "BABA ♡")
-    : (currentUserRole === "recipient" ? "Meerah ✿ (You)" : "Meerah ✿")}
+    : (currentUserRole === "recipient" ? "him (You)" : "him")}
                   </span>
                   <time className="chatMessageTime" dateTime={msg.createdAt}>
                     {formatMessageTime(msg.createdAt)}
@@ -453,6 +456,26 @@ export function ChatTimeline({
       })}
 
       <div ref={bottomAnchorRef} className="chatTimelineBottomAnchor" />
+
+      {/* Floating Scroll to Latest Button */}
+      {showScrollBottomBtn && (
+        <button
+          type="button"
+          className="chatScrollBottomFloatingBtn"
+          onClick={() => {
+            userScrolledUpRef.current = false;
+            setShowScrollBottomBtn(false);
+            if (bottomAnchorRef.current) {
+              bottomAnchorRef.current.scrollIntoView({ behavior: "smooth" });
+            }
+          }}
+          aria-label="Scroll to latest messages"
+          title="Jump to latest"
+        >
+          <span className="scrollBottomArrow" aria-hidden="true">↓</span>
+          <span className="scrollBottomLabel">Latest</span>
+        </button>
+      )}
 
       {/* Lightbox for tapped photos */}
       {lightboxImage && (

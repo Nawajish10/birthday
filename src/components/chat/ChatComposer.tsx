@@ -73,6 +73,8 @@ export function ChatComposer({
     if (val.length <= maxLength) {
       setText(val);
       if (errorMessage) setErrorMessage(null);
+      e.target.style.height = "auto";
+      e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
     }
   };
 
@@ -272,6 +274,9 @@ export function ChatComposer({
         setText("");
         setAttachments([]);
         setErrorMessage(null);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Failed to send message. Please retry.";
@@ -313,6 +318,9 @@ export function ChatComposer({
             className="chatComposerAlertClose"
             onClick={() => {
               setErrorMessage(null);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
               setMediaRecorderError(null);
             }}
             aria-label="Dismiss error"
@@ -542,6 +550,11 @@ export function ChatComposer({
               disabled={disabled || isSending}
               aria-label="Message text"
               className="chatTextInput"
+              onFocus={() => {
+                if (typeof window !== "undefined") {
+                  setTimeout(() => window.dispatchEvent(new CustomEvent("chat:focus-input")), 120);
+                }
+              }}
             />
 
             <button

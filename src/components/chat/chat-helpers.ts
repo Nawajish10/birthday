@@ -390,9 +390,9 @@ export const DEFAULT_INITIAL_MESSAGES: ChatMessage[] = [
 export const INITIAL_CONVERSATIONS: ChatConversation[] = [
   {
     id: "meerah",
-    name: "Meerah ✿",
+    name: "him",
     avatar: "/images/sample-meerah-1.jpg",
-    avatarGlyph: "M",
+    avatarGlyph: "H",
     lastMessage: "Typing...",
     lastTime: "9:41 PM",
     unreadCount: 2,

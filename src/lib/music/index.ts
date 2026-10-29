@@ -37,3 +37,20 @@ export {
 // Store hook
 export type { MusicStore } from './use-music-store';
 export { useMusicStore, getMusicAudioRef } from './use-music-store';
+
+// Audio importer & metadata helpers
+export type {
+  ManifestItem,
+  ExtractedAudioMetadata,
+} from './audio-importer';
+export {
+  EXT_TO_MIME,
+  ALLOWED_AUDIO_EXTENSIONS,
+  detectMimeType,
+  extractAudioDuration,
+  extractAudioMetadata,
+  parseCsvManifest,
+  parseJsonManifest,
+  loadManifest,
+  scanAudioDirectory,
+} from './audio-importer';
