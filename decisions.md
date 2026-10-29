@@ -240,6 +240,52 @@
 
 ---
 
+## ADR-015: Private Music Room Architecture, Ingestion Pipelines, Persistent Audio Engine, and Provider-Neutral Design
+- **Date:** October 2026
+- **Status:** Accepted
+- **Context:**
+  The birthday application required a private, full-featured music system supporting private audio ingestion, persistent playback across navigation and page reloads, user playlists, liked songs, listening history, synchronized lyrics, and strict regression protection for ambient story-music. Furthermore, audio sources must support imported audio while maintaining a provider-neutral boundary for undecided future external streaming services.
+- **Decision:**
+  1. **Single Playback Controller Invariant (`src/lib/music/use-music-store.ts`):**
+     - Established a single module-level singleton store powered by React's `useSyncExternalStore`.
+     - Exposes a single shared `<audio>` ref (`getMusicAudioRef()`) that is bound to one HTML5 audio element in the DOM.
+     - Prohibits competing, uncoordinated audio engines across components (`MusicRoom`, `StoryViewer`, ambient shell).
+     - State updates are synchronized across all calling components with zero state divergence.
+  2. **Additive Supabase Schema (`supabase/migrations/202610290003_music_system_full.sql`):**
+     - Extended `public.music_tracks` with `album`, `artwork_path`, `source_type ('imported' | 'provider')`, `provider_ref`, `mime_type`, `file_size_bytes`, `checksum`, and `availability_status`.
+     - Created `public.music_likes` with uniqueness constraint on `(user_id, track_id)`.
+     - Created `public.user_playlists` and `public.user_playlist_tracks` with atomic sorting support.
+     - Created `public.music_playback_state` for resumable user snapshots (track, position, queue, shuffle, repeat).
+     - Created `public.music_listening_history` for meaningful playback events (>=30s or completed).
+     - Created `public.music_lyrics` for optional plain and synchronized JSON lyrics.
+     - Row-Level Security (RLS) policies enforce authenticated user ownership on all personal tables.
+  3. **Persistent Audio Storage (`birthday-audio`):**
+     - Created a private Supabase Storage bucket `birthday-audio` for imported audio files.
+     - Client playback accesses audio exclusively through short-lived (60 min) signed URLs generated via `/api/music/upload/signed-url` with strict path traversal prevention (`audio/` prefix).
+     - Privileged service-role credentials (`SUPABASE_SERVICE_ROLE_KEY`) are isolated strictly to trusted server routes (`src/app/api/music/upload/route.ts`).
+  4. **Dual Ingestion Pipelines:**
+     - **CLI Script (`scripts/import-music.ts`)**: Supports CSV and JSON manifests, file existence check, binary magic header sniffing, SHA-256 deduplication, Supabase Storage uploads, catalogue records insertion, and `--dry-run` mode.
+     - **Admin Upload UI (`src/components/admin/music/AdminMusicUpload.tsx`)**: Authenticated drag-and-drop file uploader with metadata editing, auto-duration extraction, client-side 50MB validation, real-time XHR progress tracking, and retry controls, integrated into `Admin.tsx`.
+  5. **Playback Persistence & Autoplay Compliance:**
+     - Position is checkpointed periodically with a 5-second debounce rather than on every `timeupdate` tick.
+     - On page mount/refresh, the last valid track and queue are restored from the database.
+     - Autoplay restrictions are strictly respected: playback remains paused on reload until an explicit user gesture is received.
+  6. **Story-Music Protection & Ambient Coordination:**
+     - `StoryViewer` integrates with the shared audio engine using the existing `externalAudioRef` interface.
+     - On story launch, ambient audio state (`src`, `currentTime`, `wasPlaying`, `volume`) is captured via `captureAudioState` and paused cleanly.
+     - On story exit, `restoreAudioState` restores the prior track and playback position, resuming playback only if it was active prior to opening.
+  7. **Provider-Neutral Design:**
+     - Tracks are represented internally with stable IDs and `source_type` (`imported` vs `provider`).
+     - External provider IDs (`provider_ref`) remain isolated from internal track identities.
+     - Local playback works seamlessly without any external provider configured.
+- **Consequences:**
+  - 100% test coverage across all music workflows: 657/657 tests passing in the repository.
+  - TypeScript compilation and ESLint pass with 0 errors and 0 warnings.
+  - Production build succeeds with all 13 routes optimized.
+  - Completely non-destructive additive migration ensures existing birthday content remains unharmed.
+
+---
+
 ## ADR-014: Authoritative Passcode Verification, Auto-Healing Database Sync, and Passcode Gate Redesign
 - **Date:** October 2026
 - **Status:** Accepted
@@ -276,3 +322,49 @@
   - 448/448 automated tests pass across 48 suites.
   - TypeScript compilation and ESLint pass with 0 errors and 0 warnings.
   - Next.js production build succeeds with all 13 routes optimized.
+
+---
+
+## ADR-015: Private Music Room Architecture, Ingestion Pipelines, Persistent Audio Engine, and Provider-Neutral Design
+- **Date:** October 2026
+- **Status:** Accepted
+- **Context:**
+  The birthday application required a private, full-featured music system supporting private audio ingestion, persistent playback across navigation and page reloads, user playlists, liked songs, listening history, synchronized lyrics, and strict regression protection for ambient story-music. Furthermore, audio sources must support imported audio while maintaining a provider-neutral boundary for undecided future external streaming services.
+- **Decision:**
+  1. **Single Playback Controller Invariant (`src/lib/music/use-music-store.ts`):**
+     - Established a single module-level singleton store powered by React's `useSyncExternalStore`.
+     - Exposes a single shared `<audio>` ref (`getMusicAudioRef()`) that is bound to one HTML5 audio element in the DOM.
+     - Prohibits competing, uncoordinated audio engines across components (`MusicRoom`, `StoryViewer`, ambient shell).
+     - State updates are synchronized across all calling components with zero state divergence.
+  2. **Additive Supabase Schema (`supabase/migrations/202610290003_music_system_full.sql`):**
+     - Extended `public.music_tracks` with `album`, `artwork_path`, `source_type ('imported' | 'provider')`, `provider_ref`, `mime_type`, `file_size_bytes`, `checksum`, and `availability_status`.
+     - Created `public.music_likes` with uniqueness constraint on `(user_id, track_id)`.
+     - Created `public.user_playlists` and `public.user_playlist_tracks` with atomic sorting support.
+     - Created `public.music_playback_state` for resumable user snapshots (track, position, queue, shuffle, repeat).
+     - Created `public.music_listening_history` for meaningful playback events (>=30s or completed).
+     - Created `public.music_lyrics` for optional plain and synchronized JSON lyrics.
+     - Row-Level Security (RLS) policies enforce authenticated user ownership on all personal tables.
+  3. **Persistent Audio Storage (`birthday-audio`):**
+     - Created a private Supabase Storage bucket `birthday-audio` for imported audio files.
+     - Client playback accesses audio exclusively through short-lived (60 min) signed URLs generated via `/api/music/upload/signed-url` with strict path traversal prevention (`audio/` prefix).
+     - Privileged service-role credentials (`SUPABASE_SERVICE_ROLE_KEY`) are isolated strictly to trusted server routes (`src/app/api/music/upload/route.ts`).
+  4. **Dual Ingestion Pipelines:**
+     - **CLI Script (`scripts/import-music.ts`)**: Supports CSV and JSON manifests, file existence check, binary magic header sniffing, SHA-256 deduplication, Supabase Storage uploads, catalogue records insertion, and `--dry-run` mode.
+     - **Admin Upload UI (`src/components/admin/music/AdminMusicUpload.tsx`)**: Authenticated drag-and-drop file uploader with metadata editing, auto-duration extraction, client-side 50MB validation, real-time XHR progress tracking, and retry controls, integrated into `Admin.tsx`.
+  5. **Playback Persistence & Autoplay Compliance:**
+     - Position is checkpointed periodically with a 5-second debounce rather than on every `timeupdate` tick.
+     - On page mount/refresh, the last valid track and queue are restored from the database.
+     - Autoplay restrictions are strictly respected: playback remains paused on reload until an explicit user gesture is received.
+  6. **Story-Music Protection & Ambient Coordination:**
+     - `StoryViewer` integrates with the shared audio engine using the existing `externalAudioRef` interface.
+     - On story launch, ambient audio state (`src`, `currentTime`, `wasPlaying`, `volume`) is captured via `captureAudioState` and paused cleanly.
+     - On story exit, `restoreAudioState` restores the prior track and playback position, resuming playback only if it was active prior to opening.
+  7. **Provider-Neutral Design:**
+     - Tracks are represented internally with stable IDs and `source_type` (`imported` vs `provider`).
+     - External provider IDs (`provider_ref`) remain isolated from internal track identities.
+     - Local playback works seamlessly without any external provider configured.
+- **Consequences:**
+  - 100% test coverage across all music workflows: 657/657 tests passing in the repository.
+  - TypeScript compilation and ESLint pass with 0 errors and 0 warnings.
+  - Production build succeeds with all 13 routes optimized.
+  - Completely non-destructive additive migration ensures existing birthday content remains unharmed.

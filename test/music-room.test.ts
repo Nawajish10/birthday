@@ -47,6 +47,64 @@ function loadMusicRoomModule() {
     if (moduleName === "./music-catalogue" || moduleName.endsWith("music-catalogue")) {
       return catalogueExports;
     }
+    if (moduleName === "@/lib/music/use-music-store" || moduleName.endsWith("use-music-store")) {
+      return {
+        useMusicStore: () => ({
+          tracks: [],
+          queue: [],
+          likedTrackIds: new Set(),
+          currentTrackId: null,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
+          volume: 0.85,
+          isMuted: false,
+          isShuffle: false,
+          repeatMode: "off",
+          audioRef: { current: null },
+          loadCatalogue: async () => {},
+          loadLikes: async () => {},
+          restorePlaybackState: async () => {},
+          setCurrentTrack: () => {},
+          setIsPlaying: () => {},
+          setCurrentTime: () => {},
+          setDuration: () => {},
+          setVolume: () => {},
+          setMuted: () => {},
+          toggleShuffle: () => {},
+          setRepeatMode: () => {},
+          toggleLike: async () => {},
+        }),
+      };
+    }
+    if (moduleName === "@/lib/music/api-client" || moduleName.endsWith("api-client")) {
+      return {
+        recordHistoryEvent: async () => {},
+        fetchHistory: async () => [],
+        fetchPlaylist: async () => ({ id: "p1", name: "test", tracks: [] }),
+        reorderPlaylistTracks: async () => {},
+        removeTrackFromPlaylist: async () => {},
+      };
+    }
+    if (moduleName.includes("PlaylistManagerModal")) {
+      return {
+        CreatePlaylistModal: () => null,
+        EditPlaylistModal: () => null,
+        AddToPlaylistModal: () => null,
+      };
+    }
+    if (moduleName.includes("LyricsPanel")) {
+      return {
+        LyricsPanel: () => null,
+      };
+    }
+    if (moduleName.includes("ListeningHistoryModal")) {
+      return {
+        ListeningHistoryList: () => null,
+        ListeningHistoryModal: () => null,
+        formatRelativeTime: () => "Just now",
+      };
+    }
     return nodeRequire(moduleName);
   };
 

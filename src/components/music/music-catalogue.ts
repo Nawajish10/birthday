@@ -5,7 +5,7 @@
  * Free of JSX so it can be imported directly in Node.js native tests.
  */
 
-export type MusicFilterType = "all" | "favorites" | "playlists";
+export type MusicFilterType = "all" | "favorites" | "playlists" | "recently-played";
 export type PlayerCardSize = "compact" | "standard" | "expanded";
 
 export interface MusicTrackItem {
@@ -558,6 +558,7 @@ export function formatDuration(seconds: number): string {
  */
 export function parseDurationToSeconds(durationStr: string): number {
   if (!durationStr || typeof durationStr !== "string") return 0;
+  if (durationStr.includes("-")) return 0;
   const parts = durationStr.trim().split(":");
   if (parts.length === 2) {
     const mins = parseInt(parts[0], 10);
@@ -572,8 +573,11 @@ export function parseDurationToSeconds(durationStr: string): number {
     if (isNaN(hrs) || isNaN(mins) || isNaN(secs) || hrs < 0 || mins < 0 || secs < 0) return 0;
     return hrs * 3600 + mins * 60 + secs;
   }
-  const singleNum = parseInt(durationStr, 10);
-  return isNaN(singleNum) || singleNum < 0 ? 0 : singleNum;
+  if (parts.length === 1) {
+    const singleNum = parseInt(durationStr, 10);
+    return isNaN(singleNum) || singleNum < 0 ? 0 : singleNum;
+  }
+  return 0;
 }
 
 /**

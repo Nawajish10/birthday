@@ -96,4 +96,34 @@ To eliminate merge conflicts and accidental regression of shared application sta
 | **WS5: Multiplayer Games** | Games & Realtime Agent | `src/components/games/GamesPanel.tsx`, `game-registry.ts`, `multiplayer-service.ts`, `ConnectFour.tsx`, `TriviaDuel.tsx`, `EscapeRoomPuzzle.tsx`, `WouldYouRather.tsx`, `DailyWordPuzzle.tsx` | `test/games-expanded-multiplayer.test.ts`, `test/games.test.ts` |
 | **WS6: Orchestration & QA** | Lead Orchestrator | `src/components/Experience.tsx`, `next.config.ts`, `PRD.md`, `flow.md`, `decisions.md`, `ai-agent.md` | Full repository test suite (400/400 passing) |
 
+---
+
+## 5. Music System Multi-Agent Invariants & Operational Rules
+
+1. **Single Playback Controller Invariant:**
+   - All components must interact with playback state via `useMusicStore()` from `@/lib/music/use-music-store`.
+   - Never instantiate a competing `<audio>` tag. Retrieve the single DOM audio ref using `getMusicAudioRef()`.
+   - StoryViewer must always receive `externalAudioRef={sharedAudioRef}`.
+
+2. **Database Ingestion & RLS Invariants:**
+   - Database tables: `music_tracks`, `user_playlists`, `user_playlist_tracks`, `music_likes`, `music_playback_state`, `music_listening_history`, `music_lyrics`.
+   - All migrations must be strictly additive using `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS`.
+   - User-specific tables must enforce `auth.uid() = user_id` Row-Level Security.
+
+3. **Storage & Media Privacy:**
+   - Audio files must reside in the private Supabase Storage bucket `birthday-audio` under `audio/{track_id}/{filename}`.
+   - Client access must use time-limited signed URLs (60 min) obtained from `/api/music/upload/signed-url`.
+   - Never pass service-role keys to browser bundles.
+
+4. **CLI Batch-Import Script Usage:**
+   - Script location: `scripts/import-music.ts`.
+   - Execution command: `npx tsx scripts/import-music.ts --manifest <path> --audio-dir <path> [--dry-run]`
+   - Manifest accepted formats: CSV (`title,artist,album,audio_filename,playlist,duration_seconds`) or JSON.
+   - Computes SHA-256 for duplicate detection before storage upload.
+
+5. **Provider-Neutral Streaming Boundary:**
+   - Tracks maintain `source_type: 'imported' | 'provider'`.
+   - External provider identifiers are isolated in `provider_ref`.
+   - No YouTube ripping or DRM circumvention is permitted. Local audio plays without streaming provider dependencies.
+
 
