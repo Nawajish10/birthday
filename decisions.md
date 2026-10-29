@@ -446,3 +446,48 @@
   - TypeScript strict compilation passes with 0 errors (`npx tsc --noEmit`).
   - ESLint passes with 0 errors and 0 warnings (`npm run lint`).
   - Production build (`npm run build`) generates 14 static and dynamic routes cleanly in 4.1s.
+
+### Multi-Agent Production Orchestration: Independent App Router Architecture, Route Integrity, and Cross-System Harmonization
+
+- **Date:** 30 October 2026
+- **Status:** Accepted & Implemented
+- **Context:**
+  The birthday application previously operated with all post-unlock destinations rendered conditionally inside a single client-side tab state (`Experience.tsx`), resulting in 404 Not Found errors on deep linking, browser refresh, or direct URL navigation (`/memories`, `/profile`, `/music`, `/study`, `/games`, `/chat`). Furthermore, the UI required alignment with the multi-agent design specification, including a Snapchat-inspired camera room, Spotify-inspired music room, Instagram-inspired profile for **Meerah** (born 30 October 2001), WhatsApp-inspired 1-to-1 private chat, a literary study sanctuary, and a games hub.
+- **Decisions:**
+  1. **Independent App Router Route Architecture (`src/app/`):**
+     - Established dedicated independent route directories and server page components:
+       * `/` (`src/app/page.tsx`)
+       * `/memories` (`src/app/memories/page.tsx`)
+       * `/profile` (`src/app/profile/page.tsx`)
+       * `/music` (`src/app/music/page.tsx`)
+       * `/study` (`src/app/study/page.tsx`)
+       * `/games` (`src/app/games/page.tsx`)
+       * `/chat` (`src/app/chat/page.tsx`)
+     - Each route implements server-side session scope verification (`readScope("birthday")`) and renders inside a unified `RouteShell.tsx` wrapper with automatic passcode-gate fallback.
+  2. **Authoritative Navigation (`src/components/shared/BottomNav.tsx`):**
+     - Updated bottom navigation to use Next.js `<Link href="...">` elements for genuine client-side routing, browser history, and direct refresh support.
+     - Dynamically determines active route via `usePathname()`.
+     - Preserves all accessibility semantics (`role="navigation"`, `role="menubar"`, `role="menuitem"`, `aria-current="page"`).
+  3. **Authoritative Identity & Birthday Engine (`src/lib/birthday-dates.ts`):**
+     - Recipient standardized exclusively to **Meerah** across all headers, cards, chat threads, and greetings.
+     - Authoritative birth date locked to **30 October 2001** (`2001-10-30T00:00:00.000Z`).
+     - Dynamic age calculation and live countdown updating every second to the next 30 October milestone.
+     - Profile tabs strictly enforce Posts and Favorites (strictly zero Reels tab).
+  4. **Spotify-Inspired Music Room & Audio Engine Singleton:**
+     - Coordinated single-instance audio management via custom window event bus (`birthday-audio-pause`, `birthday-audio-resume`).
+     - Background music automatically pauses when video modals or birthday reveal sounds play, preventing overlapping audio.
+     - Full MP4 audio/video container support.
+  5. **WhatsApp-Inspired Private 1-to-1 Chat & Web Crypto Security:**
+     - Dual-role testing support: Admin (Creator/BABA) ↔ Meerah.
+     - Full conversation list, active thread view, online status, timestamps, read receipts (sent/seen double checks), inline photo preview, and voice note player with waveform visualizer.
+     - Truthful cryptographic security model: Web Crypto API `AES-GCM-256`, PBKDF2 with 100,000 iterations, and SHA-256 key fingerprints.
+  6. **Literary Study Sanctuary & Games Hub:**
+     - Study room enhanced with time-aware greeting, Today's Plan checklist (3/5 completed with persistent tasks), quick action cards, recent notes, and curated bookshelf.
+     - Games hub features 8 playable games (2048, Memory Match couplets, Tic-Tac-Toe, Snake, Word Hunt, Typing Rush, Color Match, Math/Birthday Quiz).
+  7. **Mobile-First UX & Clearance Invariants:**
+     - Zero horizontal overflow across 320px, 360px, 390px, and 430px viewports.
+     - Safe-area inset support (`env(safe-area-inset-bottom)`) and bottom clearance padding (`.shell-content-with-bottom-nav`) ensuring zero content clipping.
+- **Consequences:**
+  - Production build (`npm run build`) generates all 11 static and dynamic pages with 0 errors.
+  - Dedicated architecture test suite (`test/routes-architecture.test.ts`) passes 6/6.
+  - Full test suites pass cleanly across audio, profile, study, games, chat, and mobile performance.

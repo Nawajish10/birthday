@@ -46,10 +46,11 @@ export function BookCanvas({
   }, []);
 
   const turnPage = (direction: "next" | "prev") => {
+    const count = pages.length || 1;
     if (direction === "next") {
-      onPageChange((currentPage + 1) % pages.length);
+      onPageChange((currentPage + 1) % count);
     } else {
-      onPageChange((currentPage - 1 + pages.length) % pages.length);
+      onPageChange((currentPage - 1 + count) % count);
     }
   };
 

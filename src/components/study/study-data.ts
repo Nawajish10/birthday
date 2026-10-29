@@ -979,3 +979,213 @@ export function saveReadingProgressForBook(
 
   return updated;
 }
+
+
+// ============================================================================
+// Study Tasks, Notes, Resources & Timetable Model
+// ============================================================================
+
+export interface StudyTask {
+  id: string;
+  label: string;
+  completed: boolean;
+  category?: string;
+}
+
+export const INITIAL_STUDY_TASKS: StudyTask[] = [
+  { id: "task-1", label: "Complete DSA Practice (Trees & DP)", completed: true, category: "DSA" },
+  { id: "task-2", label: "Read a Chapter of Selected Literature", completed: true, category: "Reading" },
+  { id: "task-3", label: "Take Notes & System Reflections", completed: true, category: "Notes" },
+  { id: "task-4", label: "Revise CS Core Formulas & Patterns", completed: false, category: "Revision" },
+  { id: "task-5", label: "Plan Tomorrow's Focus Schedule", completed: false, category: "Planning" },
+];
+
+export interface StudyNote {
+  id: string;
+  title: string;
+  category: "DSA Notes" | "Web Dev" | "Personal" | string;
+  date: string;
+  snippet: string;
+  content: string;
+  tags: string[];
+  colorAccent?: string;
+}
+
+export const INITIAL_STUDY_NOTES: StudyNote[] = [
+  {
+    id: "note-1",
+    title: "DSA Notes · Trees & Dynamic Programming",
+    category: "DSA Notes",
+    date: "Today · 2 hrs ago",
+    snippet: "Key tree traversals (inorder gives sorted BST). Memoization state transitions for 0/1 Knapsack & Longest Common Subsequence...",
+    content: "Key tree traversals: Inorder traversal on a BST yields keys in strictly non-decreasing order. For level-order and zigzag, use a double-ended queue. When approaching dynamic programming problems, identify overlapping subproblems and optimal substructure: dp[i][w] = max(dp[i-1][w], dp[i-1][w-wt[i]] + val[i]). Always verify base cases at index 0.",
+    tags: ["Trees", "DP", "LeetCode", "Algorithms"],
+    colorAccent: "#376E58",
+  },
+  {
+    id: "note-2",
+    title: "Web Dev · React 19, Transitions & Canvas",
+    category: "Web Dev",
+    date: "Yesterday",
+    snippet: "useTransition for non-blocking UI updates, stable callback references, and requestAnimationFrame batching for smooth 60fps...",
+    content: "Rendering architecture: Wrap non-urgent state updates inside startTransition to keep inputs responsive. When drawing dynamic visualizers on an HTML5 canvas, scale dimensions with window.devicePixelRatio to prevent blur on high-DPI displays. Clean up event listeners in cleanup returns.",
+    tags: ["Next.js", "React", "Canvas", "Performance"],
+    colorAccent: "#523742",
+  },
+  {
+    id: "note-3",
+    title: "Personal · Reading Reflections & Calm Mind",
+    category: "Personal",
+    date: "Oct 28",
+    snippet: "“The quieter you become, the more you are able to hear.” Morning deep work sessions bring the purest flow and peace...",
+    content: "“The quieter you become, the more you are able to hear.” Balancing intense algorithmic problem-solving with gentle literary reading provides equilibrium. Protect 9 AM - 12 PM for deep analytical work without notifications; keep evenings reserved for poetry, warm chai, and contemplative prose.",
+    tags: ["Mindset", "Journal", "Rhythm", "Calm"],
+    colorAccent: "#D4798D",
+  },
+];
+
+export interface StudyResource {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  linkText: string;
+  badge: string;
+  url?: string;
+}
+
+export const STUDY_RESOURCES: StudyResource[] = [
+  {
+    id: "res-1",
+    title: "NeetCode & Striver DSA Sheet",
+    category: "Algorithms",
+    description: "Curated 150 algorithmic patterns across arrays, two-pointers, sliding window, trees, graphs, and DP.",
+    linkText: "Curated Roadmap",
+    badge: "Essential",
+  },
+  {
+    id: "res-2",
+    title: "System Design Primer & Architecture",
+    category: "Systems",
+    description: "Distributed caching, CAP theorem, database sharding, rate limiting, and horizontal scaling fundamentals.",
+    linkText: "Reference Guide",
+    badge: "Core",
+  },
+  {
+    id: "res-3",
+    title: "Modern TypeScript & Web Internals",
+    category: "Frontend",
+    description: "Deep dive into React 19 concurrent features, Server Components, accessibility, and strict TS patterns.",
+    linkText: "Handbook",
+    badge: "Practical",
+  },
+  {
+    id: "res-4",
+    title: "Poetry & Classical Urdu Sanctuary",
+    category: "Literature",
+    description: "Timeless ghazals and selected couplets by Faiz, Ghalib, and Iqbal for peaceful study breaks.",
+    linkText: "Literary Corner",
+    badge: "Soulful",
+  },
+];
+
+export interface TimetableSlot {
+  time: string;
+  title: string;
+  subtitle: string;
+  type: "focus" | "break" | "learning" | "winddown";
+  icon: string;
+}
+
+export const STUDY_TIMETABLE: TimetableSlot[] = [
+  {
+    time: "08:30 AM – 09:00 AM",
+    title: "Morning Routine & Warm Chai",
+    subtitle: "Gentle start, review today's plan & mindset",
+    type: "winddown",
+    icon: "☕",
+  },
+  {
+    time: "09:00 AM – 11:30 AM",
+    title: "Deep Work · DSA & Problem Solving",
+    subtitle: "High-focus block: 3 problem patterns & complexity analysis",
+    type: "focus",
+    icon: "💻",
+  },
+  {
+    time: "11:30 AM – 12:00 PM",
+    title: "Mindful Pause & Stretch",
+    subtitle: "Hydrate, step away from screens, calm deep breaths",
+    type: "break",
+    icon: "🌿",
+  },
+  {
+    time: "12:00 PM – 02:00 PM",
+    title: "Core CS & Project Building",
+    subtitle: "Web architectures, feature implementation & debugging",
+    type: "learning",
+    icon: "🛠️",
+  },
+  {
+    time: "02:00 PM – 03:30 PM",
+    title: "Lunch & Rest",
+    subtitle: "Nourishing meal & restful intermission",
+    type: "break",
+    icon: "🍱",
+  },
+  {
+    time: "03:30 PM – 05:30 PM",
+    title: "Revision & Notes Synthesis",
+    subtitle: "Flashcards, formula sheets, documentation summaries",
+    type: "focus",
+    icon: "📝",
+  },
+  {
+    time: "06:00 PM – 07:30 PM",
+    title: "Evening Reading Sanctuary",
+    subtitle: "Poetry, novel chapters, quiet literary reflections",
+    type: "winddown",
+    icon: "📖",
+  },
+];
+
+const STORAGE_KEY_TASKS = "birthday-study-tasks";
+const STORAGE_KEY_NOTES = "birthday-study-notes";
+
+export function loadSavedTasks(): StudyTask[] {
+  if (typeof window === "undefined") return INITIAL_STUDY_TASKS;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_TASKS);
+    if (!raw) return INITIAL_STUDY_TASKS;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_STUDY_TASKS;
+  } catch {
+    return INITIAL_STUDY_TASKS;
+  }
+}
+
+export function saveTasks(tasks: StudyTask[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
+  } catch {}
+}
+
+export function loadSavedNotes(): StudyNote[] {
+  if (typeof window === "undefined") return INITIAL_STUDY_NOTES;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_NOTES);
+    if (!raw) return INITIAL_STUDY_NOTES;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_STUDY_NOTES;
+  } catch {
+    return INITIAL_STUDY_NOTES;
+  }
+}
+
+export function saveNotes(notes: StudyNote[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
+  } catch {}
+}

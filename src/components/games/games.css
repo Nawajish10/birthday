@@ -2098,3 +2098,1259 @@
     font-size: 0.72rem;
   }
 }
+
+
+/* ============================================================================
+ * Redesigned Games Hub: Wordmark Header, Search, Filter Pills & Visual Thumbnails
+ * ============================================================================ */
+
+/* Top Navigation Bar */
+.gamesHubTopNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: rgba(255, 253, 248, 0.95);
+  border: 1px solid var(--game-line);
+  border-radius: 20px;
+  box-shadow: var(--game-shadow-sm);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.gamesWordmark {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--game-plum);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gamesWordmark span {
+  color: var(--game-rose);
+  font-size: 20px;
+}
+
+/* Search Input */
+.gamesSearchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 240px;
+  max-width: 340px;
+  flex: 1;
+}
+
+.gamesSearchIcon {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  color: var(--game-muted);
+  pointer-events: none;
+}
+
+.gamesSearchInput {
+  width: 100%;
+  padding: 8px 34px 8px 34px;
+  border-radius: 99px;
+  border: 1px solid var(--game-line);
+  background: var(--game-ivory);
+  font-size: 13px;
+  color: var(--game-ink);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.gamesSearchInput:focus {
+  border-color: var(--game-rose);
+  box-shadow: 0 0 0 3px rgba(182, 83, 95, 0.12);
+  background: #fff;
+}
+
+.gamesSearchClearBtn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  color: var(--game-muted);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+.gamesSearchClearBtn:hover {
+  color: var(--game-plum);
+}
+
+/* Filter Pills Bar */
+.gamesFilterBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.filterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 99px;
+  border: 1px solid var(--game-line);
+  background: var(--game-ivory);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--game-ink);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(66, 45, 54, 0.04);
+}
+
+.filterPill:hover {
+  background: #fff;
+  border-color: var(--game-rose);
+  transform: translateY(-1px);
+}
+
+.filterPill.isActive {
+  background: linear-gradient(135deg, var(--game-rose), #9e3d49);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(182, 83, 95, 0.28);
+}
+
+.filterPillIcon {
+  font-size: 14px;
+}
+
+/* Empty State */
+.gamesEmptyState {
+  text-align: center;
+  padding: 48px 20px;
+  background: var(--game-ivory);
+  border: 1px dashed var(--game-line);
+  border-radius: 20px;
+  margin: 32px 0;
+}
+
+.gamesEmptyState .emptyIcon {
+  font-size: 42px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.gamesEmptyState h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  color: var(--game-plum);
+  margin: 0 0 8px;
+}
+
+.gamesEmptyState p {
+  color: var(--game-muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+/* ============================================================================
+ * Game Card Thumbnail Banners (Distinct Visual Identities)
+ * ============================================================================ */
+
+.gameCardThumbnail {
+  width: 100%;
+  height: 90px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(145deg, #f8efe6, #f3e5d8);
+  border: 1px solid rgba(220, 200, 180, 0.5);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+/* 2048 Thumbnail */
+.thumb2048 {
+  display: grid;
+  grid-template-columns: repeat(2, 34px);
+  gap: 4px;
+}
+.miniTile {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+.miniTile.t2 { background: #faede8; color: #776e65; }
+.miniTile.t4 { background: #fce4d6; color: #776e65; }
+.miniTile.t8 { background: #f2b179; color: #fff; }
+.miniTile.t2048 {
+  background: linear-gradient(135deg, #edc22e, #f1c75b);
+  color: #fff;
+  font-size: 9px;
+  box-shadow: 0 0 8px rgba(237, 194, 46, 0.5);
+}
+
+/* Memory Match Thumbnail */
+.thumbMemory {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.miniCard {
+  width: 44px;
+  height: 58px;
+  border-radius: 8px;
+  border: 1px solid var(--game-line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s;
+}
+.miniCard.back {
+  background: linear-gradient(135deg, #fdf8ef, #f6e8d2);
+  color: var(--game-rose);
+  font-size: 20px;
+  transform: rotate(-6deg);
+}
+.miniCard.front {
+  background: #fff;
+  transform: rotate(5deg);
+  border-color: var(--game-rose-border);
+}
+.miniCard.front span { font-size: 20px; }
+.miniCard.front small { font-size: 9px; color: var(--game-muted); }
+
+/* Tic Tac Toe Thumbnail */
+.thumbTTT {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--game-sage-border);
+}
+.miniTTTRow {
+  display: flex;
+  gap: 8px;
+  font-size: 16px;
+  align-items: center;
+  justify-content: center;
+}
+.miniTTTRow .dot { color: #d0c0b0; }
+
+/* Snake Thumbnail */
+.thumbSnake {
+  width: 90%;
+  height: 60px;
+  background: #1c2e24;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.snakeTrack {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.snakeSegment { color: #52b788; font-size: 12px; }
+.snakeHead {
+  color: #74c69d;
+  font-size: 16px;
+  text-shadow: 0 0 6px rgba(116, 198, 157, 0.8);
+}
+.snakeFood { font-size: 16px; margin-left: 12px; animation: pulse 1.5s infinite; }
+
+/* Word Hunt Thumbnail */
+.thumbWord {
+  display: flex;
+  gap: 4px;
+}
+.wordTile {
+  width: 24px;
+  height: 28px;
+  background: #fffdfa;
+  border: 1px solid #d4b896;
+  border-bottom: 3px solid #b89872;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a3728;
+}
+.wordTile.glow {
+  background: #fff4e0;
+  border-color: var(--game-gold);
+  color: var(--game-rose);
+}
+
+/* Typing Rush Thumbnail */
+.thumbTyping {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 80%;
+}
+.keycapRow {
+  display: flex;
+  gap: 6px;
+}
+.keycap {
+  background: #fff;
+  border: 1px solid #d5c8be;
+  border-bottom: 3px solid #b8a89c;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--game-plum);
+}
+.speedBar {
+  width: 100%;
+  height: 6px;
+  background: #ebd8cc;
+  border-radius: 99px;
+  position: relative;
+  overflow: visible;
+}
+.speedFill {
+  width: 70%;
+  height: 100%;
+  background: linear-gradient(90deg, #f1a24d, #e63946);
+  border-radius: 99px;
+}
+.speedBolt {
+  position: absolute;
+  right: 25%;
+  top: -8px;
+  font-size: 13px;
+}
+
+/* Color Match Thumbnail */
+.thumbColor {
+  display: flex;
+  gap: 10px;
+}
+.colorDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+  border: 2px solid #fff;
+}
+.colorDot.rose { background: var(--game-rose); }
+.colorDot.gold { background: var(--game-gold); }
+.colorDot.sage { background: var(--game-sage); }
+.colorDot.lavender { background: #8a5ca5; }
+
+/* Math Quiz Thumbnail */
+.thumbMath {
+  background: #253342;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 2px solid #3c4f63;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mathEquation {
+  font-family: 'DM Mono', monospace, sans-serif;
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.mathStar { color: #f59e0b; font-size: 14px; }
+
+/* Miscellaneous Thumbnails */
+.thumbBirthday {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cakeIcon { font-size: 28px; }
+.quizBadge {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--game-rose-light);
+  color: var(--game-rose);
+  padding: 3px 8px;
+  border-radius: 99px;
+}
+.c4GridMini {
+  display: flex;
+  gap: 4px;
+  background: #2563eb;
+  padding: 8px;
+  border-radius: 6px;
+}
+.c4Chip { width: 14px; height: 14px; border-radius: 50%; }
+.c4Chip.r { background: #ef4444; }
+.c4Chip.y { background: #fbbf24; }
+.thumbTrivia { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 18px; color: var(--game-plum); }
+.thumbEscape { display: flex; gap: 10px; font-size: 24px; }
+.thumbWYR { display: flex; gap: 8px; font-size: 11px; font-weight: 700; }
+.wyrBubble { padding: 4px 8px; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
+.thumbDaily { display: flex; gap: 4px; }
+.dailyTile { width: 18px; height: 22px; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; border-radius: 3px; }
+.dailyTile.correct { background: #538d4e; }
+.dailyTile.present { background: #b59f3b; }
+.dailyTile.absent { background: #787c7e; }
+
+/* ============================================================================
+ * Memory Match Couplet Enhancements
+ * ============================================================================ */
+
+.revealedCoupletCard {
+  background: linear-gradient(135deg, #fffdfa, #fbf2e6);
+  border: 1px solid var(--game-gold-border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 6px 16px rgba(229, 169, 59, 0.12);
+  animation: fadeIn 0.3s ease;
+}
+
+.coupletIcon {
+  font-size: 28px;
+}
+
+.coupletTextGroup {
+  flex: 1;
+}
+
+.coupletUrdu {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--game-plum);
+  margin: 0 0 4px;
+  font-family: Tahoma, 'Noto Naskh Arabic', serif;
+  line-height: 1.4;
+}
+
+.coupletEnglish {
+  font-size: 13px;
+  color: var(--game-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.memoryTileFront .tileCoupletHint {
+  font-size: 9px;
+  color: var(--game-muted);
+  margin-top: 2px;
+}
+
+.memoryTileBack .tileBackRibbon {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(182, 83, 95, 0.7);
+  letter-spacing: 0.1em;
+}
+
+/* ============================================================================
+ * 2048 Game Styling
+ * ============================================================================ */
+
+.game2048Container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px;
+  user-select: none;
+  touch-action: none;
+}
+
+.game2048Header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+
+.game2048Urdu {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--game-gold);
+  display: block;
+}
+
+.game2048Title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 26px;
+  color: var(--game-plum);
+  margin: 2px 0;
+}
+
+.game2048Sub {
+  font-size: 12px;
+  color: var(--game-muted);
+  margin: 0;
+}
+
+.game2048Scores {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.scorePill {
+  background: var(--game-gold-light);
+  border: 1px solid var(--game-gold-border);
+  padding: 6px 10px;
+  border-radius: 10px;
+  text-align: center;
+  min-width: 60px;
+}
+
+.scorePill.best {
+  background: var(--game-rose-light);
+  border-color: var(--game-rose-border);
+}
+
+.scoreLabel {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--game-muted);
+  letter-spacing: 0.05em;
+}
+
+.scoreVal {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--game-plum);
+}
+
+.game2048ResetBtn {
+  background: var(--game-ivory);
+  border: 1px solid var(--game-line);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--game-ink);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.game2048ResetBtn:hover {
+  background: #fff;
+  border-color: var(--game-rose);
+}
+
+.game2048GridWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #bbada0;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(66, 45, 54, 0.15);
+}
+
+.game2048Grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+}
+
+.tile2048 {
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: clamp(16px, 4vw, 24px);
+  font-weight: 700;
+  transition: transform 0.1s ease-in-out;
+  background: rgba(238, 228, 218, 0.35);
+}
+
+.tile2048.tile-2 { background: #eee4da; color: #776e65; }
+.tile2048.tile-4 { background: #ede0c8; color: #776e65; }
+.tile2048.tile-8 { background: #f2b179; color: #f9f6f2; }
+.tile2048.tile-16 { background: #f59563; color: #f9f6f2; }
+.tile2048.tile-32 { background: #f67c5f; color: #f9f6f2; }
+.tile2048.tile-64 { background: #f65e3b; color: #f9f6f2; }
+.tile2048.tile-128 { background: #edcf72; color: #f9f6f2; font-size: 20px; box-shadow: 0 0 10px rgba(237, 207, 114, 0.4); }
+.tile2048.tile-256 { background: #edcc61; color: #f9f6f2; font-size: 20px; box-shadow: 0 0 15px rgba(237, 204, 97, 0.5); }
+.tile2048.tile-512 { background: #edc850; color: #f9f6f2; font-size: 20px; box-shadow: 0 0 20px rgba(237, 200, 80, 0.6); }
+.tile2048.tile-1024 { background: #edc53f; color: #f9f6f2; font-size: 16px; box-shadow: 0 0 25px rgba(237, 197, 63, 0.7); }
+.tile2048.tile-2048 {
+  background: linear-gradient(135deg, #edc22e, #b6535f);
+  color: #fff;
+  font-size: 15px;
+  box-shadow: 0 0 30px rgba(237, 194, 46, 0.85);
+  animation: pulse 1.5s infinite;
+}
+
+.overlay2048 {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 253, 248, 0.92);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.25s ease;
+}
+
+.overlay2048 .overlayIcon { font-size: 40px; margin-bottom: 8px; }
+.overlay2048 h4 { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--game-plum); margin: 0 0 6px; }
+.overlay2048 p { font-size: 14px; color: var(--game-muted); margin: 0 0 16px; max-width: 280px; }
+.overlayButtons { display: flex; gap: 10px; }
+
+/* Directional D-Pad Controls */
+.game2048Controls, .snakeControls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+.dpadRow { display: flex; gap: 8px; }
+.dpadBtn {
+  width: 50px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--game-line);
+  background: var(--game-ivory);
+  font-size: 16px;
+  color: var(--game-ink);
+  cursor: pointer;
+  box-shadow: var(--game-shadow-sm);
+  display: grid;
+  place-items: center;
+  transition: all 0.15s;
+}
+.dpadBtn:active { transform: scale(0.94); background: #fff; }
+
+/* ============================================================================
+ * Tic Tac Toe Styling
+ * ============================================================================ */
+
+.ticTacToeContainer {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 12px;
+  text-align: center;
+}
+
+.tttHeader { margin-bottom: 16px; }
+.tttUrdu { font-size: 11px; font-weight: 700; color: var(--game-sage); }
+.tttTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--game-plum); margin: 2px 0; }
+.tttSub { font-size: 13px; color: var(--game-muted); margin: 0; }
+
+.tttModeSwitch {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tttModeBtn {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1px solid var(--game-line);
+  background: var(--game-ivory);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tttModeBtn.isActive {
+  background: var(--game-sage);
+  color: #fff;
+  border-color: var(--game-sage);
+}
+
+.tttScoreboard {
+  display: flex;
+  justify-content: space-around;
+  background: var(--game-ivory);
+  border: 1px solid var(--game-line);
+  border-radius: 14px;
+  padding: 10px;
+  margin-bottom: 18px;
+}
+
+.scoreCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.scoreCard.activeTurn {
+  background: rgba(182, 83, 95, 0.1);
+  box-shadow: 0 0 0 1px var(--game-rose-border);
+}
+
+.playerSymbol { font-size: 18px; }
+.playerName { font-size: 11px; font-weight: 600; color: var(--game-muted); }
+.playerScore { font-size: 16px; font-weight: 700; color: var(--game-plum); }
+
+.tttGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto 16px;
+  aspect-ratio: 1 / 1;
+}
+
+.tttCell {
+  background: var(--game-ivory);
+  border: 2px solid var(--game-line);
+  border-radius: 14px;
+  font-size: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--game-shadow-sm);
+}
+
+.tttCell:hover:not(:disabled) {
+  background: #fff;
+  border-color: var(--game-rose);
+}
+
+.tttCell.isWinning {
+  background: var(--game-gold-light);
+  border-color: var(--game-gold);
+  animation: pulse 1s infinite;
+}
+
+.tttStatusBar {
+  margin-top: 14px;
+}
+
+.winnerBanner, .drawBanner, .turnBanner {
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.winnerBanner { background: var(--game-rose-light); color: var(--game-rose); }
+.drawBanner { background: var(--game-gold-light); color: var(--game-ink); }
+.turnBanner { background: var(--game-sage-light); color: var(--game-sage); }
+
+/* ============================================================================
+ * Snake Game Styling
+ * ============================================================================ */
+
+.snakeGameContainer {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.snakeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.snakeUrdu { font-size: 11px; font-weight: 700; color: var(--game-sage); }
+.snakeTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; color: var(--game-plum); margin: 2px 0; }
+.snakeSub { font-size: 12px; color: var(--game-muted); margin: 0; }
+
+.snakeStats {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.snakeBoard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #1e2c22;
+  border-radius: 16px;
+  border: 4px solid #2f4536;
+  box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(66, 45, 54, 0.15);
+  overflow: hidden;
+}
+
+.snakeGrid {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  grid-template-rows: repeat(16, 1fr);
+  width: 100%;
+  height: 100%;
+}
+
+.snakeCell {
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+
+.snakeHead {
+  background: #52b788;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 10px;
+}
+
+.snakeBody {
+  background: #74c69d;
+  border-radius: 3px;
+}
+
+.snakeFood {
+  font-size: 14px;
+  animation: pulse 1s infinite;
+}
+
+.snakeOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 44, 34, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.snakeOverlay span { font-size: 40px; margin-bottom: 8px; }
+.snakeOverlay h4 { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; margin: 0 0 6px; }
+.snakeOverlay p { font-size: 13px; color: #c4d7cb; margin: 0 0 16px; }
+
+/* ============================================================================
+ * Word Hunt & Anagram Styling
+ * ============================================================================ */
+
+.wordHuntContainer {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.wordHuntHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.wordHuntUrdu { font-size: 11px; font-weight: 700; color: var(--game-rose); }
+.wordHuntTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--game-plum); margin: 2px 0; }
+.wordHuntSub { font-size: 12px; color: var(--game-muted); margin: 0; }
+
+.wordHuntStats { display: flex; gap: 6px; }
+
+.wordHuntClueCard {
+  background: var(--game-ivory);
+  border: 1px solid var(--game-line);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.clueEnglish { font-size: 14px; color: var(--game-ink); margin: 0 0 4px; }
+.clueUrdu { font-size: 13px; color: var(--game-muted); font-family: Tahoma, 'Noto Naskh Arabic', serif; margin: 0; }
+
+.wordHuntAnswerArea {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.wordAnswerSlots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.letterSlot {
+  width: 40px;
+  height: 48px;
+  border-bottom: 3px solid var(--game-line);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--game-plum);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 6px 6px 0 0;
+}
+
+.letterSlot.filled {
+  border-bottom-color: var(--game-gold);
+  background: var(--game-ivory);
+}
+
+.letterSlot.solved {
+  border-bottom-color: var(--game-sage);
+  color: var(--game-sage);
+  background: var(--game-sage-light);
+}
+
+.scrambledTilesGrid {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.letterTile {
+  width: 44px;
+  height: 48px;
+  background: #fffdfa;
+  border: 1px solid #d4b896;
+  border-bottom: 4px solid #b89872;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #4a3728;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+}
+
+.letterTile:active:not(:disabled) {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+.letterTile.used {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-bottom-width: 1px;
+}
+
+.wordHuntActions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.wordFeedback {
+  text-align: center;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  margin-bottom: 14px;
+}
+.wordFeedback.success { background: var(--game-sage-light); color: var(--game-sage); font-weight: 700; }
+.wordFeedback.neutral { background: var(--game-rose-light); color: var(--game-rose); }
+
+/* ============================================================================
+ * Typing Rush Styling
+ * ============================================================================ */
+
+.typingRushContainer {
+  max-width: 580px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.typingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.typingUrdu { font-size: 11px; font-weight: 700; color: var(--game-gold); }
+.typingTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--game-plum); margin: 2px 0; }
+.typingSub { font-size: 12px; color: var(--game-muted); margin: 0; }
+.typingStats { display: flex; gap: 6px; }
+
+.quoteDisplayCard {
+  background: var(--game-ivory);
+  border: 1px solid var(--game-line);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: var(--game-shadow-sm);
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+}
+
+.quoteChars {
+  font-family: 'DM Mono', monospace, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.quoteChar.correct { color: #2e7d32; font-weight: 600; }
+.quoteChar.incorrect { color: #c62828; text-decoration: underline; background: rgba(198, 40, 40, 0.1); }
+.quoteChar.current { border-left: 2px solid var(--game-rose); animation: blink 1s infinite; }
+.quoteChar.untyped { color: #8c7f76; }
+
+.typingInputArea { margin-bottom: 16px; }
+.typingInput {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 2px solid var(--game-line);
+  background: #fff;
+  font-family: 'DM Mono', monospace, sans-serif;
+  font-size: 16px;
+  color: var(--game-plum);
+  outline: none;
+  transition: border 0.2s;
+}
+.typingInput:focus { border-color: var(--game-rose); }
+
+.typingActions { display: flex; justify-content: center; }
+
+.typingResultCard {
+  background: var(--game-gold-light);
+  border: 1px solid var(--game-gold-border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  margin-top: 18px;
+}
+.typingResultCard span { font-size: 32px; display: block; margin-bottom: 6px; }
+.typingResultCard h4 { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; margin: 0 0 6px; }
+.typingResultCard p { font-size: 14px; color: var(--game-ink); margin: 0; }
+
+/* ============================================================================
+ * Color Match Styling
+ * ============================================================================ */
+
+.colorMatchContainer {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px;
+  text-align: center;
+}
+
+.colorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.colorUrdu { font-size: 11px; font-weight: 700; color: var(--game-rose); }
+.colorTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--game-plum); margin: 2px 0; }
+.colorSub { font-size: 12px; color: var(--game-muted); margin: 0; }
+.colorStats { display: flex; gap: 6px; }
+
+.colorCardWrapper { margin-bottom: 24px; }
+.colorDisplayBox {
+  background: var(--game-ivory);
+  border: 2px solid var(--game-line);
+  border-radius: 20px;
+  padding: 40px 20px;
+  box-shadow: var(--game-shadow-md);
+  transition: all 0.2s;
+}
+.colorDisplayBox.feedback-correct { border-color: #2e7d32; box-shadow: 0 0 20px rgba(46, 125, 50, 0.2); }
+.colorDisplayBox.feedback-wrong { border-color: #c62828; box-shadow: 0 0 20px rgba(198, 40, 40, 0.2); }
+
+.colorWord {
+  display: block;
+  font-size: clamp(36px, 8vw, 54px);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.colorHint { font-size: 13px; color: var(--game-muted); }
+
+.colorChoices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.colorChoiceBtn {
+  padding: 16px;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.colorChoiceBtn.matchBtn {
+  background: #2e7d32;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.25);
+}
+.colorChoiceBtn.differBtn {
+  background: #c62828;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(198, 40, 40, 0.25);
+}
+.colorChoiceBtn:active { transform: scale(0.96); }
+
+.btnKey { font-size: 10px; opacity: 0.8; text-transform: uppercase; }
+.btnLabel { font-size: 16px; font-weight: 800; letter-spacing: 0.05em; }
+
+/* ============================================================================
+ * Math Quiz Styling
+ * ============================================================================ */
+
+.mathQuizContainer {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.mathHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.mathUrdu { font-size: 11px; font-weight: 700; color: var(--game-sage); }
+.mathTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--game-plum); margin: 2px 0; }
+.mathSub { font-size: 12px; color: var(--game-muted); margin: 0; }
+.mathStats { display: flex; gap: 6px; }
+
+.mathCard {
+  background: var(--game-ivory);
+  border: 1px solid var(--game-line);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: var(--game-shadow-sm);
+}
+
+.mathQuestionBox { margin-bottom: 20px; text-align: center; }
+.mathIcon { font-size: 32px; display: block; margin-bottom: 8px; }
+.mathQuestionText { font-size: 16px; font-weight: 600; color: var(--game-plum); margin: 0 0 6px; line-height: 1.4; }
+.mathUrduHint { font-size: 13px; color: var(--game-muted); font-family: Tahoma, 'Noto Naskh Arabic', serif; margin: 0; }
+
+.mathOptionsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.mathOptBtn {
+  background: #fff;
+  border: 1px solid var(--game-line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--game-plum);
+  transition: all 0.15s;
+}
+
+.mathOptBtn:hover:not(:disabled) {
+  border-color: var(--game-rose);
+  background: var(--game-rose-light);
+}
+
+.mathOptBtn.isCorrect {
+  background: var(--game-sage-light);
+  border-color: var(--game-sage);
+  color: var(--game-sage);
+}
+
+.mathOptBtn.isWrong {
+  background: var(--game-rose-light);
+  border-color: var(--game-rose);
+  color: var(--game-rose);
+}
+
+.optIndex {
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 3px 6px;
+  border-radius: 4px;
+  color: var(--game-muted);
+}
+
+.mathFeedbackSection {
+  text-align: center;
+  padding-top: 10px;
+  border-top: 1px dashed var(--game-line);
+}
+.mathNote { font-size: 13px; color: var(--game-ink); margin-bottom: 12px; font-style: italic; }
+
+.mathCelebrationCard {
+  text-align: center;
+  padding: 36px 20px;
+  background: var(--game-ivory);
+  border-radius: 18px;
+  border: 1px solid var(--game-line);
+}
+.mathCelebrationCard span { font-size: 40px; display: block; margin-bottom: 10px; }
+.mathCelebrationCard h4 { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; margin: 0 0 8px; }
+.mathCelebrationCard p { font-size: 14px; color: var(--game-muted); margin-bottom: 18px; }
+
+/* Keyframe animations */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}

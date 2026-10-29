@@ -46,17 +46,18 @@ export function BookScene({
   });
 
   // Page Textures
+  const totalPages = pages.length > 0 ? pages.length : 1;
   const leftPageContent = useMemo(
-    () => pages[currentPage] || pages[0],
+    () => (pages.length > 0 ? pages[currentPage] || pages[0] : undefined),
     [pages, currentPage]
   );
   const rightPageContent = useMemo(
-    () => pages[(currentPage + 1) % pages.length] || pages[0],
-    [pages, currentPage]
+    () => (pages.length > 0 ? pages[(currentPage + 1) % totalPages] || pages[0] : undefined),
+    [pages, currentPage, totalPages]
   );
   const nextPageContent = useMemo(
-    () => pages[(currentPage + 2) % pages.length] || pages[0],
-    [pages, currentPage]
+    () => (pages.length > 0 ? pages[(currentPage + 2) % totalPages] || pages[0] : undefined),
+    [pages, currentPage, totalPages]
   );
 
   const leftTexture = useMemo(

@@ -1,6 +1,6 @@
 /**
  * Types and interfaces for the Birthday 1-to-1 Private Chat interface
- * Between Creator (Noah) and Recipient (Meerah)
+ * Between Creator (Noah/BABA) and Recipient (Meerah ✿)
  */
 
 export type ChatRole = "recipient" | "creator";
@@ -11,6 +11,9 @@ export type MessageDeliveryStatus =
   | "server-accepted"
   | "durably-persisted"
   | "sent"
+  | "delivered"
+  | "read"
+  | "seen"
   | "error";
 
 export type MediaKind = "image" | "video" | "audio" | "gif";
@@ -30,7 +33,7 @@ export interface ChatAttachment {
 export interface ChatMessage {
   id: string;
   clientId?: string;
-  sender: ChatRole; // "recipient" (Meerah) or "creator" (Noah)
+  sender: ChatRole; // "recipient" (Meerah ✿) or "creator" (Noah/BABA)
   body: string;
   createdAt: string; // ISO-8601 string or timestamp
   status: MessageDeliveryStatus;
@@ -40,6 +43,20 @@ export interface ChatMessage {
   reactions?: Record<string, number>;
   myReactions?: string[];
   visitorId?: string;
+}
+
+export interface ChatConversation {
+  id: string;
+  name: string;
+  avatar?: string;
+  avatarGlyph?: string;
+  lastMessage: string;
+  lastTime: string;
+  unreadCount?: number;
+  isTyping?: boolean;
+  isOnline?: boolean;
+  statusText?: string;
+  verified?: boolean;
 }
 
 export interface CuratedGif {
@@ -75,4 +92,5 @@ export interface ChatPanelProps {
   currentUserRole?: ChatRole;
   onSendMessage?: (msg: { body: string; attachments: ChatAttachment[] }) => Promise<boolean>;
   className?: string;
+  initialThreadId?: string;
 }

@@ -13,6 +13,7 @@
   padding: 6px 12px max(8px, env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 [data-theme="love"] .bottom-nav-container {
@@ -31,10 +32,12 @@
   padding: 0;
   list-style: none;
   gap: 4px;
+  box-sizing: border-box;
 }
 
 .bottom-nav-item {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   justify-content: center;
 }
@@ -57,6 +60,7 @@
   text-decoration: none;
   touch-action: manipulation;
   position: relative;
+  box-sizing: border-box;
 }
 
 [data-theme="love"] .bottom-nav-btn {
@@ -75,6 +79,10 @@
   letter-spacing: 0.02em;
   line-height: 1;
   font-family: 'DM Sans', system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* Active State */
@@ -120,7 +128,13 @@
   outline-offset: -2px;
 }
 
-/* Compact Mobile Screens */
+[data-theme="love"] .bottom-nav-btn:focus-visible {
+  outline: 2px solid #F8D7DE;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 3px rgba(248, 215, 222, 0.35);
+}
+
+/* Compact Mobile Screens (360px - 380px) */
 @media (max-width: 380px) {
   .bottom-nav-container {
     padding: 4px 6px max(6px, env(safe-area-inset-bottom));
@@ -135,17 +149,54 @@
   }
 }
 
+/* Ultra-Compact Screens (320px - 340px) */
+@media (max-width: 340px) {
+  .bottom-nav-container {
+    padding: 4px 2px max(6px, env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav-list {
+    gap: 1px;
+  }
+
+  .bottom-nav-btn {
+    min-height: 44px;
+    padding: 3px 1px;
+  }
+
+  .bottom-nav-icon {
+    font-size: 15px;
+  }
+
+  .bottom-nav-label {
+    font-size: 8px;
+    letter-spacing: -0.02em;
+  }
+}
+
 /* Ensure Page Bottom Clearance */
 .shell-content-with-bottom-nav {
   padding-bottom: clamp(72px, 10vw, 96px) !important;
+  padding-bottom: calc(clamp(72px, 10vw, 96px) + env(safe-area-inset-bottom)) !important;
 }
 
 .shell {
-  padding-bottom: clamp(72px, 10vw, 96px);
+  padding-bottom: calc(clamp(72px, 10vw, 96px) + env(safe-area-inset-bottom));
 }
 
 .shell > footer {
   margin-bottom: clamp(64px, 8vw, 88px);
+}
+
+/* Prefers-Reduced-Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-btn,
+  .bottom-nav-icon,
+  .bottom-nav-active-pill {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* Polished Desktop Bottom Navigation Enhancement */

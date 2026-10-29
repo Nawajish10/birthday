@@ -215,3 +215,27 @@ To eliminate merge conflicts and accidental regression of shared application sta
    - `Escape` key must immediately dismiss open lightboxes and return focus to the trigger element without resetting page scroll position (`scrollPositionRef`).
    - Modals must supply `role="dialog"`, `aria-modal="true"`, and accessible labels (`aria-label` or `aria-labelledby`).
    - All photographic images must define non-empty, meaningful `alt` text.
+
+
+### 7. Multi-Agent Production Orchestration Architecture (October 2026 Release)
+
+1. **Independent App Router Route System:**
+   - The application has transitioned to genuine, independently navigable Next.js App Router routes located in `src/app/`:
+     * `/` — Home (Hero, Sweet Birthday Memory, Heartfelt Notes, Photo Cards, Keepsake Book entry)
+     * `/memories` — Snapchat-inspired camera, photo uploads, Recent Memories, Albums, Stories
+     * `/profile` — Instagram-inspired personal profile for Meerah (30 October 2001), real-time countdown, 6 interests, Highlights, Posts/Favorites
+     * `/music` — Spotify-inspired Music Room, search, playlists, Now Playing, MP4 support
+     * `/study` — Literary Study Sanctuary, Today's Plan checklist (3/5 completed), notes, resources, bookshelf
+     * `/games` — Games Hub featuring 8 playable games (2048, Memory Match couplets, Tic-Tac-Toe, Snake, Word Hunt, Typing Rush, Color Match, Birthday Quiz)
+     * `/chat` — WhatsApp-inspired private 1-to-1 chat, Admin ↔ Meerah dual testing, Web Crypto E2EE
+   - All routes are protected by server-side scope validation (`readScope("birthday")`) and wrapped in `RouteShell.tsx` with passcode-gate verification fallback.
+   - Direct URL entry, browser refresh, link sharing, and back/forward browser history work without 404 errors.
+
+2. **Authoritative Identity & Birthday Invariants:**
+   - Recipient Name: **Meerah** (strictly standardized; never Mira or generic names).
+   - Authoritative Birth Date: **30 October 2001** (`2001-10-30T00:00:00.000Z`).
+   - Dynamic Age & Countdown: Computed on-the-fly from the authoritative date, updating every second.
+
+3. **Shared Navigation & Clearance Invariants:**
+   - Single authoritative navigation dock: `src/components/shared/BottomNav.tsx` using Next.js `<Link>` components and dynamic route highlighting via `usePathname()`.
+   - Content bottom clearance padding (`.shell-content-with-bottom-nav`) guarantees page elements and footers are never covered by the bottom navigation bar.

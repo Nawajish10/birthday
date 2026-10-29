@@ -1437,3 +1437,19 @@ Visitor lands on Application -> Experience.tsx loads (`tab === "home"`):
                              ├── Redact auth keys: ?key=[REDACTED]
                              ├── Redact tokens: ?token=[REDACTED]
                              └── Protect private credentials from client logs
+
+
+5. INDEPENDENT APP ROUTER NAVIGATION FLOW
+--------------------------------------------------------------------------------
+   User / Deep Link Entry:
+     /           -> Server Verification -> PasscodeCheck -> Home Experience
+     /memories   -> Server Verification -> PasscodeCheck -> Snapchat Camera & Memories Experience
+     /profile    -> Server Verification -> PasscodeCheck -> Instagram Meerah Profile Experience
+     /music      -> Server Verification -> PasscodeCheck -> Spotify Music Room Experience
+     /study      -> Server Verification -> PasscodeCheck -> Literary Study Sanctuary Experience
+     /games      -> Server Verification -> PasscodeCheck -> Games Hub Arcade Experience
+     /chat       -> Server Verification -> PasscodeCheck -> WhatsApp 1-to-1 Private Chat Experience
+
+   Direct URL Entry, Browser Refresh, and Back/Forward History:
+     - Fully supported with 0 route collisions or 404 errors.
+     - BottomNav uses genuine Next.js <Link> routing synchronized with usePathname().

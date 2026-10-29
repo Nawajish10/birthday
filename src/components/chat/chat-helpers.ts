@@ -5,6 +5,7 @@ import type {
   MediaKind,
   MessageDeliveryStatus,
   CuratedGif,
+  ChatConversation,
 } from "./chat-types.ts";
 
 // Maximum file size limits as specified
@@ -381,3 +382,229 @@ export const DEFAULT_INITIAL_MESSAGES: ChatMessage[] = [
     ],
   },
 ];
+
+
+/**
+ * WhatsApp-style conversations list
+ */
+export const INITIAL_CONVERSATIONS: ChatConversation[] = [
+  {
+    id: "meerah",
+    name: "Meerah ✿",
+    avatar: "/images/sample-meerah-1.jpg",
+    avatarGlyph: "M",
+    lastMessage: "Typing...",
+    lastTime: "9:41 PM",
+    unreadCount: 2,
+    isTyping: true,
+    isOnline: true,
+    statusText: "online",
+    verified: true,
+  },
+  {
+    id: "memories",
+    name: "Memories",
+    avatarGlyph: "📸",
+    lastMessage: "Photo shared",
+    lastTime: "8:12 PM",
+    unreadCount: 0,
+    statusText: "Personal Vault",
+  },
+  {
+    id: "study-buddy",
+    name: "Study Buddy",
+    avatarGlyph: "📚",
+    lastMessage: "Let's study together!",
+    lastTime: "5:30 PM",
+    unreadCount: 0,
+    statusText: "Library & Goals",
+  },
+  {
+    id: "game-zone",
+    name: "Game Zone",
+    avatarGlyph: "🎮",
+    lastMessage: "New high score!",
+    lastTime: "3:18 PM",
+    unreadCount: 0,
+    statusText: "Arcade & Puzzles",
+  },
+  {
+    id: "music-room",
+    name: "Music Room",
+    avatarGlyph: "🎵",
+    lastMessage: "Shared a song",
+    lastTime: "1:05 PM",
+    unreadCount: 0,
+    statusText: "Our Playlist",
+  },
+  {
+    id: "notes-ideas",
+    name: "Notes & Ideas",
+    avatarGlyph: "💡",
+    lastMessage: "Check this out",
+    lastTime: "Yesterday",
+    unreadCount: 0,
+    statusText: "Shared Thoughts",
+  },
+];
+
+export const THREAD_INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
+  meerah: [
+    {
+      id: "msg-init-1",
+      sender: "creator",
+      body: "Happy Birthday Meerah! 🎂✨ I built this whole little universe for you. Every word, every song, and every corner here was made with so much love.",
+      createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+      status: "read",
+      reactions: { "❤️": 2, "✨": 1 },
+      myReactions: ["❤️"],
+    },
+    {
+      id: "msg-init-2",
+      sender: "creator",
+      body: "Whenever you want to talk, send a voice note, or share a thought, this chat is just ours — safe, private, and always right here.",
+      createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+      status: "read",
+      reactions: { "🥺": 1 },
+    },
+    {
+      id: "msg-init-sunset",
+      sender: "recipient",
+      body: "Aww BABA thank you so much! Look at this gorgeous golden sunset from today 🌅✨",
+      createdAt: new Date(Date.now() - 1000 * 60 * 65).toISOString(),
+      status: "read",
+      attachments: [
+        {
+          id: "att-sunset-photo",
+          type: "image",
+          url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+          name: "golden-sunset.jpg",
+          size: 1120000,
+          mimeType: "image/jpeg",
+          thumbnailUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80",
+          caption: "Golden hour birthday view ♡",
+        },
+      ],
+      reactions: { "❤️": 3 },
+      myReactions: ["❤️"],
+    },
+    {
+      id: "msg-init-voice",
+      sender: "recipient",
+      body: "",
+      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      status: "read",
+      attachments: [
+        {
+          id: "att-voice-meerah",
+          type: "audio",
+          url: "https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3",
+          name: "voice-note-24s.m4a",
+          size: 320000,
+          mimeType: "audio/mpeg",
+          durationSeconds: 24,
+        },
+      ],
+    },
+    {
+      id: "msg-init-recent",
+      sender: "creator",
+      body: "I see it!! Absolutely glowing. Keep that beautiful smile all year round 🌸",
+      createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+      status: "durably-persisted",
+      reactions: { "🥰": 1 },
+    },
+  ],
+  memories: [
+    {
+      id: "mem-1",
+      sender: "creator",
+      body: "Here is where all our captured photographs and milestone moments live. Tap any memory to travel back in time 📸✨",
+      createdAt: new Date(Date.now() - 1000 * 60 * 70).toISOString(),
+      status: "read",
+      attachments: [
+        {
+          id: "att-mem-1",
+          type: "image",
+          url: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=82",
+          name: "birthday-morning.jpg",
+          size: 1420000,
+          mimeType: "image/jpeg",
+          thumbnailUrl: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=300&q=80",
+          caption: "Photo shared · A special morning celebration",
+        },
+      ],
+    },
+    {
+      id: "mem-2",
+      sender: "recipient",
+      body: "I can't believe how fast time flies! These photos brought back all the laughter.",
+      createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+      status: "read",
+    },
+  ],
+  'study-buddy': [
+    {
+      id: "study-1",
+      sender: "creator",
+      body: "Let's study together! Pomodoro timer is set and the study playlist is ready. You're going to ace everything you set your mind to 📚💫",
+      createdAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
+      status: "read",
+    },
+    {
+      id: "study-2",
+      sender: "recipient",
+      body: "Yes! Goal for today: complete 2 chapters then reward myself with cake! 🍰",
+      createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+      status: "read",
+    },
+  ],
+  'game-zone': [
+    {
+      id: "game-1",
+      sender: "creator",
+      body: "New high score! Can you beat 12,400 in the memory match game? 🎮👾",
+      createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+      status: "read",
+    },
+    {
+      id: "game-2",
+      sender: "recipient",
+      body: "Challenge accepted! I'm coming for that top rank right now 🔥",
+      createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+      status: "read",
+    },
+  ],
+  'music-room': [
+    {
+      id: "music-1",
+      sender: "creator",
+      body: "Shared a song: 'A Thousand Years' & 'Can't Help Falling in Love' are on the birthday turntable 🎵💖",
+      createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
+      status: "read",
+    },
+    {
+      id: "music-2",
+      sender: "recipient",
+      body: "Playing it on repeat all day! The vinyl record animation is so dreamy 🎶",
+      createdAt: new Date(Date.now() - 1000 * 60 * 290).toISOString(),
+      status: "read",
+    },
+  ],
+  'notes-ideas': [
+    {
+      id: "notes-1",
+      sender: "creator",
+      body: "Check this out: our shared bucket list for this new age and adventures we want to take together ✨📝",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
+      status: "read",
+    },
+    {
+      id: "notes-2",
+      sender: "recipient",
+      body: "Added 3 new destinations! Stargazing trip is definitely at the top 🌌",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
+      status: "read",
+    },
+  ],
+};

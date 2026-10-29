@@ -5,7 +5,7 @@
  * Free of JSX so it can be imported directly in Node.js native tests.
  */
 
-export type MusicFilterType = "all" | "favorites" | "playlists" | "recently-played";
+export type MusicFilterType = "for-you" | "playlists" | "liked" | "all" | "favorites" | "recently-played";
 export type PlayerCardSize = "compact" | "standard" | "expanded";
 
 export interface MusicTrackItem {
@@ -21,6 +21,9 @@ export interface MusicTrackItem {
 }
 
 export const PLAYLIST_NAMES = [
+  "Birthday Special",
+  "Chill Vibes",
+  "Soft Love",
   "Meerah's Favorites",
   "Acoustic & Soft",
   "Late Night Starlight",
@@ -43,7 +46,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 209,
     isFavorite: true,
     url: "",
-    playlist: "Meerah's Favorites",
+    playlist: "Birthday Special",
   },
   {
     id: "track-02",
@@ -53,7 +56,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 221,
     isFavorite: true,
     url: "",
-    playlist: "Meerah's Favorites",
+    playlist: "Birthday Special",
   },
   {
     id: "track-03",
@@ -63,7 +66,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 177,
     isFavorite: true,
     url: "",
-    playlist: "Meerah's Favorites",
+    playlist: "Chill Vibes",
   },
   {
     id: "track-04",
@@ -83,7 +86,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 263,
     isFavorite: true,
     url: "",
-    playlist: "Timeless Classics",
+    playlist: "Soft Love",
   },
   {
     id: "track-06",
@@ -93,7 +96,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 269,
     isFavorite: false,
     url: "",
-    playlist: "Acoustic & Soft",
+    playlist: "Chill Vibes",
   },
   {
     id: "track-07",
@@ -123,7 +126,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 209,
     isFavorite: true,
     url: "",
-    playlist: "Acoustic & Soft",
+    playlist: "Chill Vibes",
   },
   {
     id: "track-10",
@@ -133,7 +136,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 269,
     isFavorite: false,
     url: "",
-    playlist: "Timeless Classics",
+    playlist: "Soft Love",
   },
   {
     id: "track-11",
@@ -173,7 +176,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 268,
     isFavorite: true,
     url: "",
-    playlist: "Desi Melodies",
+    playlist: "Birthday Special",
   },
   {
     id: "track-15",
@@ -193,7 +196,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 285,
     isFavorite: false,
     url: "",
-    playlist: "Timeless Classics",
+    playlist: "Soft Love",
   },
   {
     id: "track-17",
@@ -533,7 +536,7 @@ export const SEED_MUSIC_CATALOGUE: MusicTrackItem[] = [
     durationSeconds: 261,
     isFavorite: true,
     url: "",
-    playlist: "Desi Melodies",
+    playlist: "Birthday Special",
   },
 ];
 
@@ -597,7 +600,7 @@ export function searchAndFilterTracks(
   let result = tracks;
 
   // Filter type stage
-  if (filter === "favorites") {
+  if (filter === "favorites" || filter === "liked") {
     result = result.filter((t) => Boolean(t.isFavorite));
   } else if (filter === "playlists") {
     if (selectedPlaylist && selectedPlaylist !== "all") {
@@ -607,13 +610,14 @@ export function searchAndFilterTracks(
     }
   }
 
-  // Search query stage
+  // Search query stage: searches across title, artist, and playlist
   const trimmed = (query || "").trim().toLowerCase();
   if (trimmed) {
     result = result.filter(
       (t) =>
         (t.title && t.title.toLowerCase().includes(trimmed)) ||
-        (t.artist && t.artist.toLowerCase().includes(trimmed))
+        (t.artist && t.artist.toLowerCase().includes(trimmed)) ||
+        (t.playlist && t.playlist.toLowerCase().includes(trimmed))
     );
   }
 

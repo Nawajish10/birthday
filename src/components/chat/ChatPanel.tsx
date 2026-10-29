@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "./chat.css";
 import {
   ChatMessage,
@@ -9,9 +9,12 @@ import {
   MediaKind,
   MessageDeliveryStatus,
   ChatPanelProps,
+  ChatConversation,
 } from "./chat-types";
 import {
   DEFAULT_INITIAL_MESSAGES,
+  INITIAL_CONVERSATIONS,
+  THREAD_INITIAL_MESSAGES,
   createPendingMessage,
   transitionMessageState,
   generateSecurityFingerprint,
@@ -49,15 +52,90 @@ export function ChatPanel({
   currentUserRole = "recipient",
   onSendMessage,
   className = "",
+  initialThreadId = "meerah",
 }: ChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(DEFAULT_INITIAL_MESSAGES);
+  // Dual-role perspective support: Meerah ✿ (recipient) vs Admin / BABA (creator)
+  const [activeRole, setActiveRole] = useState<ChatRole>(currentUserRole);
+
+  // Sync role if parent prop changes
+  useEffect(() => {
+    setActiveRole(currentUserRole);
+  }, [currentUserRole]);
+
+  // Selected thread navigation
+  const [activeThreadId, setActiveThreadId] = useState<string>(initialThreadId);
+  const [mobileView, setMobileView] = useState<"list" | "thread">("thread");
+
+  // Search filter for conversation list
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Conversations list
+  const [conversations, setConversations] = useState<ChatConversation[]>(INITIAL_CONVERSATIONS);
+
+  // Per-thread message store
+  const [threadMessages, setThreadMessages] = useState<Record<string, ChatMessage[]>>({
+    meerah: THREAD_INITIAL_MESSAGES.meerah || DEFAULT_INITIAL_MESSAGES,
+    memories: THREAD_INITIAL_MESSAGES.memories || [],
+    "study-buddy": THREAD_INITIAL_MESSAGES["study-buddy"] || [],
+    "game-zone": THREAD_INITIAL_MESSAGES["game-zone"] || [],
+    "music-room": THREAD_INITIAL_MESSAGES["music-room"] || [],
+    "notes-ideas": THREAD_INITIAL_MESSAGES["notes-ideas"] || [],
+  });
+
   const [isSending, setIsSending] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [copiedFingerprint, setCopiedFingerprint] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
 
+  // Interactive Audio/Video Calling modal state
+  const [callingState, setCallingState] = useState<{
+    type: "audio" | "video";
+    name: string;
+    status: "ringing" | "connected";
+    seconds: number;
+    isMuted: boolean;
+  } | null>(null);
+
+  // Quick New Chat / Note modal
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newChatTitle, setNewChatTitle] = useState("");
+
   const securityFingerprint = generateSecurityFingerprint(visitorId || "meerah-creator-private-chat");
 
+  // Active messages based on current selected thread
+  const activeMessages = useMemo(() => {
+    return threadMessages[activeThreadId] || [];
+  }, [threadMessages, activeThreadId]);
+
+  // Filtered conversation list
+  const filteredConversations = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.lastMessage.toLowerCase().includes(q) ||
+        (c.statusText && c.statusText.toLowerCase().includes(q))
+    );
+  }, [conversations, searchQuery]);
+
+  // Active contact info
+  const activeConversation = useMemo(() => {
+    return (
+      conversations.find((c) => c.id === activeThreadId) || {
+        id: "meerah",
+        name: "Meerah ✿",
+        avatar: "/images/sample-meerah-1.jpg",
+        avatarGlyph: "M",
+        lastMessage: "Typing...",
+        lastTime: "9:41 PM",
+        isOnline: true,
+        statusText: "online",
+      }
+    );
+  }, [conversations, activeThreadId]);
+
+  // Sync encrypted messages for Meerah thread from backend
   const syncMessages = useCallback(async () => {
     try {
       const res = await fetch("/api/creator-messages");
@@ -95,14 +173,14 @@ export function ChatPanel({
                   ]
                 : [];
               const isPersisted = Boolean(m.persisted);
-              const status: MessageDeliveryStatus = isPersisted ? "durably-persisted" : "server-accepted";
+              const targetStatus: MessageDeliveryStatus = isPersisted ? "durably-persisted" : "server-accepted";
               return {
                 id: String(m.id || `remote-${Math.random()}`),
                 clientId: m.client_id ? String(m.client_id) : undefined,
                 sender: (m.sender === "creator" ? "creator" : "recipient") as ChatRole,
                 body: text,
                 createdAt: String(m.created_at || new Date().toISOString()),
-                status,
+                status: targetStatus,
                 persisted: isPersisted,
                 storageTier: isPersisted ? "database" : "volatile_fallback",
                 reactions: {},
@@ -112,15 +190,19 @@ export function ChatPanel({
             })
           );
 
-          setMessages((prev) => {
-            const existingIds = new Set(prev.map((p) => p.id));
-            const next = [...prev];
+          setThreadMessages((prev) => {
+            const currentMeerah = prev.meerah || [];
+            const existingIds = new Set(currentMeerah.map((p) => p.id));
+            const next = [...currentMeerah];
             for (const item of decryptedItems) {
               if (!existingIds.has(item.id)) {
                 next.push(item);
               }
             }
-            return next;
+            return {
+              ...prev,
+              meerah: next,
+            };
           });
           setIsLiveConnected(true);
         }
@@ -147,7 +229,7 @@ export function ChatPanel({
             body: encrypted.ciphertext,
             iv: encrypted.iv,
             is_encrypted: true,
-            sender: currentUserRole,
+            sender: activeRole,
             visitor_id: visitorId,
           }),
         });
@@ -160,7 +242,7 @@ export function ChatPanel({
     }
     saveOfflineQueue(remaining);
     syncMessages();
-  }, [currentUserRole, visitorId, syncMessages]);
+  }, [activeRole, visitorId, syncMessages]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -172,7 +254,7 @@ export function ChatPanel({
     };
   }, [flushOfflineQueue]);
 
-  // Periodic polling sync every 3 seconds
+  // Periodic polling sync every 3 seconds for active conversation
   useEffect(() => {
     let mounted = true;
     const initialTimer = setTimeout(() => {
@@ -191,6 +273,15 @@ export function ChatPanel({
     };
   }, [syncMessages, flushOfflineQueue]);
 
+  // Calling timer simulation
+  useEffect(() => {
+    if (!callingState || callingState.status !== "connected") return;
+    const timer = setInterval(() => {
+      setCallingState((prev) => (prev ? { ...prev, seconds: prev.seconds + 1 } : null));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [callingState]);
+
   // Handle sending new message
   const handleSendMessage = async (payload: {
     body: string;
@@ -198,31 +289,62 @@ export function ChatPanel({
   }): Promise<boolean> => {
     const pendingMsg = createPendingMessage(
       payload.body,
-      currentUserRole,
+      activeRole,
       payload.attachments,
       visitorId
     );
 
-    // Optimistically add to timeline with "sending" status
-    setMessages((prev) => [...prev, pendingMsg]);
+    // Optimistically add to active thread
+    setThreadMessages((prev) => ({
+      ...prev,
+      [activeThreadId]: [...(prev[activeThreadId] || []), pendingMsg],
+    }));
+
+    // Update conversation last message snippet
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeThreadId
+          ? {
+              ...c,
+              lastMessage: payload.body || (payload.attachments[0]?.type === "image" ? "Photo shared" : "Voice note"),
+              lastTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              unreadCount: 0,
+              isTyping: false,
+            }
+          : c
+      )
+    );
+
     setIsSending(true);
 
+    // If current thread is NOT meerah (e.g. memories or study-buddy notes), deliver immediately locally
+    if (activeThreadId !== "meerah") {
+      setTimeout(() => {
+        setThreadMessages((prev) => ({
+          ...prev,
+          [activeThreadId]: (prev[activeThreadId] || []).map((m) =>
+            m.id === pendingMsg.id ? transitionMessageState(m, "read") : m
+          ),
+        }));
+        setIsSending(false);
+      }, 400);
+      return true;
+    }
+
     try {
-      // If parent provided custom handler, delegate to it
       if (onSendMessage) {
         const ok = await onSendMessage(payload);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === pendingMsg.id
-              ? transitionMessageState(m, ok !== false ? "sent" : "error")
-              : m
-          )
-        );
+        setThreadMessages((prev) => ({
+          ...prev,
+          [activeThreadId]: (prev[activeThreadId] || []).map((m) =>
+            m.id === pendingMsg.id ? transitionMessageState(m, ok !== false ? "sent" : "error") : m
+          ),
+        }));
         setIsSending(false);
         return ok !== false;
       }
 
-      // E2EE encryption before transmission
+      // Web Crypto E2EE encryption before transmission
       const key = await deriveConversationKey(CONVERSATION_PASSPHRASE, CONVERSATION_SALT);
       const encrypted = await encryptTextMessage(payload.body, key);
 
@@ -231,7 +353,7 @@ export function ChatPanel({
         body: encrypted.ciphertext,
         iv: encrypted.iv,
         is_encrypted: true,
-        sender: currentUserRole,
+        sender: activeRole,
         visitor_id: visitorId,
         media: payload.attachments?.[0]
           ? {
@@ -257,9 +379,9 @@ export function ChatPanel({
       const isPersisted = Boolean(data.message?.persisted);
       const targetStatus: MessageDeliveryStatus = isPersisted ? "durably-persisted" : "server-accepted";
 
-      // Transition to explicit delivery status and update ID from server if provided
-      setMessages((prev) =>
-        prev.map((m) =>
+      setThreadMessages((prev) => ({
+        ...prev,
+        [activeThreadId]: (prev[activeThreadId] || []).map((m) =>
           m.id === pendingMsg.id
             ? {
                 ...m,
@@ -269,8 +391,8 @@ export function ChatPanel({
                 id: data.message?.id || m.id,
               }
             : m
-        )
-      );
+        ),
+      }));
 
       setIsSending(false);
       return true;
@@ -280,12 +402,12 @@ export function ChatPanel({
       q.push({ id: pendingMsg.id, payload });
       saveOfflineQueue(q);
 
-      // Transition to error state with retry button
-      setMessages((prev) =>
-        prev.map((m) =>
+      setThreadMessages((prev) => ({
+        ...prev,
+        [activeThreadId]: (prev[activeThreadId] || []).map((m) =>
           m.id === pendingMsg.id ? transitionMessageState(m, "error") : m
-        )
-      );
+        ),
+      }));
       setIsSending(false);
       return false;
     }
@@ -293,18 +415,17 @@ export function ChatPanel({
 
   // Retry sending a failed message
   const handleRetryMessage = async (messageId: string) => {
-    const target = messages.find((m) => m.id === messageId);
+    const target = activeMessages.find((m) => m.id === messageId);
     if (!target) return;
 
-    // Transition back to sending
-    setMessages((prev) =>
-      prev.map((m) =>
+    setThreadMessages((prev) => ({
+      ...prev,
+      [activeThreadId]: (prev[activeThreadId] || []).map((m) =>
         m.id === messageId ? transitionMessageState(m, "sending") : m
-      )
-    );
+      ),
+    }));
 
     try {
-      // Retain end-to-end encryption on retries (do NOT leak plaintext)
       const key = await deriveConversationKey(CONVERSATION_PASSPHRASE, CONVERSATION_SALT);
       const encrypted = await encryptTextMessage(target.body, key);
 
@@ -327,8 +448,9 @@ export function ChatPanel({
       const isPersisted = Boolean(data.message?.persisted);
       const targetStatus: MessageDeliveryStatus = isPersisted ? "durably-persisted" : "server-accepted";
 
-      setMessages((prev) =>
-        prev.map((m) =>
+      setThreadMessages((prev) => ({
+        ...prev,
+        [activeThreadId]: (prev[activeThreadId] || []).map((m) =>
           m.id === messageId
             ? {
                 ...m,
@@ -338,21 +460,23 @@ export function ChatPanel({
                 id: data.message?.id || m.id,
               }
             : m
-        )
-      );
+        ),
+      }));
     } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
+      setThreadMessages((prev) => ({
+        ...prev,
+        [activeThreadId]: (prev[activeThreadId] || []).map((m) =>
           m.id === messageId ? transitionMessageState(m, "error") : m
-        )
-      );
+        ),
+      }));
     }
   };
 
   // Add or toggle emoji reaction
   const handleAddReaction = (messageId: string, emoji: string) => {
-    setMessages((prev) =>
-      prev.map((m) => {
+    setThreadMessages((prev) => ({
+      ...prev,
+      [activeThreadId]: (prev[activeThreadId] || []).map((m) => {
         if (m.id !== messageId) return m;
 
         const currentReactions = { ...(m.reactions || {}) };
@@ -360,7 +484,6 @@ export function ChatPanel({
         const alreadyReacted = myReactions.includes(emoji);
 
         if (alreadyReacted) {
-          // Remove reaction
           currentReactions[emoji] = Math.max(0, (currentReactions[emoji] || 1) - 1);
           if (currentReactions[emoji] === 0) {
             delete currentReactions[emoji];
@@ -368,13 +491,12 @@ export function ChatPanel({
           const nextMyReactions = myReactions.filter((e) => e !== emoji);
           return { ...m, reactions: currentReactions, myReactions: nextMyReactions };
         } else {
-          // Add reaction
           currentReactions[emoji] = (currentReactions[emoji] || 0) + 1;
           myReactions.push(emoji);
           return { ...m, reactions: currentReactions, myReactions };
         }
-      })
-    );
+      }),
+    }));
   };
 
   const copyFingerprintToClipboard = () => {
@@ -385,70 +507,441 @@ export function ChatPanel({
     }
   };
 
+  const handleSelectConversation = (threadId: string) => {
+    setActiveThreadId(threadId);
+    setMobileView("thread");
+
+    // Clear unread count for clicked thread
+    setConversations((prev) =>
+      prev.map((c) => (c.id === threadId ? { ...c, unreadCount: 0 } : c))
+    );
+  };
+
+  const startCall = (type: "audio" | "video") => {
+    setCallingState({
+      type,
+      name: activeConversation.name,
+      status: "ringing",
+      seconds: 0,
+      isMuted: false,
+    });
+
+    // Simulate answer after 2.5 seconds
+    setTimeout(() => {
+      setCallingState((prev) => (prev ? { ...prev, status: "connected" } : null));
+    }, 2500);
+  };
+
+  const endCall = () => {
+    setCallingState(null);
+  };
+
+  const handleCreateNewChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChatTitle.trim()) return;
+
+    const newId = `custom-${Date.now()}`;
+    const newConv: ChatConversation = {
+      id: newId,
+      name: newChatTitle.trim(),
+      avatarGlyph: "💭",
+      lastMessage: "Conversation created",
+      lastTime: "Just now",
+      unreadCount: 0,
+      statusText: "Personal thread",
+    };
+
+    setConversations((prev) => [newConv, ...prev]);
+    setThreadMessages((prev) => ({
+      ...prev,
+      [newId]: [
+        {
+          id: `msg-${Date.now()}`,
+          sender: activeRole,
+          body: `Started thread: "${newChatTitle.trim()}" ✨`,
+          createdAt: new Date().toISOString(),
+          status: "read",
+        },
+      ],
+    }));
+
+    setActiveThreadId(newId);
+    setMobileView("thread");
+    setShowNewChatModal(false);
+    setNewChatTitle("");
+  };
+
   return (
     <section
-      className={`chatPanelContainer ${className}`}
-      aria-label="Private 1-to-1 chat"
+      className={`chatPanelContainer whatsappLayout ${mobileView === "thread" ? "mobileShowThread" : "mobileShowList"} ${className}`}
+      aria-label="WhatsApp Private 1-to-1 Chat"
     >
-      {/* Intimate Love Theme Header */}
-      <header className="chatPanelHeader">
-        <div className="chatHeaderLeft">
-          <div className="chatAvatarRing" aria-hidden="true">
-            <span className="chatAvatarGlyph">
-              {currentUserRole === "recipient" ? "N" : "M"}
-            </span>
-            <span className="chatOnlineDot" title="Direct 1-to-1 connection" />
-          </div>
-
-          <div className="chatTitleGroup">
-            <h2 className="chatTitleHeading">
-              {currentUserRole === "recipient" ? "Noah & Meerah ♡" : "Meerah ♡"}
-            </h2>
-            <div className="chatSubStatus">
-              <span className="chatRoleBadge">
-                {currentUserRole === "recipient" ? "Private with Creator" : "Direct to Recipient"}
+      {/* ====================================================================
+          SIDEBAR: WhatsApp-style Chats List View
+          ==================================================================== */}
+      <aside className="chatSidebarPane" aria-label="Conversations list">
+        {/* Sidebar Header */}
+        <div className="chatSidebarHeader">
+          <div className="sidebarHeaderUser">
+            <div className="sidebarAvatar" title="Your Account">
+              <span className="sidebarAvatarGlyph">
+                {activeRole === "recipient" ? "M" : "B"}
               </span>
-              <span className="chatConnectionDot" />
-              <span className="chatConnectionText">
-                {isLiveConnected ? "Direct Link Live" : "Private Session"}
+              <span className="onlineBadgeDot" />
+            </div>
+            <div className="sidebarUserMeta">
+              <h2 className="sidebarTitle">Chats</h2>
+              <span className="sidebarRoleLabel">
+                {activeRole === "recipient" ? "Meerah ✿" : "Admin (BABA)"}
               </span>
             </div>
           </div>
+
+          <div className="sidebarActionsGroup">
+            {/* Perspective Switcher */}
+            <button
+              type="button"
+              className="roleTogglePill"
+              onClick={() => setActiveRole((prev) => (prev === "recipient" ? "creator" : "recipient"))}
+              title={`Switch perspective (currently ${activeRole === "recipient" ? "Meerah ✿" : "Admin BABA"})`}
+              aria-label={`Switch role perspective from ${activeRole}`}
+            >
+              <span className="roleSwitchIcon" aria-hidden="true">🔄</span>
+              <span className="roleSwitchText">
+                {activeRole === "recipient" ? "Meerah" : "Admin"}
+              </span>
+            </button>
+
+            {/* "+" New Conversation Action */}
+            <button
+              type="button"
+              className="sidebarIconBtn addChatBtn"
+              onClick={() => setShowNewChatModal(true)}
+              title="Start a new chat or note"
+              aria-label="New chat"
+            >
+              <span aria-hidden="true">＋</span>
+            </button>
+          </div>
         </div>
 
-        <div className="chatHeaderRight">
-          <button
-            type="button"
-            className="chatSecurityBadgeBtn"
-            onClick={() => setShowSecurityModal(true)}
-            title="View End-to-End Encryption Safety Fingerprint"
-            aria-label="End-to-End Encrypted: view safety details"
-          >
-            <span className="lockPillIcon" aria-hidden="true">🔒</span>
-            <span className="lockPillText">Encrypted</span>
-          </button>
+        {/* Search Bar */}
+        <div className="chatSearchContainer">
+          <div className="chatSearchInputWrapper">
+            <span className="chatSearchIcon" aria-hidden="true">🔍</span>
+            <input
+              type="text"
+              className="chatSearchInput"
+              placeholder="Search or start new chat"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search conversation list"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="chatSearchClearBtn"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
-      </header>
 
-      {/* Main Timeline */}
-      <ChatTimeline
-        messages={messages}
-        currentUserRole={currentUserRole}
-        onRetryMessage={handleRetryMessage}
-        onAddReaction={handleAddReaction}
-      />
+        {/* Conversation List */}
+        <div className="chatConversationList" role="list">
+          {filteredConversations.map((conv) => {
+            const isSelected = conv.id === activeThreadId;
+            return (
+              <div
+                key={conv.id}
+                role="listitem"
+                tabIndex={0}
+                className={`conversationItem ${isSelected ? "conversationItemActive" : ""}`}
+                onClick={() => handleSelectConversation(conv.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleSelectConversation(conv.id);
+                  }
+                }}
+                aria-selected={isSelected}
+              >
+                <div className="conversationAvatarWrapper">
+                  <div className="conversationAvatar">
+                    {conv.avatar ? (
+                      <img
+                        src={conv.avatar}
+                        alt={conv.name}
+                        className="conversationAvatarImg"
+                        onError={(e) => {
+                          // Fallback to glyph if image fails
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : null}
+                    <span className="conversationGlyph">
+                      {conv.avatarGlyph || conv.name.charAt(0)}
+                    </span>
+                  </div>
+                  {conv.isOnline && <span className="avatarOnlineDot" />}
+                </div>
 
-      {/* Composer Input */}
-      <ChatComposer
-        onSendMessage={handleSendMessage}
-        isSending={isSending}
-        currentUserRole={currentUserRole}
-        placeholder={
-          currentUserRole === "recipient"
-            ? "Write something sweet to Noah… ♡"
-            : "Write a birthday note to Meerah… ♡"
-        }
-      />
+                <div className="conversationDetails">
+                  <div className="conversationRowTop">
+                    <span className="conversationName">
+                      {conv.name}
+                      {conv.verified && <span className="verifiedStar" title="Verified Safe 1-to-1">✿</span>}
+                    </span>
+                    <span className="conversationTimestamp">{conv.lastTime}</span>
+                  </div>
+
+                  <div className="conversationRowBottom">
+                    {conv.isTyping ? (
+                      <span className="conversationTyping">
+                        <span className="typingText">typing</span>
+                        <span className="typingDots">...</span>
+                      </span>
+                    ) : (
+                      <span className="conversationSnippet">{conv.lastMessage}</span>
+                    )}
+
+                    {Boolean(conv.unreadCount && conv.unreadCount > 0) && (
+                      <span className="conversationUnreadBadge">{conv.unreadCount}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+
+      {/* ====================================================================
+          MAIN: WhatsApp-style Active Conversation Pane
+          ==================================================================== */}
+      <main className="chatMainPane" aria-label={`Conversation with ${activeConversation.name}`}>
+        {/* Active Conversation Header */}
+        <header className="chatPanelHeader whatsappActiveHeader">
+          <div className="chatHeaderLeft">
+            {/* Mobile Back Button to Return to Chats List */}
+            <button
+              type="button"
+              className="chatMobileBackBtn"
+              onClick={() => setMobileView("list")}
+              title="Back to Chats"
+              aria-label="Back to conversation list"
+            >
+              ←
+            </button>
+
+            <div className="chatAvatarRing" aria-hidden="true">
+              {activeConversation.avatar ? (
+                <img
+                  src={activeConversation.avatar}
+                  alt={activeConversation.name}
+                  className="chatHeaderAvatarImg"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : null}
+              <span className="chatAvatarGlyph">
+                {activeConversation.avatarGlyph || activeConversation.name.charAt(0)}
+              </span>
+              <span className="chatOnlineDot" title="Direct 1-to-1 connection" />
+            </div>
+
+            <div className="chatTitleGroup">
+              <h2 className="chatTitleHeading">
+                {activeConversation.name}
+              </h2>
+              <div className="chatSubStatus">
+                <span className="chatOnlineStatusIndicator">
+                  {activeConversation.isTyping
+                    ? "typing..."
+                    : activeConversation.isOnline
+                    ? "online"
+                    : activeConversation.statusText || "offline"}
+                </span>
+                <span className="chatConnectionDot" />
+                <span className="chatEncryptedTag">
+                  🔒 End-to-End Encrypted
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="chatHeaderRight">
+            {/* Audio Call Button */}
+            <button
+              type="button"
+              className="chatActionHeaderBtn audioCallBtn"
+              onClick={() => startCall("audio")}
+              title={`Start Audio Call with ${activeConversation.name}`}
+              aria-label="Audio call"
+            >
+              <span aria-hidden="true">📞</span>
+            </button>
+
+            {/* Video Call Button */}
+            <button
+              type="button"
+              className="chatActionHeaderBtn videoCallBtn"
+              onClick={() => startCall("video")}
+              title={`Start Video Call with ${activeConversation.name}`}
+              aria-label="Video call"
+            >
+              <span aria-hidden="true">📹</span>
+            </button>
+
+            {/* E2EE Safety Number Fingerprint Button */}
+            <button
+              type="button"
+              className="chatSecurityBadgeBtn"
+              onClick={() => setShowSecurityModal(true)}
+              title="View End-to-End Encryption Safety Fingerprint"
+              aria-label="End-to-End Encrypted: view safety details"
+            >
+              <span className="lockPillIcon" aria-hidden="true">🔒</span>
+              <span className="lockPillText">Safety</span>
+            </button>
+          </div>
+        </header>
+
+        {/* WhatsApp Message Timeline */}
+        <div className="chatWallpaperWrapper">
+          <ChatTimeline
+            messages={activeMessages}
+            currentUserRole={activeRole}
+            onRetryMessage={handleRetryMessage}
+            onAddReaction={handleAddReaction}
+          />
+        </div>
+
+        {/* Message Composer Bar */}
+        <ChatComposer
+          onSendMessage={handleSendMessage}
+          isSending={isSending}
+          currentUserRole={activeRole}
+          placeholder={
+            activeRole === "recipient"
+              ? "Type a message to BABA... ♡"
+              : `Type a message to ${activeConversation.name}... ♡`
+          }
+        />
+      </main>
+
+      {/* ====================================================================
+          MODALS & OVERLAYS
+          ==================================================================== */}
+
+      {/* Interactive Calling Screen Modal */}
+      {callingState && (
+        <div className="chatCallModalOverlay" role="dialog" aria-modal="true" aria-label="Call screen">
+          <div className="chatCallModalBackdrop" onClick={endCall} />
+          <div className="chatCallCard">
+            <div className="callPulsingRings">
+              <span className="pulseRing ring1" />
+              <span className="pulseRing ring2" />
+              <div className="callAvatar">
+                <span className="callAvatarText">{callingState.name.charAt(0)}</span>
+              </div>
+            </div>
+
+            <h3 className="callTargetName">{callingState.name}</h3>
+            <p className="callStatusLine">
+              {callingState.status === "ringing"
+                ? `Ringing ${callingState.type === "video" ? "video" : "audio"} channel...`
+                : `Connected · ${Math.floor(callingState.seconds / 60)}:${(callingState.seconds % 60).toString().padStart(2, "0")}`}
+            </p>
+
+            <div className="callLoveNote">
+              🌸 Birthday hotline to Meerah ✿ is always open with unlimited love!
+            </div>
+
+            <div className="callControlsRow">
+              <button
+                type="button"
+                className={`callControlBtn ${callingState.isMuted ? "muted" : ""}`}
+                onClick={() => setCallingState((prev) => (prev ? { ...prev, isMuted: !prev.isMuted } : null))}
+                aria-label={callingState.isMuted ? "Unmute microphone" : "Mute microphone"}
+              >
+                {callingState.isMuted ? "🔇" : "🎙️"}
+              </button>
+
+              <button
+                type="button"
+                className="callEndBtn"
+                onClick={endCall}
+                aria-label="End call"
+              >
+                ☎️
+              </button>
+
+              <button
+                type="button"
+                className="callControlBtn"
+                onClick={() => {}}
+                aria-label="Speaker"
+              >
+                🔊
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Chat / Note Modal */}
+      {showNewChatModal && (
+        <div className="chatSecurityModalOverlay" role="dialog" aria-modal="true" aria-label="Start New Chat">
+          <div className="chatSecurityBackdrop" onClick={() => setShowNewChatModal(false)} />
+          <div className="chatSecurityModalCard">
+            <button
+              type="button"
+              className="chatModalCloseBtn"
+              onClick={() => setShowNewChatModal(false)}
+              aria-label="Close new chat modal"
+            >
+              ✕
+            </button>
+
+            <div className="securityModalHeader">
+              <span className="securityShieldIcon" aria-hidden="true">💬</span>
+              <h3>New Conversation</h3>
+              <p className="securitySubhead">Create a dedicated thread for birthday ideas, study, or notes</p>
+            </div>
+
+            <form onSubmit={handleCreateNewChat} className="newChatForm">
+              <input
+                type="text"
+                className="newChatInput"
+                placeholder="Thread title (e.g. Paris Trip Ideas, Secret Wishlist)..."
+                value={newChatTitle}
+                onChange={(e) => setNewChatTitle(e.target.value)}
+                autoFocus
+              />
+              <div className="newChatActions">
+                <button
+                  type="button"
+                  className="closeModalMainBtn"
+                  onClick={() => setShowNewChatModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="startChatSubmitBtn"
+                  disabled={!newChatTitle.trim()}
+                >
+                  Create Chat
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Security & Verification Modal */}
       {showSecurityModal && (

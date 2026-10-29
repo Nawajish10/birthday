@@ -17,6 +17,18 @@ import {
   saveReadingProgressForBook,
   loadAllReadingProgress,
   ReadingProgressRecord,
+  StudyTask,
+  INITIAL_STUDY_TASKS,
+  loadSavedTasks,
+  saveTasks,
+  StudyNote,
+  INITIAL_STUDY_NOTES,
+  loadSavedNotes,
+  saveNotes,
+  STUDY_RESOURCES,
+  StudyResource,
+  STUDY_TIMETABLE,
+  TimetableSlot,
 } from "./study-data";
 
 export interface StudyPanelProps {
@@ -27,6 +39,8 @@ export interface StudyPanelProps {
   className?: string;
 }
 
+type QuickModalType = "notes" | "resources" | "progress" | "timetable" | null;
+
 export function StudyPanel({
   initialBooks = STUDY_BOOKS,
   initialGenre = "all",
@@ -34,18 +48,165 @@ export function StudyPanel({
   onOpenBook,
   className = "",
 }: StudyPanelProps) {
+  // ==========================================================================
+  // Greeting State (Time-Aware)
+  // ==========================================================================
+  const [greeting, setGreeting] = useState<string>("Good Morning");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      setGreeting("Good Morning");
+    } else if (hour < 17) {
+      setGreeting("Good Afternoon");
+    } else {
+      setGreeting("Good Evening");
+    }
+  }, []);
+
+  // ==========================================================================
+  // Today's Plan Tasks State
+  // ==========================================================================
+  const [tasks, setTasks] = useState<StudyTask[]>(() => {
+    if (typeof window !== "undefined") {
+      return loadSavedTasks();
+    }
+    return INITIAL_STUDY_TASKS;
+  });
+
+  const [newTaskInput, setNewTaskInput] = useState<string>("");
+  const [showAddTaskInput, setShowAddTaskInput] = useState<boolean>(false);
+
+  const completedCount = useMemo(() => {
+    return tasks.filter((t) => t.completed).length;
+  }, [tasks]);
+
+  const completionPercentage = useMemo(() => {
+    if (tasks.length === 0) return 0;
+    return Math.round((completedCount / tasks.length) * 100);
+  }, [completedCount, tasks.length]);
+
+  const handleToggleTask = useCallback((taskId: string) => {
+    setTasks((prev) => {
+      const updated = prev.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      );
+      saveTasks(updated);
+      return updated;
+    });
+  }, []);
+
+  const handleAddTask = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const trimmed = newTaskInput.trim();
+      if (!trimmed) return;
+      const newTask: StudyTask = {
+        id: `task-${Date.now()}`,
+        label: trimmed,
+        completed: false,
+        category: "Focus",
+      };
+      setTasks((prev) => {
+        const updated = [...prev, newTask];
+        saveTasks(updated);
+        return updated;
+      });
+      setNewTaskInput("");
+      setShowAddTaskInput(false);
+    },
+    [newTaskInput]
+  );
+
+  const handleResetTasks = useCallback(() => {
+    setTasks(INITIAL_STUDY_TASKS);
+    saveTasks(INITIAL_STUDY_TASKS);
+  }, []);
+
+  // ==========================================================================
+  // Quick Actions & Notes Reel State
+  // ==========================================================================
+  const [activeQuickModal, setActiveQuickModal] = useState<QuickModalType>(null);
+  const [notes, setNotes] = useState<StudyNote[]>(() => {
+    if (typeof window !== "undefined") {
+      return loadSavedNotes();
+    }
+    return INITIAL_STUDY_NOTES;
+  });
+  const [activeNoteDetail, setActiveNoteDetail] = useState<StudyNote | null>(null);
+  const [newNoteFormOpen, setNewNoteFormOpen] = useState<boolean>(false);
+  const [newNoteTitle, setNewNoteTitle] = useState<string>("");
+  const [newNoteCategory, setNewNoteCategory] = useState<string>("Personal");
+  const [newNoteContent, setNewNoteContent] = useState<string>("");
+  const [newNoteTags, setNewNoteTags] = useState<string>("");
+  const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
+
+  const handleCreateNote = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newNoteTitle.trim() || !newNoteContent.trim()) return;
+
+      const created: StudyNote = {
+        id: `note-${Date.now()}`,
+        title: newNoteTitle.trim(),
+        category: newNoteCategory,
+        date: "Just now",
+        snippet:
+          newNoteContent.trim().slice(0, 110) +
+          (newNoteContent.trim().length > 110 ? "..." : ""),
+        content: newNoteContent.trim(),
+        tags: newNoteTags
+          .split(",")
+          .map((t) => t.trim().replace(/^#/, ""))
+          .filter(Boolean),
+        colorAccent:
+          newNoteCategory === "DSA Notes"
+            ? "#376E58"
+            : newNoteCategory === "Web Dev"
+            ? "#523742"
+            : "#D4798D",
+      };
+
+      setNotes((prev) => {
+        const updated = [created, ...prev];
+        saveNotes(updated);
+        return updated;
+      });
+
+      setNewNoteTitle("");
+      setNewNoteContent("");
+      setNewNoteTags("");
+      setNewNoteFormOpen(false);
+      setActiveNoteDetail(created);
+    },
+    [newNoteCategory, newNoteContent, newNoteTags, newNoteTitle]
+  );
+
+  const handleCopyNoteContent = useCallback((note: StudyNote) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(`${note.title}\n\n${note.content}`);
+      setCopiedNoteId(note.id);
+      setTimeout(() => setCopiedNoteId(null), 2000);
+    }
+  }, []);
+
+  // ==========================================================================
+  // Bookshelf & Reader State
+  // ==========================================================================
   const [selectedGenre, setSelectedGenre] = useState<string>(initialGenre);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeBook, setActiveBook] = useState<Book | null>(null);
   const [activeTab, setActiveTab] = useState<"about" | "reader">("about");
-  const [selectedTemplate, setSelectedTemplate] = useState<ReadingTemplateId>("romantic-journal");
+  const [selectedTemplate, setSelectedTemplate] = useState<ReadingTemplateId>(
+    "romantic-journal"
+  );
   const [readerFontSize, setReaderFontSize] = useState<"sm" | "md" | "lg">("md");
 
   // Reader progression state for active book
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
-  const [newNoteText, setNewNoteText] = useState<string>("");
-  const [userNotes, setUserNotes] = useState<string[]>([]);
+  const [newMarginNoteText, setNewMarginNoteText] = useState<string>("");
+  const [userBookNotes, setUserBookNotes] = useState<string[]>([]);
   const [studyCardIndex, setStudyCardIndex] = useState<number>(0);
   const [isCardFlipped, setIsCardFlipped] = useState<boolean>(false);
 
@@ -69,11 +230,16 @@ export function StudyPanel({
     try {
       const all = loadAllReadingProgress();
       const entries = Object.values(all).filter(
-        (p) => (p.percentRead && p.percentRead > 0) || (p.chapterIndex && p.chapterIndex > 0) || p.isBookmarked
+        (p) =>
+          (p.percentRead && p.percentRead > 0) ||
+          (p.chapterIndex && p.chapterIndex > 0) ||
+          p.isBookmarked
       );
       if (entries.length > 0) {
         entries.sort(
-          (a, b) => new Date(b.lastReadAt || 0).getTime() - new Date(a.lastReadAt || 0).getTime()
+          (a, b) =>
+            new Date(b.lastReadAt || 0).getTime() -
+            new Date(a.lastReadAt || 0).getTime()
         );
         const mostRecent = entries[0];
         const matchedBook = initialBooks.find((b) => b.id === mostRecent.bookId);
@@ -114,7 +280,7 @@ export function StudyPanel({
       const progress = getReadingProgressForBook(book.id);
       setCurrentChapterIndex(progress.chapterIndex || 0);
       setIsBookmarked(Boolean(progress.isBookmarked));
-      setUserNotes(progress.notes || []);
+      setUserBookNotes(progress.notes || []);
       setStudyCardIndex(0);
       setIsCardFlipped(false);
 
@@ -125,21 +291,26 @@ export function StudyPanel({
     [onOpenBook]
   );
 
-  // Close modal
   const handleCloseModal = useCallback(() => {
     setActiveBook(null);
   }, []);
 
-  // Keyboard navigation: Escape key closes modal
+  // Keyboard navigation: Escape key closes modals
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && activeBook) {
-        handleCloseModal();
+      if (e.key === "Escape") {
+        if (activeBook) {
+          handleCloseModal();
+        } else if (activeNoteDetail) {
+          setActiveNoteDetail(null);
+        } else if (activeQuickModal) {
+          setActiveQuickModal(null);
+        }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeBook, handleCloseModal]);
+  }, [activeBook, activeNoteDetail, activeQuickModal, handleCloseModal]);
 
   // Chapters helper for active book
   const bookChapters: Chapter[] = useMemo(() => {
@@ -225,292 +396,567 @@ export function StudyPanel({
     refreshProgress();
   }, [activeBook, isBookmarked, refreshProgress]);
 
-  // Add study note handler
-  const handleAddNote = useCallback(
+  // Add study margin note handler
+  const handleAddMarginNote = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!activeBook || !newNoteText.trim()) return;
-      const updatedNotes = [...userNotes, newNoteText.trim()];
-      setUserNotes(updatedNotes);
-      setNewNoteText("");
+      if (!activeBook || !newMarginNoteText.trim()) return;
+      const updatedNotes = [...userBookNotes, newMarginNoteText.trim()];
+      setUserBookNotes(updatedNotes);
+      setNewMarginNoteText("");
       saveReadingProgressForBook(activeBook.id, { notes: updatedNotes });
       refreshProgress();
     },
-    [activeBook, newNoteText, userNotes, refreshProgress]
+    [activeBook, newMarginNoteText, userBookNotes, refreshProgress]
   );
 
   return (
     <div className={`study-container ${className}`.trim()}>
       {/* ================================================================== */}
-      {/* Welcoming Header — Literary Bookshelf Sanctuary */}
+      {/* Header with Greeting & Daily Intent */}
       {/* ================================================================== */}
       <header className="study-header">
         <div className="study-kicker">
-          <span aria-hidden="true">📖</span>
+          <span aria-hidden="true">🌸</span>
           <span>Curated Bookshelf · مطالعہ اور سکون</span>
         </div>
-        <h1 className="study-title">Read &amp; Study</h1>
+        <h1 className="study-title">
+          {greeting}, {recipientName} &mdash; Read &amp; Study
+        </h1>
+        <p className="study-subtitle-lead">
+          Let&apos;s make today productive ✿
+        </p>
         <p className="study-subtitle">
-          A quiet, cozy sanctuary of cherished books, timeless poetry, and contemplative prose,
-          thoughtfully handpicked for {recipientName}’s gentle afternoons and reflective evenings.
+          A dedicated, quiet space for algorithmic practice, web mastery, and
+          cherished literature. Balance deep focus with reflective evening reads.
         </p>
         <div className="study-header-stats" aria-label="Bookshelf summary">
-          <span className="study-stat-pill">
-            <span aria-hidden="true">📚</span>
-            <span>{initialBooks.length} Curated Volumes</span>
-          </span>
-          <span className="study-stat-divider" aria-hidden="true">·</span>
-          <span className="study-stat-pill">
-            <span aria-hidden="true">🏷️</span>
-            <span>{STUDY_GENRES.length} Literary Shelves</span>
-          </span>
-          <span className="study-stat-divider" aria-hidden="true">·</span>
-          <span className="study-stat-pill">
-            <span aria-hidden="true">☕</span>
-            <span>Cozy Reading Corner</span>
-          </span>
+          <span className="study-stat-item"><b>{totalBooks}</b> Books</span>
+          <span className="study-stat-divider" aria-hidden="true">&bull;</span>
+          <span className="study-stat-item"><b>{genres.length - 1}</b> Categories</span>
         </div>
       </header>
 
       {/* ================================================================== */}
-      {/* Continue Reading Card (if active reading progress exists) */}
+      {/* Top Productivity Dashboard: Today's Plan & Quick Action Grid */}
       {/* ================================================================== */}
-      {recentProgress && !searchQuery && (
-        <section className="study-continue-section" aria-label="Continue reading">
-          <div className="study-continue-card">
-            <div className="study-continue-left">
-              <span className="study-continue-badge">🔖 Continue Reading · جاری رکھیں</span>
-              <h3 className="study-continue-title">{recentProgress.book.title}</h3>
-              <p className="study-continue-meta">
-                {recentProgress.book.author} · Chapter {(recentProgress.progress.chapterIndex || 0) + 1}
-              </p>
-              <div className="study-continue-bar-wrap">
-                <div
-                  className="study-continue-bar"
-                  style={{ width: `${Math.max(recentProgress.progress.percentRead || 10, 10)}%` }}
-                />
+      <section className="study-dashboard-row" aria-label="Daily study dashboard">
+        {/* Left: Today's Plan Card */}
+        <div className="study-plan-card">
+          <div className="study-plan-card-header">
+            <div>
+              <div className="study-plan-badge">
+                <span>📋</span> Daily Focus · آج کا لائحہ عمل
               </div>
-              <span className="study-continue-percent">
-                {recentProgress.progress.percentRead || 10}% completed
+              <h2 className="study-plan-title">Today&apos;s Plan</h2>
+            </div>
+            <div className="study-plan-status-pill">
+              <span className="study-plan-status-count">
+                {completedCount}/{tasks.length} completed
               </span>
             </div>
-            <button
-              type="button"
-              className="study-continue-resume-btn"
-              onClick={() => handleOpenBook(recentProgress.book, true)}
-              aria-label={`Resume reading ${recentProgress.book.title}`}
-            >
-              <span>Resume Reading</span>
-              <span aria-hidden="true">&rarr;</span>
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* ================================================================== */}
-      {/* Curated Recommendations Highlights (Display Table) */}
-      {/* ================================================================== */}
-      {recommendations.length > 0 && selectedGenre === "all" && !searchQuery && (
-        <section
-          className="study-recommendations-section"
-          aria-labelledby="study-recommendations-heading"
-        >
-          <div className="study-recommendations-header">
-            <h2 id="study-recommendations-heading" className="study-recommendations-title">
-              <span aria-hidden="true">✨</span>
-              <span>Curator&apos;s Highlights · خاص انتخاب</span>
-            </h2>
-            <span className="study-recommendations-badge">Handpicked for You</span>
           </div>
 
-          <div className="study-recommendations-grid">
-            {recommendations.map((rec) => (
+          {/* Progress completion bar */}
+          <div className="study-plan-progress-wrapper" aria-label={`Progress: ${completionPercentage}% completed`}>
+            <div className="study-plan-progress-meta">
+              <span className="study-plan-progress-label">Completion Status</span>
+              <span className="study-plan-progress-value">{completionPercentage}%</span>
+            </div>
+            <div className="study-plan-progress-track">
               <div
-                key={rec.id}
-                className="study-rec-card"
-                role="button"
-                tabIndex={0}
-                onClick={() => handleOpenBook(rec)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleOpenBook(rec);
-                  }
-                }}
-                aria-label={`Open details for recommended book ${rec.title}`}
+                className="study-plan-progress-fill"
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Checklist of Tasks */}
+          <div className="study-plan-checklist" role="list">
+            {tasks.map((task) => (
+              <label
+                key={task.id}
+                className={`study-task-item ${task.completed ? "is-completed" : ""}`}
               >
-                <div>
-                  <div className="study-rec-ribbon">
-                    <span aria-hidden="true">★</span> Curated Pick
-                  </div>
-                  <h3 className="study-rec-card-title">{rec.title}</h3>
-                  <div className="study-rec-card-author">{rec.author}</div>
-                  <div className="study-rec-card-rationale">
-                    &ldquo;{rec.ratingRationale}&rdquo;
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="study-rec-inspect-btn"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                >
-                  <span>Inspect Book &amp; Reader</span>
-                  <span aria-hidden="true">&rarr;</span>
-                </button>
-              </div>
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={() => handleToggleTask(task.id)}
+                  className="study-task-checkbox"
+                  aria-label={task.label}
+                />
+                <span className="study-task-custom-box" aria-hidden="true">
+                  {task.completed && <span>✓</span>}
+                </span>
+                <span className="study-task-label">{task.label}</span>
+                {task.category && (
+                  <span className="study-task-category">{task.category}</span>
+                )}
+              </label>
             ))}
           </div>
-        </section>
-      )}
 
-      {/* ================================================================== */}
-      {/* Search & Genre Filter Bar (12 Canonical Genres) */}
-      {/* ================================================================== */}
-      <section className="study-controls" aria-label="Book catalog filters">
-        {/* Search Input */}
-        <div className="study-search-bar">
-          <span className="study-search-icon" aria-hidden="true">
-            🔍
-          </span>
-          <input
-            type="search"
-            className="study-search-input"
-            placeholder="Search by title, author, keyword, or Urdu verse..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search bookshelf"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              className="study-search-clear"
-              onClick={() => setSearchQuery("")}
-              aria-label="Clear search input"
-            >
-              ✕
-            </button>
+          {/* Add custom task inline form */}
+          {showAddTaskInput ? (
+            <form onSubmit={handleAddTask} className="study-add-task-form">
+              <input
+                type="text"
+                className="study-add-task-input"
+                placeholder="E.g. Revise Binary Search Tree patterns..."
+                value={newTaskInput}
+                onChange={(e) => setNewTaskInput(e.target.value)}
+                autoFocus
+              />
+              <div className="study-add-task-actions">
+                <button type="submit" className="study-btn-primary study-btn-sm">
+                  Add Task
+                </button>
+                <button
+                  type="button"
+                  className="study-btn-secondary study-btn-sm"
+                  onClick={() => setShowAddTaskInput(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="study-plan-footer-actions">
+              <button
+                type="button"
+                className="study-plan-action-btn"
+                onClick={() => setShowAddTaskInput(true)}
+              >
+                <span>+</span> Add Task
+              </button>
+              <button
+                type="button"
+                className="study-plan-action-link"
+                onClick={handleResetTasks}
+                title="Reset to default daily plan"
+              >
+                Reset Default Checklist
+              </button>
+            </div>
           )}
         </div>
 
-        {/* 12-Genre Pill Bar */}
-        <div className="study-genre-bar" role="tablist" aria-label="Filter by genre">
+        {/* Right: Quick Action Grid (4 tactile cards) */}
+        <div className="study-quick-grid" role="group" aria-label="Quick study actions">
+          {/* Card 1: Notes (All Notes) */}
           <button
             type="button"
-            role="tab"
-            aria-selected={selectedGenre === "all"}
-            className={`study-genre-pill ${selectedGenre === "all" ? "is-active" : ""}`}
-            onClick={() => setSelectedGenre("all")}
+            className="study-quick-card"
+            onClick={() => setActiveQuickModal("notes")}
           >
-            <span>📚</span>
-            <span>All Genres</span>
-            <span className="study-genre-pill-count">{genreCounts["all"] || 0}</span>
+            <div className="study-quick-icon-wrap" style={{ background: "#E5EDE2", color: "#376E58" }}>
+              <span>📝</span>
+            </div>
+            <div className="study-quick-content">
+              <div className="study-quick-kicker">All Notes · نوٹس</div>
+              <h3 className="study-quick-title">Notes</h3>
+              <p className="study-quick-desc">DSA, Web Dev &amp; reflections</p>
+            </div>
+            <span className="study-quick-arrow" aria-hidden="true">&rarr;</span>
           </button>
 
-          {STUDY_GENRES.map((genre) => {
-            const count = genreCounts[genre.id] || 0;
-            const isActive = selectedGenre === genre.id;
-            return (
-              <button
-                key={genre.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`study-genre-pill ${isActive ? "is-active" : ""}`}
-                onClick={() => setSelectedGenre(genre.id)}
-              >
-                <span aria-hidden="true">{genre.icon}</span>
-                <span>{genre.name}</span>
-                <span className="study-genre-pill-count">{count}</span>
-              </button>
-            );
-          })}
+          {/* Card 2: Resources (Study Materials) */}
+          <button
+            type="button"
+            className="study-quick-card"
+            onClick={() => setActiveQuickModal("resources")}
+          >
+            <div className="study-quick-icon-wrap" style={{ background: "#F8E8EC", color: "#D4798D" }}>
+              <span>📚</span>
+            </div>
+            <div className="study-quick-content">
+              <div className="study-quick-kicker">Study Materials · ذرائع</div>
+              <h3 className="study-quick-title">Resources</h3>
+              <p className="study-quick-desc">Curated sheets, visualizers &amp; core guides</p>
+            </div>
+            <span className="study-quick-arrow" aria-hidden="true">&rarr;</span>
+          </button>
+
+          {/* Card 3: Progress (Track Goals) */}
+          <button
+            type="button"
+            className="study-quick-card"
+            onClick={() => setActiveQuickModal("progress")}
+          >
+            <div className="study-quick-icon-wrap" style={{ background: "#FFF0D6", color: "#C69325" }}>
+              <span>🎯</span>
+            </div>
+            <div className="study-quick-content">
+              <div className="study-quick-kicker">Track Goals · اہداف</div>
+              <h3 className="study-quick-title">Progress</h3>
+              <p className="study-quick-desc">Weekly hours, reading count &amp; streaks</p>
+            </div>
+            <span className="study-quick-arrow" aria-hidden="true">&rarr;</span>
+          </button>
+
+          {/* Card 4: Timetable (Your Schedule) */}
+          <button
+            type="button"
+            className="study-quick-card"
+            onClick={() => setActiveQuickModal("timetable")}
+          >
+            <div className="study-quick-icon-wrap" style={{ background: "#EAE6F0", color: "#523742" }}>
+              <span>⏰</span>
+            </div>
+            <div className="study-quick-content">
+              <div className="study-quick-kicker">Your Schedule · اوقات نامہ</div>
+              <h3 className="study-quick-title">Timetable</h3>
+              <p className="study-quick-desc">Deep focus blocks &amp; reading breaks</p>
+            </div>
+            <span className="study-quick-arrow" aria-hidden="true">&rarr;</span>
+          </button>
         </div>
       </section>
 
       {/* ================================================================== */}
-      {/* Bookshelf Grid */}
+      {/* Recent Notes Card Reel */}
       {/* ================================================================== */}
-      {filteredBooks.length > 0 ? (
-        <section className="study-shelf-grid" aria-label="Bookshelf grid">
-          {filteredBooks.map((book) => {
-            const genre = STUDY_GENRES.find((g) => g.id === book.genreId);
-            return (
-              <article
-                key={book.id}
-                className="study-book-card"
-                role="button"
-                tabIndex={0}
-                onClick={() => handleOpenBook(book)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleOpenBook(book);
-                  }
-                }}
-                aria-label={`View details for ${book.title} by ${book.author}`}
-              >
-                {/* Book Cover Visual with Paper & Spine Styling */}
-                <div
-                  className="study-book-cover"
+      <section className="study-notes-section" aria-labelledby="study-recent-notes-heading">
+        <div className="study-section-header">
+          <div>
+            <span className="study-section-kicker">Knowledge Repository · یادداشتیں</span>
+            <h2 id="study-recent-notes-heading" className="study-section-title">
+              Recent Notes
+            </h2>
+          </div>
+          <div className="study-section-actions">
+            <button
+              type="button"
+              className="study-btn-secondary study-btn-sm"
+              onClick={() => setNewNoteFormOpen(true)}
+            >
+              <span>+</span> New Note
+            </button>
+            <button
+              type="button"
+              className="study-btn-ghost study-btn-sm"
+              onClick={() => setActiveQuickModal("notes")}
+            >
+              View All ({notes.length}) &rarr;
+            </button>
+          </div>
+        </div>
+
+        <div className="study-notes-reel">
+          {notes.slice(0, 3).map((note) => (
+            <article
+              key={note.id}
+              className="study-note-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveNoteDetail(note)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setActiveNoteDetail(note);
+                }
+              }}
+              aria-label={`Open note: ${note.title}`}
+            >
+              <div className="study-note-card-top">
+                <span
+                  className="study-note-category-pill"
                   style={{
-                    backgroundColor: book.coverColor,
-                    borderColor: book.coverAccent,
+                    color: note.colorAccent || "#523742",
+                    borderColor: `${note.colorAccent || "#523742"}44`,
                   }}
                 >
-                  <div className="study-bookmark-ribbon" aria-hidden="true" />
-                  <div className="study-cover-top">
-                    <span className="study-cover-symbol" aria-hidden="true">
-                      {book.coverSymbol}
+                  {note.category}
+                </span>
+                <span className="study-note-date">{note.date}</span>
+              </div>
+              <h3 className="study-note-title">{note.title}</h3>
+              <p className="study-note-snippet">{note.snippet}</p>
+              <div className="study-note-footer">
+                <div className="study-note-tags">
+                  {note.tags.slice(0, 3).map((tag) => (
+                    <span key={tag} className="study-note-tag">
+                      #{tag}
                     </span>
-                    <h3 className="study-cover-title">{book.title}</h3>
-                    <div className="study-cover-author">{book.author}</div>
-                  </div>
-                  <div className="study-cover-bottom">
-                    <span className="study-cover-badge">{genre?.name || "Book"}</span>
-                    <span className="study-cover-pages">{book.pageCount} p.</span>
-                  </div>
+                  ))}
                 </div>
-
-                {/* Card Meta & Synopsis */}
-                <div className="study-book-meta">
-                  <div className="study-book-meta-header">
-                    <h4 className="study-book-card-title">{book.title}</h4>
-                    <p className="study-book-card-author">{book.author}</p>
-                  </div>
-                  <p className="study-book-synopsis">{book.description}</p>
-                  <div className="study-book-card-footer">
-                    <span className="study-book-tag">
-                      {genre?.icon} {genre?.name}
-                    </span>
-                    <span className="study-book-cta">Open Reader &rarr;</span>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </section>
-      ) : (
-        <div className="study-empty-state">
-          <div className="study-empty-icon" aria-hidden="true">
-            🔍
-          </div>
-          <h3 className="study-empty-title">No books found</h3>
-          <p className="study-empty-desc">
-            We couldn&apos;t find any books matching &ldquo;{searchQuery}&rdquo; in this genre.
-          </p>
-          <button
-            type="button"
-            className="study-empty-btn"
-            onClick={() => {
-              setSearchQuery("");
-              setSelectedGenre("all");
-            }}
-          >
-            Clear Filters &amp; Reset
-          </button>
+                <span className="study-note-cta">Read &rarr;</span>
+              </div>
+            </article>
+          ))}
         </div>
-      )}
+      </section>
+
+      {/* ================================================================== */}
+      {/* Curated Bookshelf with Literature & Poetry Excerpts */}
+      {/* ================================================================== */}
+      <section className="study-bookshelf-wrapper" aria-labelledby="study-bookshelf-heading">
+        <div className="study-bookshelf-intro">
+          <div className="study-kicker">
+            <span aria-hidden="true">📖</span>
+            <span>Curated Bookshelf · مطالعہ اور سکون</span>
+          </div>
+          <h2 id="study-bookshelf-heading" className="study-bookshelf-heading">
+            Literary Bookshelf &amp; Excerpts
+          </h2>
+          <p className="study-bookshelf-sub">
+            Handpicked literature, timeless Urdu poetry, and contemplative prose,
+            thoughtfully curated for {recipientName}’s gentle afternoons and reflective evenings.
+          </p>
+
+          <div className="study-header-stats" aria-label="Bookshelf summary">
+            <span className="study-stat-pill">
+              <span aria-hidden="true">📚</span>
+              <span>{initialBooks.length} Curated Volumes</span>
+            </span>
+            <span className="study-stat-divider" aria-hidden="true">·</span>
+            <span className="study-stat-pill">
+              <span aria-hidden="true">🏷️</span>
+              <span>{STUDY_GENRES.length} Literary Shelves</span>
+            </span>
+            <span className="study-stat-divider" aria-hidden="true">·</span>
+            <span className="study-stat-pill">
+              <span aria-hidden="true">☕</span>
+              <span>Cozy Reading Corner</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Continue Reading Card (if active reading progress exists) */}
+        {recentProgress && !searchQuery && (
+          <div className="study-continue-section" aria-label="Continue reading">
+            <div className="study-continue-card">
+              <div className="study-continue-left">
+                <span className="study-continue-badge">🔖 Continue Reading · جاری رکھیں</span>
+                <h3 className="study-continue-title">{recentProgress.book.title}</h3>
+                <p className="study-continue-meta">
+                  {recentProgress.book.author} · Chapter{" "}
+                  {(recentProgress.progress.chapterIndex || 0) + 1}
+                </p>
+                <div className="study-continue-bar-wrap">
+                  <div
+                    className="study-continue-bar"
+                    style={{
+                      width: `${Math.max(recentProgress.progress.percentRead || 10, 10)}%`,
+                    }}
+                  />
+                </div>
+                <span className="study-continue-percent">
+                  {recentProgress.progress.percentRead || 10}% completed
+                </span>
+              </div>
+              <button
+                type="button"
+                className="study-continue-resume-btn"
+                onClick={() => handleOpenBook(recentProgress.book, true)}
+                aria-label={`Resume reading ${recentProgress.book.title}`}
+              >
+                <span>Resume Reading</span>
+                <span aria-hidden="true">&rarr;</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Curated Recommendations Highlights (Display Table) */}
+        {recommendations.length > 0 && selectedGenre === "all" && !searchQuery && (
+          <div
+            className="study-recommendations-section"
+            aria-labelledby="study-recommendations-heading"
+          >
+            <div className="study-recommendations-header">
+              <h3 id="study-recommendations-heading" className="study-recommendations-title">
+                <span aria-hidden="true">✨</span>
+                <span>Curator&apos;s Highlights · خاص انتخاب</span>
+              </h3>
+              <span className="study-recommendations-badge">Handpicked for You</span>
+            </div>
+
+            <div className="study-recommendations-grid">
+              {recommendations.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="study-rec-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleOpenBook(rec)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleOpenBook(rec);
+                    }
+                  }}
+                  aria-label={`Open details for recommended book ${rec.title}`}
+                >
+                  <div>
+                    <div className="study-rec-ribbon">
+                      <span aria-hidden="true">★</span> Curated Pick
+                    </div>
+                    <h4 className="study-rec-card-title">{rec.title}</h4>
+                    <div className="study-rec-card-author">{rec.author}</div>
+                    <div className="study-rec-card-rationale">
+                      &ldquo;{rec.ratingRationale}&rdquo;
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="study-rec-inspect-btn"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  >
+                    <span>Inspect Book &amp; Reader</span>
+                    <span aria-hidden="true">&rarr;</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Search & Genre Filter Bar (12 Canonical Genres) */}
+        <section className="study-controls" aria-label="Book catalog filters">
+          {/* Search Input */}
+          <div className="study-search-bar">
+            <span className="study-search-icon" aria-hidden="true">
+              🔍
+            </span>
+            <input
+              type="search"
+              className="study-search-input"
+              placeholder="Search by title, author, keyword, or Urdu verse..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search bookshelf"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="study-search-clear"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search input"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* 12-Genre Pill Bar */}
+          <div className="study-genre-bar" role="tablist" aria-label="Filter by genre">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedGenre === "all"}
+              className={`study-genre-pill ${selectedGenre === "all" ? "is-active" : ""}`}
+              onClick={() => setSelectedGenre("all")}
+            >
+              <span>📚</span>
+              <span>All Genres</span>
+              <span className="study-genre-pill-count">{genreCounts["all"] || 0}</span>
+            </button>
+
+            {STUDY_GENRES.map((genre) => {
+              const count = genreCounts[genre.id] || 0;
+              const isActive = selectedGenre === genre.id;
+              return (
+                <button
+                  key={genre.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  className={`study-genre-pill ${isActive ? "is-active" : ""}`}
+                  onClick={() => setSelectedGenre(genre.id)}
+                >
+                  <span aria-hidden="true">{genre.icon}</span>
+                  <span>{genre.name}</span>
+                  <span className="study-genre-pill-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Bookshelf Grid */}
+        {filteredBooks.length > 0 ? (
+          <div className="study-shelf-grid" aria-label="Bookshelf grid">
+            {filteredBooks.map((book) => {
+              const genre = STUDY_GENRES.find((g) => g.id === book.genreId);
+              return (
+                <article
+                  key={book.id}
+                  className="study-book-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleOpenBook(book)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleOpenBook(book);
+                    }
+                  }}
+                  aria-label={`View details for ${book.title} by ${book.author}`}
+                >
+                  {/* Book Cover Visual with Paper & Spine Styling */}
+                  <div
+                    className="study-book-cover"
+                    style={{
+                      backgroundColor: book.coverColor,
+                      borderColor: book.coverAccent,
+                    }}
+                  >
+                    <div className="study-bookmark-ribbon" aria-hidden="true" />
+                    <div className="study-cover-top">
+                      <span className="study-cover-symbol" aria-hidden="true">
+                        {book.coverSymbol}
+                      </span>
+                      <h3 className="study-cover-title">{book.title}</h3>
+                      <div className="study-cover-author">{book.author}</div>
+                    </div>
+                    <div className="study-cover-bottom">
+                      <span className="study-cover-badge">{genre?.name || "Book"}</span>
+                      <span className="study-cover-pages">{book.pageCount} p.</span>
+                    </div>
+                  </div>
+
+                  {/* Card Meta & Synopsis */}
+                  <div className="study-book-meta">
+                    <div className="study-book-meta-header">
+                      <h4 className="study-book-card-title">{book.title}</h4>
+                      <p className="study-book-card-author">{book.author}</p>
+                    </div>
+                    <p className="study-book-synopsis">{book.description}</p>
+                    <div className="study-book-card-footer">
+                      <span className="study-book-tag">
+                        {genre?.icon} {genre?.name}
+                      </span>
+                      <span className="study-book-cta">Open Reader &rarr;</span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="study-empty-state">
+            <div className="study-empty-icon" aria-hidden="true">
+              🔍
+            </div>
+            <h3 className="study-empty-title">No books found</h3>
+            <p className="study-empty-desc">
+              We couldn&apos;t find any books matching &ldquo;{searchQuery}&rdquo; in this genre.
+            </p>
+            <button
+              type="button"
+              className="study-empty-btn"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedGenre("all");
+              }}
+            >
+              Clear Filters &amp; Reset
+            </button>
+          </div>
+        )}
+      </section>
 
       {/* ================================================================== */}
       {/* Book Detail & Interactive Multi-Template Reader Modal */}
@@ -917,23 +1363,23 @@ export function StudyPanel({
                             <h4 className="workspace-notes-heading">
                               <span>📝 Study Margin Notes</span>
                             </h4>
-                            <form onSubmit={handleAddNote} className="workspace-add-note-form">
+                            <form onSubmit={handleAddMarginNote} className="workspace-add-note-form">
                               <input
                                 type="text"
                                 className="workspace-note-input"
                                 placeholder="Add a margin reflection..."
-                                value={newNoteText}
-                                onChange={(e) => setNewNoteText(e.target.value)}
+                                value={newMarginNoteText}
+                                onChange={(e) => setNewMarginNoteText(e.target.value)}
                               />
                               <button type="submit" className="workspace-note-submit">
                                 Post Note
                               </button>
                             </form>
                             <ul className="workspace-notes-list">
-                              {userNotes.length === 0 ? (
+                              {userBookNotes.length === 0 ? (
                                 <li className="workspace-note-empty">No notes yet. Type above to record your thoughts.</li>
                               ) : (
-                                userNotes.map((note, idx) => (
+                                userBookNotes.map((note, idx) => (
                                   <li key={idx} className="workspace-note-card">
                                     <span className="workspace-note-pin">📌</span>
                                     <span>{note}</span>
@@ -1052,6 +1498,505 @@ export function StudyPanel({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* Quick Action: Notes Modal (All Notes) */}
+      {/* ================================================================== */}
+      {activeQuickModal === "notes" && (
+        <div
+          className="study-modal-backdrop"
+          role="presentation"
+          onClick={() => setActiveQuickModal(null)}
+        >
+          <div
+            className="study-modal-content study-quick-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-notes-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="study-modal-header">
+              <div className="study-modal-header-info">
+                <span className="study-modal-genre-tag">📝 Notes Workspace</span>
+                <span className="study-modal-reading-time">{notes.length} Active Notes</span>
+              </div>
+              <button
+                type="button"
+                className="study-modal-close-btn"
+                onClick={() => setActiveQuickModal(null)}
+                aria-label="Close notes modal"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="study-quick-modal-body">
+              <div className="study-quick-modal-head-row">
+                <div>
+                  <h2 id="quick-notes-title" className="study-quick-modal-heading">
+                    All Study Notes &amp; Reflections
+                  </h2>
+                  <p className="study-quick-modal-desc">
+                    Personal algorithm notes, architectural ideas, and daily reading insights.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="study-btn-primary study-btn-sm"
+                  onClick={() => setNewNoteFormOpen(true)}
+                >
+                  + Add New Note
+                </button>
+              </div>
+
+              <div className="study-quick-notes-list">
+                {notes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="study-quick-note-item"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setActiveQuickModal(null);
+                      setActiveNoteDetail(note);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setActiveQuickModal(null);
+                        setActiveNoteDetail(note);
+                      }
+                    }}
+                  >
+                    <div className="study-quick-note-head">
+                      <span
+                        className="study-note-category-pill"
+                        style={{
+                          color: note.colorAccent || "#523742",
+                          borderColor: `${note.colorAccent || "#523742"}44`,
+                        }}
+                      >
+                        {note.category}
+                      </span>
+                      <span className="study-note-date">{note.date}</span>
+                    </div>
+                    <h3 className="study-quick-note-title">{note.title}</h3>
+                    <p className="study-quick-note-snippet">{note.snippet}</p>
+                    <div className="study-note-tags">
+                      {note.tags.map((t) => (
+                        <span key={t} className="study-note-tag">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* Quick Action: Resources Modal (Study Materials) */}
+      {/* ================================================================== */}
+      {activeQuickModal === "resources" && (
+        <div
+          className="study-modal-backdrop"
+          role="presentation"
+          onClick={() => setActiveQuickModal(null)}
+        >
+          <div
+            className="study-modal-content study-quick-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-resources-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="study-modal-header">
+              <div className="study-modal-header-info">
+                <span className="study-modal-genre-tag">📚 Study Materials</span>
+                <span className="study-modal-reading-time">Curated for Meerah</span>
+              </div>
+              <button
+                type="button"
+                className="study-modal-close-btn"
+                onClick={() => setActiveQuickModal(null)}
+                aria-label="Close resources modal"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="study-quick-modal-body">
+              <h2 id="quick-resources-title" className="study-quick-modal-heading">
+                Curated Engineering &amp; Literary Resources
+              </h2>
+              <p className="study-quick-modal-desc">
+                High-yield cheat sheets, algorithmic roadmaps, and quiet literary corners.
+              </p>
+
+              <div className="study-resources-grid">
+                {STUDY_RESOURCES.map((res: StudyResource) => (
+                  <div key={res.id} className="study-resource-card">
+                    <div className="study-resource-top">
+                      <span className="study-resource-category">{res.category}</span>
+                      <span className="study-resource-badge">{res.badge}</span>
+                    </div>
+                    <h3 className="study-resource-title">{res.title}</h3>
+                    <p className="study-resource-desc">{res.description}</p>
+                    <div className="study-resource-footer">
+                      <span className="study-resource-link-btn">
+                        <span>{res.linkText}</span>
+                        <span aria-hidden="true">&rarr;</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* Quick Action: Progress Modal (Track Goals) */}
+      {/* ================================================================== */}
+      {activeQuickModal === "progress" && (
+        <div
+          className="study-modal-backdrop"
+          role="presentation"
+          onClick={() => setActiveQuickModal(null)}
+        >
+          <div
+            className="study-modal-content study-quick-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-progress-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="study-modal-header">
+              <div className="study-modal-header-info">
+                <span className="study-modal-genre-tag">🎯 Goal Tracker</span>
+                <span className="study-modal-reading-time">Study Analytics</span>
+              </div>
+              <button
+                type="button"
+                className="study-modal-close-btn"
+                onClick={() => setActiveQuickModal(null)}
+                aria-label="Close progress modal"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="study-quick-modal-body">
+              <h2 id="quick-progress-title" className="study-quick-modal-heading">
+                Weekly Mastery &amp; Reading Momentum
+              </h2>
+              <p className="study-quick-modal-desc">
+                Consistent daily discipline compounds into remarkable engineering and poetic depth.
+              </p>
+
+              <div className="study-progress-stats-grid">
+                <div className="study-stat-metric-card">
+                  <span className="study-metric-icon">🔥</span>
+                  <div className="study-metric-value">5 Days</div>
+                  <div className="study-metric-label">Active Focus Streak</div>
+                  <div className="study-metric-hint">Current week momentum</div>
+                </div>
+
+                <div className="study-stat-metric-card">
+                  <span className="study-metric-icon">💻</span>
+                  <div className="study-metric-value">42 Problems</div>
+                  <div className="study-metric-label">DSA Patterns Mastered</div>
+                  <div className="study-metric-hint">Trees, DP &amp; Two-Pointers</div>
+                </div>
+
+                <div className="study-stat-metric-card">
+                  <span className="study-metric-icon">📖</span>
+                  <div className="study-metric-value">{initialBooks.length} Books</div>
+                  <div className="study-metric-label">In Personal Library</div>
+                  <div className="study-metric-hint">12 curated shelves</div>
+                </div>
+
+                <div className="study-stat-metric-card">
+                  <span className="study-metric-icon">⏱️</span>
+                  <div className="study-metric-value">4.5 Hrs / Day</div>
+                  <div className="study-metric-label">Target Deep Work</div>
+                  <div className="study-metric-hint">Balanced with breaks</div>
+                </div>
+              </div>
+
+              {/* Today's Checklist Progress Recap */}
+              <div className="study-progress-recap-box">
+                <h4 className="study-progress-recap-title">Today&apos;s Plan Completion</h4>
+                <div className="study-plan-progress-track">
+                  <div
+                    className="study-plan-progress-fill"
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+                <p className="study-progress-recap-note">
+                  {completedCount} of {tasks.length} tasks completed today ({completionPercentage}%).
+                  Every single checked item is a step toward mastery!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* Quick Action: Timetable Modal (Your Schedule) */}
+      {/* ================================================================== */}
+      {activeQuickModal === "timetable" && (
+        <div
+          className="study-modal-backdrop"
+          role="presentation"
+          onClick={() => setActiveQuickModal(null)}
+        >
+          <div
+            className="study-modal-content study-quick-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-timetable-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="study-modal-header">
+              <div className="study-modal-header-info">
+                <span className="study-modal-genre-tag">⏰ Daily Timetable</span>
+                <span className="study-modal-reading-time">Calm Routine</span>
+              </div>
+              <button
+                type="button"
+                className="study-modal-close-btn"
+                onClick={() => setActiveQuickModal(null)}
+                aria-label="Close timetable modal"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="study-quick-modal-body">
+              <h2 id="quick-timetable-title" className="study-quick-modal-heading">
+                Meerah&apos;s Daily Focus &amp; Reading Schedule
+              </h2>
+              <p className="study-quick-modal-desc">
+                Structured for intense morning clarity, restorative mid-day breaks, and tranquil literary evenings.
+              </p>
+
+              <div className="study-timetable-list">
+                {STUDY_TIMETABLE.map((slot: TimetableSlot, idx: number) => (
+                  <div
+                    key={idx}
+                    className={`study-timetable-row type-${slot.type}`}
+                  >
+                    <div className="study-timetable-time">
+                      <span className="study-slot-icon" aria-hidden="true">
+                        {slot.icon}
+                      </span>
+                      <span>{slot.time}</span>
+                    </div>
+                    <div className="study-timetable-details">
+                      <h4 className="study-timetable-title">{slot.title}</h4>
+                      <p className="study-timetable-subtitle">{slot.subtitle}</p>
+                    </div>
+                    <span className={`study-slot-badge badge-${slot.type}`}>
+                      {slot.type === "focus"
+                        ? "Deep Work"
+                        : slot.type === "break"
+                        ? "Pause & Rest"
+                        : slot.type === "learning"
+                        ? "Architecture"
+                        : "Wind Down"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* Note Detail Reader Modal */}
+      {/* ================================================================== */}
+      {activeNoteDetail && (
+        <div
+          className="study-modal-backdrop"
+          role="presentation"
+          onClick={() => setActiveNoteDetail(null)}
+        >
+          <div
+            className="study-modal-content study-note-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="note-detail-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="study-modal-header">
+              <div className="study-modal-header-info">
+                <span
+                  className="study-note-category-pill"
+                  style={{
+                    color: activeNoteDetail.colorAccent || "#523742",
+                    borderColor: `${activeNoteDetail.colorAccent || "#523742"}44`,
+                  }}
+                >
+                  {activeNoteDetail.category}
+                </span>
+                <span className="study-note-date">{activeNoteDetail.date}</span>
+              </div>
+              <button
+                type="button"
+                className="study-modal-close-btn"
+                onClick={() => setActiveNoteDetail(null)}
+                aria-label="Close note view"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="study-note-detail-body">
+              <h2 id="note-detail-title" className="study-note-detail-title">
+                {activeNoteDetail.title}
+              </h2>
+              <div className="study-note-detail-tags">
+                {activeNoteDetail.tags.map((t) => (
+                  <span key={t} className="study-note-tag">
+                    #{t}
+                  </span>
+                ))}
+              </div>
+              <div className="study-note-detail-content">
+                <p>{activeNoteDetail.content}</p>
+              </div>
+              <div className="study-note-detail-actions">
+                <button
+                  type="button"
+                  className="study-btn-secondary study-btn-sm"
+                  onClick={() => handleCopyNoteContent(activeNoteDetail)}
+                >
+                  {copiedNoteId === activeNoteDetail.id ? "✓ Copied to Clipboard" : "📋 Copy Note"}
+                </button>
+                <button
+                  type="button"
+                  className="study-btn-ghost study-btn-sm"
+                  onClick={() => setActiveNoteDetail(null)}
+                >
+                  Done Reading
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* Create New Note Modal */}
+      {/* ================================================================== */}
+      {newNoteFormOpen && (
+        <div
+          className="study-modal-backdrop"
+          role="presentation"
+          onClick={() => setNewNoteFormOpen(false)}
+        >
+          <div
+            className="study-modal-content study-new-note-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-note-form-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="study-modal-header">
+              <span className="study-modal-genre-tag">📝 Create Note</span>
+              <button
+                type="button"
+                className="study-modal-close-btn"
+                onClick={() => setNewNoteFormOpen(false)}
+                aria-label="Close new note form"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleCreateNote} className="study-new-note-form">
+              <h2 id="new-note-form-title" className="study-new-note-title">
+                New Study Reflection or Technical Note
+              </h2>
+              <div className="study-form-group">
+                <label htmlFor="new-note-title-input" className="study-form-label">
+                  Note Title
+                </label>
+                <input
+                  id="new-note-title-input"
+                  type="text"
+                  className="study-form-input"
+                  placeholder="E.g. Binary Search Tree Inorder Traversal..."
+                  value={newNoteTitle}
+                  onChange={(e) => setNewNoteTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="study-form-row">
+                <div className="study-form-group">
+                  <label htmlFor="new-note-category-select" className="study-form-label">
+                    Category
+                  </label>
+                  <select
+                    id="new-note-category-select"
+                    className="study-form-select"
+                    value={newNoteCategory}
+                    onChange={(e) => setNewNoteCategory(e.target.value)}
+                  >
+                    <option value="DSA Notes">DSA Notes</option>
+                    <option value="Web Dev">Web Dev</option>
+                    <option value="Personal">Personal &amp; Literature</option>
+                    <option value="Systems">Systems &amp; Architecture</option>
+                  </select>
+                </div>
+                <div className="study-form-group">
+                  <label htmlFor="new-note-tags-input" className="study-form-label">
+                    Tags (comma separated)
+                  </label>
+                  <input
+                    id="new-note-tags-input"
+                    type="text"
+                    className="study-form-input"
+                    placeholder="Trees, DP, Revision"
+                    value={newNoteTags}
+                    onChange={(e) => setNewNoteTags(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="study-form-group">
+                <label htmlFor="new-note-content-input" className="study-form-label">
+                  Note Content &amp; Key Insight
+                </label>
+                <textarea
+                  id="new-note-content-input"
+                  className="study-form-textarea"
+                  rows={5}
+                  placeholder="Record your thoughts, algorithm steps, or reading reflections..."
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="study-form-actions">
+                <button type="submit" className="study-btn-primary">
+                  Save Note
+                </button>
+                <button
+                  type="button"
+                  className="study-btn-secondary"
+                  onClick={() => setNewNoteFormOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -16,6 +16,7 @@ import {
   loadPhotos,
   toCompactDerivativeUrl,
   photoAssetToProfilePostItem,
+  GOOGLE_PHOTOS_DATA,
 } from "../../lib/media-service.ts";
 import type { BirthdayCountdownResult, ProfileData, HighlightCollection, PhotoAsset } from "../../types/media-contracts.ts";
 import "./profile.css";
@@ -134,13 +135,39 @@ export function sanitizeExternalUrl(rawUrl: unknown): { isSafe: boolean; sanitiz
 
 /**
  * Default story highlights shown when none are provided.
+ * Circular Highlights with valid cover photos: New, Memories, Golden Days, Travel, Friends
  */
 export const DEFAULT_HIGHLIGHTS: ProfileHighlight[] = [
-  { id: "hl-memories", title: "Memories ✿" },
-  { id: "hl-golden", title: "Golden Days ✨" },
-  { id: "hl-laughter", title: "Laughter ♡" },
-  { id: "hl-wishes", title: "Wishes 🎂" },
-  { id: "hl-forever", title: "Eternal 🕊️" },
+  {
+    id: "hl-memories",
+    title: "Memories",
+    coverUrl: GOOGLE_PHOTOS_DATA[0]?.thumbnailUrl || "https://lh3.googleusercontent.com/pw/AP1GczMLasTHYPPFuDPfLPRSnH5tQ6mhgV3XNu-V5SBjy_maHYwLX5_Ej716nIoS7pipr9aPZrJObZTzo-QGHxKckSqpY6EtdiRb_qnVCyjw_1dU1tYIk3iF=w400-h400-c",
+    photoIds: ["gphoto_special_birthday_popup", "gphoto_fa949a46b9e9de99"],
+  },
+  {
+    id: "hl-golden",
+    title: "Golden Days",
+    coverUrl: GOOGLE_PHOTOS_DATA[1]?.thumbnailUrl || "https://lh3.googleusercontent.com/pw/AP1GczNFONb5xMBungxJ7eEXpNMyXugzGXTPVLtKKtiBW8Xrf_OcA0cwVcB_YXVToDju4_vShkBN7JFylGXKmal1c0ti2_XyImh7nxJ7n7pMWahXYlG9EpxL=w400-h400-c",
+    photoIds: ["gphoto_fa949a46b9e9de99", "gphoto_583f8fdba0608ec6"],
+  },
+  {
+    id: "hl-travel",
+    title: "Travel",
+    coverUrl: GOOGLE_PHOTOS_DATA[2]?.thumbnailUrl || "https://lh3.googleusercontent.com/pw/AP1GczOt4ewD10S3LbFEUoJvNw_Am1b-BIsOdz6rwdR2IUbdRgxOhVZ4ZS7JxgZ1GkkgKAHr5BhKoA1j5usMNIkaReM2QS2h0QUDFWp8HvZxzQcRwGV9WOf2=w400-h400-c",
+    photoIds: ["gphoto_583f8fdba0608ec6", "gphoto_f5c4be70912173ab"],
+  },
+  {
+    id: "hl-friends",
+    title: "Friends",
+    coverUrl: GOOGLE_PHOTOS_DATA[3]?.thumbnailUrl || "https://lh3.googleusercontent.com/pw/AP1GczMYXe3__ks42H0s_alGL517E9hYquUtEkgYjKOUBN-KlFbtqJ8LiR-vHhpFNsIcDTXEtjmF6rTMWmzfLdY7dMCkdojfpZEcVbU83CuZO6_8gre1mSSQ=w400-h400-c",
+    photoIds: ["gphoto_f5c4be70912173ab", "gphoto_f2670d3d7c539e77"],
+  },
+  {
+    id: "hl-forever",
+    title: "Eternal",
+    coverUrl: GOOGLE_PHOTOS_DATA[4]?.thumbnailUrl || "https://lh3.googleusercontent.com/pw/AP1GczMF3Mked9DD8umt-lTuNsIG2HkSqTrvwX3_USWdGW3F89xUHOMhkKL_1JtCX2c5LXFKWKBxBn2KIl9GIoYYeGXBnsd4Q-eHOufH77HnhyBteGPlsvI2=w400-h400-c",
+    photoIds: ["gphoto_f2670d3d7c539e77", "gphoto_97ed0cf0ca9f4fc3"],
+  },
 ];
 
 /**
@@ -160,7 +187,8 @@ export function getHighlightGlyph(id: string, title: string): string {
   const t = (title || "").toLowerCase();
   if (t.includes("memory") || t.includes("memories")) return "✿";
   if (t.includes("gold") || t.includes("shine") || t.includes("star")) return "✨";
-  if (t.includes("laugh") || t.includes("smile") || t.includes("love") || t.includes("heart")) return "♡";
+  if (t.includes("travel") || t.includes("trip") || t.includes("journey") || t.includes("tour")) return "✈️";
+  if (t.includes("friend") || t.includes("laugh") || t.includes("smile") || t.includes("love") || t.includes("heart")) return "♡";
   if (t.includes("wish") || t.includes("cake") || t.includes("celebrat") || t.includes("birthday")) return "🎂";
   if (t.includes("eternal") || t.includes("forever") || t.includes("chapter") || t.includes("vault")) return "🕊️";
   if (t.includes("song") || t.includes("music")) return "♪";
@@ -219,7 +247,7 @@ export function ProfilePanel({
   instagramUrl,
   externalInstagramUrl,
   recipientName = "Meerah",
-  bio = "birthday girl · main character today",
+  bio = "birthday girl • dreamer • learner • creator",
   highlights: propHighlights,
   profileMode,
   onModeChange,
@@ -276,21 +304,25 @@ export function ProfilePanel({
     return merged;
   }, [posts, photos]);
 
-  // 1. Profile State & Persistence (authoritative birth date: 28 October 2002)
+  // 1. Profile State & Persistence (authoritative birth date: 30 October 2001)
   const [profile, setProfile] = useState<ProfileData>(() => {
     const saved = loadProfile();
     return {
       ...saved,
-      displayName: saved.displayName || recipientName || "Meerah",
-      bio: saved.bio || bio || "birthday girl · main character today",
+      displayName: "Meerah",
+      bio: saved.bio && saved.bio !== "birthday girl · main character today"
+        ? saved.bio
+        : "birthday girl • dreamer • learner • creator",
       interests: saved.interests && saved.interests.length > 0
         ? saved.interests
         : ["Reading", "Poetry", "Music", "Photography", "Cooking", "Gardening"],
-      birthDate: saved.birthDate || AUTHORITATIVE_BIRTH_DATE,
+      birthDate: saved.birthDate && saved.birthDate !== "2002-10-28" && saved.birthDate !== "2002-10-29"
+        ? saved.birthDate
+        : AUTHORITATIVE_BIRTH_DATE,
     };
   });
 
-  // 2. Authoritative Dynamic Age & Countdown (28 October 2002 -> 24 years young in 2026)
+  // 2. Authoritative Dynamic Age & Countdown (30 October 2001)
   const birthDateStr = profile.birthDate || AUTHORITATIVE_BIRTH_DATE;
   const [countdown, setCountdown] = useState<BirthdayCountdownResult>(() =>
     calculateNextBirthdayCountdown(birthDateStr)
@@ -310,15 +342,19 @@ export function ProfilePanel({
     return loadHighlights();
   });
 
-  // Effective highlights for display
+  // Effective highlights for display with valid cover images
   const effectiveHighlights: ProfileHighlight[] = useMemo(() => {
     if (highlightsList && highlightsList.length > 0) {
-      return highlightsList.map((hl) => ({
-        id: hl.id,
-        title: hl.title,
-        coverUrl: hl.coverPhotoUrl || (hl.coverPhotoId ? effectivePosts.find(p => p.id === hl.coverPhotoId)?.url : undefined),
-        photoIds: hl.photoIds,
-      }));
+      return highlightsList.map((hl, index) => {
+        const coverPhoto = hl.coverPhotoId ? effectivePosts.find((p) => p.id === hl.coverPhotoId) : undefined;
+        const fallbackCover = GOOGLE_PHOTOS_DATA[index % GOOGLE_PHOTOS_DATA.length]?.thumbnailUrl;
+        return {
+          id: hl.id,
+          title: hl.title,
+          coverUrl: hl.coverPhotoUrl || coverPhoto?.thumbnailUrl || coverPhoto?.url || fallbackCover,
+          photoIds: hl.photoIds,
+        };
+      });
     }
     return resolveHighlights(propHighlights);
   }, [highlightsList, propHighlights, effectivePosts]);
@@ -578,6 +614,18 @@ export function ProfilePanel({
 
   return (
     <div className="profilePanel" data-testid="profile-panel">
+      {/* 0. Header with wordmark "Meerah ✿" */}
+      <header className="profileTopBar" data-testid="profile-top-bar" aria-label="Profile navigation header">
+        <div className="profileTopBarLeft">
+          <h1 className="profileWordmark">
+            Meerah <span className="profileWordmarkFlower" aria-hidden="true">✿</span>
+          </h1>
+        </div>
+        <div className="profileTopBarRight">
+          <span className="profileTopBadge">Birthday Edition</span>
+        </div>
+      </header>
+
       {/* 1. Dynamic Birthday Card & Live Countdown Banner */}
       <section
         className="profileBirthdayCard"
@@ -589,13 +637,18 @@ export function ProfilePanel({
             🎂
           </div>
           <div className="profileBirthdayInfo">
-            <span className="profileBirthdayKicker">
-              {countdown.isToday ? "Special Celebration" : "Birthday Milestone"}
-            </span>
+            <div className="profileBirthdayHeaderLine">
+              <span className="profileBirthdayKicker">
+                {countdown.isToday ? "Special Celebration" : "Birthday Milestone"}
+              </span>
+              <span className="profileBirthdayDateTag">
+                Date: 30 October 2026
+              </span>
+            </div>
             <div className="profileBirthdayAgeDisplay">
               <span className="profileBirthdayAgeNumber">{currentAge}</span>
               <span className="profileBirthdayAgeLabel">
-                {countdown.isToday ? "years of grace today!" : "years young"}
+                {countdown.isToday ? "years young today! 🎂✨" : "years young"}
               </span>
             </div>
             {countdown.isToday ? (
@@ -619,6 +672,11 @@ export function ProfilePanel({
                   <div className="profileCountdownUnit">
                     <b className="profileCountdownNum">{String(countdown.minutes).padStart(2, "0")}</b>
                     <small>Mins</small>
+                  </div>
+                  <span className="profileCountdownColon" aria-hidden="true">:</span>
+                  <div className="profileCountdownUnit">
+                    <b className="profileCountdownNum">{String(countdown.seconds).padStart(2, "0")}</b>
+                    <small>Secs</small>
                   </div>
                 </div>
               </div>

@@ -209,7 +209,9 @@ export function ChatTimeline({
                 {/* Sender badge for context */}
                 <div className="chatSenderHeader">
                   <span className="chatSenderName">
-                    {msg.sender === "creator" ? "Noah ♡" : "Meerah"}
+                    {msg.sender === "creator"
+    ? (currentUserRole === "creator" ? "BABA (You)" : "BABA ♡")
+    : (currentUserRole === "recipient" ? "Meerah ✿ (You)" : "Meerah ✿")}
                   </span>
                   <time className="chatMessageTime" dateTime={msg.createdAt}>
                     {formatMessageTime(msg.createdAt)}
@@ -348,6 +350,24 @@ export function ChatTimeline({
                             aria-label="Session memory only"
                           >
                             ✓
+                          </span>
+                        )}
+                        {(msg.status === "read" || msg.status === "seen") && (
+                          <span
+                            className="chatCheckmark chatDoubleTickSeen"
+                            title="Read"
+                            aria-label="Read"
+                          >
+                            ✓✓
+                          </span>
+                        )}
+                        {msg.status === "delivered" && (
+                          <span
+                            className="chatCheckmark chatDeliveredReceipt"
+                            title="Delivered"
+                            aria-label="Delivered"
+                          >
+                            ✓✓
                           </span>
                         )}
                         {msg.status === "durably-persisted" && (

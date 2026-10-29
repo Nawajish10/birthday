@@ -90,7 +90,7 @@ export function MusicRoom({
   // Local UI state (never promoted to store)
   // ------------------------------------------------------------------
   const [cardSize, setCardSize] = useState<PlayerCardSize>("standard");
-  const [activeFilter, setActiveFilter] = useState<MusicFilterType>("all");
+  const [activeFilter, setActiveFilter] = useState<MusicFilterType>("for-you");
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [unavailableToast, setUnavailableToast] = useState<string | null>(null);
@@ -204,11 +204,15 @@ export function MusicRoom({
   );
 
   // Filtered tracks for all / favorites / static playlists
-  const standardFilteredTracks = useMemo(
-    () =>
-      searchAndFilterTracks(tracks, searchQuery, activeFilter, selectedPlaylist),
-    [tracks, searchQuery, activeFilter, selectedPlaylist]
-  );
+  const standardFilteredTracks = useMemo(() => {
+    const effectiveFilter: MusicFilterType =
+      activeFilter === "for-you"
+        ? "all"
+        : activeFilter === "liked"
+        ? "favorites"
+        : activeFilter;
+    return searchAndFilterTracks(tracks, searchQuery, effectiveFilter, selectedPlaylist);
+  }, [tracks, searchQuery, activeFilter, selectedPlaylist]);
 
   // Active custom playlist resolution
   const isCustomPlaylistSelected =
@@ -654,6 +658,102 @@ export function MusicRoom({
   }, [displayedTracks, tracks, currentTrackId, isPlaying, handleSelectTrack]);
 
   // ------------------------------------------------------------------
+  // Mutual audio exclusivity: pause when any video plays or on broadcast
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const handleGlobalPlay = (e: Event) => {
+      if (e.target instanceof HTMLVideoElement) {
+        const audio = getAudioEl();
+        if (audio && !audio.paused) {
+          audio.pause();
+          setIsPlayingState(false);
+        }
+      }
+    };
+
+    const handleCustomPause = () => {
+      const audio = getAudioEl();
+      if (audio && !audio.paused) {
+        audio.pause();
+        setIsPlayingState(false);
+      }
+    };
+
+    window.addEventListener("play", handleGlobalPlay, true);
+    window.addEventListener("birthday:pause-music", handleCustomPause);
+    window.addEventListener("birthday-audio-pause", handleCustomPause);
+
+    return () => {
+      window.removeEventListener("play", handleGlobalPlay, true);
+      window.removeEventListener("birthday:pause-music", handleCustomPause);
+      window.removeEventListener("birthday-audio-pause", handleCustomPause);
+    };
+  }, [getAudioEl, setIsPlayingState]);
+
+  // Curated section greetings and playlists
+  const greetingText = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  }, []);
+
+  const FEATURED_PLAYLISTS = useMemo(
+    () => [
+      {
+        title: "Birthday Special",
+        slug: "birthday",
+        icon: "🎂",
+        description: "Heartfelt celebratory anthems curated for Meerah's special birthday",
+        count: tracks.filter((t) => t.playlist === "Birthday Special").length || 6,
+      },
+      {
+        title: "Chill Vibes",
+        slug: "chill",
+        icon: "☕",
+        description: "Gentle acoustic moments and soothing midnight melodies",
+        count: tracks.filter((t) => t.playlist === "Chill Vibes").length || 6,
+      },
+      {
+        title: "Soft Love",
+        slug: "love",
+        icon: "💌",
+        description: "Timeless romantic ballads, sweet lyrics and quiet blessings",
+        count: tracks.filter((t) => t.playlist === "Soft Love").length || 6,
+      },
+    ],
+    [tracks]
+  );
+
+  const handlePlayFeaturedPlaylist = useCallback(
+    (playlistTitle: string) => {
+      setSelectedPlaylist(playlistTitle);
+      setActiveFilter("playlists");
+      const matchingTracks = tracks.filter((t) => t.playlist === playlistTitle);
+      if (matchingTracks.length > 0) {
+        handleSelectTrack(matchingTracks[0], true);
+      }
+    },
+    [tracks, handleSelectTrack]
+  );
+
+  const recentTracksToDisplay: MusicTrackItem[] = useMemo(() => {
+    if (historyEntries.length > 0) {
+      const list: MusicTrackItem[] = [];
+      for (const entry of historyEntries.slice(0, 6)) {
+        const matched = tracks.find((t) => t.id === entry.track_id);
+        if (matched) {
+          list.push(matched);
+        } else if (entry.track) {
+          list.push(dbTrackToItem(entry.track, store.likedTrackIds));
+        }
+      }
+      if (list.length > 0) return list;
+    }
+    return tracks.slice(0, 6);
+  }, [historyEntries, tracks, store.likedTrackIds]);
+
+  // ------------------------------------------------------------------
   // Audio event listeners
   // ------------------------------------------------------------------
   useEffect(() => {
@@ -906,10 +1006,13 @@ export function MusicRoom({
           : <audio ref={internalAudioRef} preload="metadata" />
       )}
 
-      {/* Header */}
+      {/* Header with Wordmark */}
       <header className="music-room-header">
+        <div className="music-wordmark-bar">
+          <span className="wordmark">Meerah <i>✿</i></span>
+        </div>
         <span className="music-room-kicker">
-          <span>✿</span> OUR LITTLE SOUNDTRACK <span>✿</span>
+          <span>✿</span> OUR LITTLE SOUNDTRACK · ہماری موسیقی <span>✿</span>
         </span>
         <h1 className="music-room-title">
           Music Room <span className="heart-glyph">♡</span>
@@ -963,25 +1066,19 @@ export function MusicRoom({
             )}
           </div>
 
-          {/* Filter Chips */}
+          {/* Category Filter Pills: For You, Playlists, Liked */}
           <div className="music-filter-chips" role="radiogroup" aria-label="Filter catalogue">
             <button
               type="button"
-              className={`music-chip ${activeFilter === "all" ? "is-active" : ""}`}
-              onClick={() => setActiveFilter("all")}
+              className={`music-chip ${activeFilter === "for-you" ? "is-active" : ""}`}
+              onClick={() => {
+                setActiveFilter("for-you");
+                setSelectedPlaylist("all");
+              }}
               role="radio"
-              aria-checked={activeFilter === "all"}
+              aria-checked={activeFilter === "for-you"}
             >
-              All Songs <span className="music-chip-count">{totalCount}</span>
-            </button>
-            <button
-              type="button"
-              className={`music-chip ${activeFilter === "favorites" ? "is-active" : ""}`}
-              onClick={() => setActiveFilter("favorites")}
-              role="radio"
-              aria-checked={activeFilter === "favorites"}
-            >
-              Favourites ♡ <span className="music-chip-count">{favCount}</span>
+              For You ✿
             </button>
             <button
               type="button"
@@ -994,12 +1091,27 @@ export function MusicRoom({
             </button>
             <button
               type="button"
-              className={`music-chip ${activeFilter === "recently-played" ? "is-active" : ""}`}
-              onClick={() => setActiveFilter("recently-played")}
+              className={`music-chip ${activeFilter === "liked" || activeFilter === "favorites" ? "is-active" : ""}`}
+              onClick={() => {
+                setActiveFilter("liked");
+                setSelectedPlaylist("all");
+              }}
               role="radio"
-              aria-checked={activeFilter === "recently-played"}
+              aria-checked={activeFilter === "liked" || activeFilter === "favorites"}
             >
-              Recently Played ↺
+              Favourites ♡ <span className="music-chip-count">{favCount}</span>
+            </button>
+            <button
+              type="button"
+              className={`music-chip ${activeFilter === "all" ? "is-active" : ""}`}
+              onClick={() => {
+                setActiveFilter("all");
+                setSelectedPlaylist("all");
+              }}
+              role="radio"
+              aria-checked={activeFilter === "all"}
+            >
+              All Songs <span className="music-chip-count">{totalCount}</span>
             </button>
           </div>
 
@@ -1068,6 +1180,116 @@ export function MusicRoom({
           </div>
         )}
       </section>
+
+      {/* Curated Section: Good Morning & Featured Playlist Cards & Recently Played */}
+      {activeFilter === "for-you" && !searchQuery.trim() && (
+        <section className="music-curated-section" aria-label="Curated recommendations for Meerah">
+          <div className="music-curated-header">
+            <div className="music-greeting-badge">
+              <span>✿</span> {greetingText}
+            </div>
+            <h2 className="music-greeting-title">
+              {greetingText}, Meerah <i>✿</i>
+            </h2>
+            <p className="music-greeting-subtitle">
+              Handpicked melodies, warm acoustics, and timeless love songs for your special day.
+            </p>
+          </div>
+
+          {/* Featured Playlist Cards Grid */}
+          <div className="music-featured-grid" role="region" aria-label="Featured Playlists">
+            {FEATURED_PLAYLISTS.map((pl) => (
+              <div
+                key={pl.title}
+                className="music-featured-card"
+                onClick={() => handlePlayFeaturedPlaylist(pl.title)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handlePlayFeaturedPlaylist(pl.title);
+                  }
+                }}
+              >
+                <div className={`music-featured-art music-featured-art-${pl.slug}`}>
+                  <span className="music-featured-icon">{pl.icon}</span>
+                </div>
+                <div className="music-featured-meta">
+                  <span className="music-featured-tag">CURATED PLAYLIST</span>
+                  <h3 className="music-featured-name">{pl.title}</h3>
+                  <p className="music-featured-desc">{pl.description}</p>
+                  <span className="music-featured-tracks">{pl.count} melodies</span>
+                </div>
+                <button
+                  type="button"
+                  className="music-featured-play-btn"
+                  aria-label={`Play ${pl.title} playlist`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePlayFeaturedPlaylist(pl.title);
+                  }}
+                >
+                  ▶
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Curated Recently Played List */}
+          <div className="music-curated-recent-section">
+            <div className="music-curated-recent-header">
+              <h3 className="music-curated-recent-title">Recently Played</h3>
+              <span className="music-curated-recent-caption">Your listening journey · حال ہی میں سنے گئے</span>
+            </div>
+            <div className="music-recent-tracks-grid">
+              {recentTracksToDisplay.map((track) => {
+                const isCurrent = track.id === currentTrackId;
+                const isTrackPlaying = isCurrent && isPlaying;
+                return (
+                  <div
+                    key={track.id}
+                    className={`music-recent-card ${isCurrent ? "is-active-recent" : ""}`}
+                    onClick={() => handleSelectTrack(track, true)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleSelectTrack(track, true);
+                      }
+                    }}
+                  >
+                    <div className="music-recent-art">
+                      <span>{isCurrent && isPlaying ? "♫" : "✿"}</span>
+                    </div>
+                    <div className="music-recent-info">
+                      <span className="music-recent-title">{track.title}</span>
+                      <span className="music-recent-artist">{track.artist}</span>
+                    </div>
+                    <span className="music-recent-duration">{track.duration}</span>
+                    <button
+                      type="button"
+                      className={`music-recent-play-trigger ${isTrackPlaying ? "is-playing" : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isCurrent) {
+                          handleTogglePlay();
+                        } else {
+                          handleSelectTrack(track, true);
+                        }
+                      }}
+                      aria-label={isTrackPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
+                    >
+                      {isTrackPlaying ? "Ⅱ" : "▶"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Now Playing Card */}
       <section
@@ -1660,6 +1882,136 @@ export function MusicRoom({
           setIsCreatePlaylistOpen(true);
         }}
       />
+      {/* Persistent Bottom Now Playing Bar (Spotify-Inspired) */}
+      {currentTrack && (
+        <aside className="music-bottom-bar" aria-label="Persistent Now Playing Bar">
+          {/* Left: Track Info & Artwork */}
+          <div className="music-bottom-left">
+            <div className={`music-bottom-disc ${isPlaying ? "is-spinning" : ""}`} aria-hidden="true">
+              <span>✿</span>
+            </div>
+            <div className="music-bottom-meta">
+              <span className="music-bottom-title">{currentTrack.title}</span>
+              <span className="music-bottom-artist">{currentTrack.artist}</span>
+            </div>
+            <button
+              type="button"
+              className={`music-bottom-fav-btn ${currentTrack.isFavorite ? "is-fav" : ""}`}
+              onClick={(e) => handleToggleFavorite(currentTrack.id, e)}
+              aria-label={currentTrack.isFavorite ? "Remove from favourites" : "Add to favourites"}
+            >
+              {currentTrack.isFavorite ? "♥" : "♡"}
+            </button>
+          </div>
+
+          {/* Center: Controls & Scrubber */}
+          <div className="music-bottom-center">
+            <div className="music-bottom-controls">
+              <button
+                type="button"
+                className={`music-bottom-btn ${isShuffle ? "is-active" : ""}`}
+                onClick={handleToggleShuffle}
+                aria-label={isShuffle ? "Disable shuffle" : "Enable shuffle"}
+                title="Shuffle"
+              >
+                ⤨
+              </button>
+              <button
+                type="button"
+                className="music-bottom-btn"
+                onClick={handlePreviousTrack}
+                aria-label="Previous track"
+                title="Previous"
+              >
+                |◀
+              </button>
+              <button
+                type="button"
+                className="music-bottom-btn-playpause"
+                onClick={handleTogglePlay}
+                aria-label={isPlaying ? "Pause" : "Play"}
+                title={isPlaying ? "Pause" : "Play"}
+              >
+                {isPlaying ? "Ⅱ" : "▶"}
+              </button>
+              <button
+                type="button"
+                className="music-bottom-btn"
+                onClick={handleNextTrack}
+                aria-label="Next track"
+                title="Next"
+              >
+                ▶|
+              </button>
+              <button
+                type="button"
+                className="music-bottom-btn"
+                onClick={cycleRepeatMode}
+                aria-label={repeatLabel}
+                title={repeatLabel}
+              >
+                {repeatDisplay}
+              </button>
+            </div>
+
+            <div className="music-bottom-scrubber">
+              <span className="music-bottom-time">{formatDuration(currentTime)}</span>
+              <input
+                type="range"
+                className="music-bottom-slider music-progress-bar"
+                min={0}
+                max={duration > 0 ? duration : 100}
+                value={currentTime}
+                onChange={handleProgressChange}
+                aria-label="Playback progress"
+              />
+              <span className="music-bottom-time">{formatDuration(duration)}</span>
+            </div>
+          </div>
+
+          {/* Right: Lyrics, Queue, Volume */}
+          <div className="music-bottom-right">
+            <button
+              type="button"
+              className={`music-bottom-btn ${showLyrics ? "is-active" : ""}`}
+              onClick={() => setShowLyrics((v) => !v)}
+              aria-label="Toggle synchronized lyrics"
+              title="Lyrics"
+            >
+              💬
+            </button>
+            <button
+              type="button"
+              className={`music-bottom-btn ${showQueue ? "is-active" : ""}`}
+              onClick={() => setShowQueue((v) => !v)}
+              aria-label="Toggle queue"
+              title="Queue"
+            >
+              ☰
+            </button>
+            <div className="music-bottom-volume">
+              <button
+                type="button"
+                className="music-bottom-vol-btn"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted || volume === 0 ? "🔇" : "🔉"}
+              </button>
+              <input
+                type="range"
+                className="music-bottom-vol-slider music-volume-slider"
+                min={0}
+                max={1}
+                step={0.01}
+                value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                aria-label="Volume slider"
+              />
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

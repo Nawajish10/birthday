@@ -1464,3 +1464,549 @@
   background: rgba(182, 83, 95, 0.12);
   border-color: var(--memories-red);
 }
+
+
+/* ==========================================================================
+   Snapchat-Inspired Header, Search, Recent Memories & On This Day Styling
+   ========================================================================== */
+
+/* 1. Header Bar */
+.memoriesSnapHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+
+.memoriesHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.memoriesWordmark {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(24px, 6vw, 34px);
+  font-weight: 700;
+  color: var(--memories-ink);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.memoriesWordmark i {
+  color: var(--memories-rose);
+  font-style: italic;
+  margin-left: 2px;
+}
+
+.memoriesHeaderTagline {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 13px;
+  color: var(--memories-muted);
+  font-style: italic;
+}
+
+.memoriesHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.memoriesHeaderIconBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--memories-line);
+  background: var(--memories-white);
+  color: var(--memories-brown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(69, 54, 42, 0.05);
+}
+
+.memoriesHeaderIconBtn:hover {
+  background: var(--memories-pink-soft);
+  border-color: var(--memories-rose);
+  transform: translateY(-1px);
+}
+
+.memoriesHeaderIconBtn.isActive {
+  background: var(--memories-rose);
+  color: #fff;
+  border-color: var(--memories-rose);
+}
+
+.memoriesNotifWrap {
+  position: relative;
+}
+
+.memoriesNotifDot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--memories-red);
+  border: 2px solid var(--memories-white);
+}
+
+/* Dropdown Menu */
+.memoriesDropdownMenu {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: 290px;
+  background: var(--memories-white);
+  border: 1px solid var(--memories-line);
+  border-radius: var(--memories-radius-md);
+  box-shadow: var(--memories-shadow);
+  padding: 16px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.memoriesDropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--memories-line);
+  padding-bottom: 8px;
+}
+
+.memoriesDropdownHeader h4 {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 15px;
+  color: var(--memories-ink);
+}
+
+.memoriesDropdownClose {
+  background: transparent;
+  border: none;
+  color: var(--memories-muted);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.memoriesDropdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memoriesDropdownItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--memories-radius-sm);
+  background: var(--memories-pink-soft);
+  font-size: 13px;
+}
+
+.memoriesDropdownItem p {
+  margin: 0 0 2px 0;
+  color: var(--memories-ink);
+}
+
+.memoriesDropdownItem small {
+  color: var(--memories-muted);
+  font-size: 11px;
+}
+
+.memoriesProfileLinkBtn {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--memories-rose);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.memoriesProfileLinkBtn:hover {
+  opacity: 0.92;
+}
+
+/* 2. Expandable Search Bar */
+.memoriesSearchBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--memories-white);
+  border: 1.5px solid var(--memories-rose);
+  border-radius: 999px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(182, 83, 95, 0.12);
+  animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.memoriesSearchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--memories-ink);
+  outline: none;
+  font-family: inherit;
+}
+
+.memoriesSearchClearBtn {
+  background: transparent;
+  border: none;
+  color: var(--memories-muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* 3. Snaps Wrapper & Recent Memories Section */
+.memoriesSnapsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.memoriesRecentSection {
+  background: var(--memories-white);
+  border: 1px solid var(--memories-line);
+  border-radius: var(--memories-radius-lg);
+  padding: 20px;
+  box-shadow: var(--memories-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.memoriesRecentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.memoriesRecentTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memoriesRecentSparkle {
+  font-size: 18px;
+  color: var(--memories-rose);
+}
+
+.memoriesRecentTitle {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--memories-ink);
+}
+
+.memoriesSeeAllBtn {
+  background: transparent;
+  border: 1px solid var(--memories-line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  color: var(--memories-rose);
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 36px;
+}
+
+.memoriesSeeAllBtn:hover {
+  background: var(--memories-pink-soft);
+  border-color: var(--memories-rose);
+}
+
+.memoriesRecentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .memoriesRecentGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+}
+
+.memoriesRecentCard {
+  background: var(--memories-paper);
+  border: 1px solid var(--memories-line);
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.memoriesRecentCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(69, 54, 42, 0.1);
+  border-color: var(--memories-rose);
+}
+
+.recentCardThumbWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #eee;
+}
+
+.recentCardThumbWrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.recentCardOverlay {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--memories-rose);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.memoriesRecentCard:hover .recentCardOverlay {
+  opacity: 1;
+}
+
+.recentCardCaption {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--memories-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 4. On This Day Modal & Grid */
+.memoriesModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 15, 31, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.memoriesOnThisDayCard {
+  width: 100%;
+  max-width: 650px;
+  max-height: 85vh;
+  background: var(--memories-white);
+  border-radius: var(--memories-radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  overflow-y: auto;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.memoriesModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--memories-line);
+  padding-bottom: 12px;
+}
+
+.memoriesModalTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.memoriesModalBadge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--memories-rose);
+}
+
+.memoriesModalTitle {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--memories-ink);
+}
+
+.memoriesModalSubtitle {
+  font-size: 13px;
+  color: var(--memories-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+.memoriesModalCloseBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--memories-line);
+  background: var(--memories-paper);
+  color: var(--memories-brown);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.onThisDayYearSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.onThisDayYearHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.onThisDayYearBadge {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--memories-rose);
+  background: var(--memories-pink-soft);
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--memories-pink);
+}
+
+.onThisDayYearDate {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--memories-muted);
+}
+
+.onThisDayGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.onThisDayPhotoCard {
+  background: var(--memories-paper);
+  border: 1px solid var(--memories-line);
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease;
+}
+
+.onThisDayPhotoCard:hover {
+  transform: scale(1.02);
+  border-color: var(--memories-rose);
+}
+
+.onThisDayPhotoCard img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.onThisDayPhotoCaption {
+  font-size: 11px;
+  color: var(--memories-ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onThisDayEmptyState {
+  text-align: center;
+  padding: 36px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.onThisDayEmptyIcon {
+  font-size: 32px;
+  color: var(--memories-rose);
+}
+
+.onThisDayEmptyState h4 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  margin: 0;
+  color: var(--memories-ink);
+}
+
+.onThisDayEmptyState p {
+  font-size: 13px;
+  color: var(--memories-muted);
+  max-width: 320px;
+  margin: 0;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

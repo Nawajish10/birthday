@@ -11,10 +11,27 @@
 
 import type { ComponentType } from "react";
 
-export type GameCategory = "competitive" | "cooperative" | "social" | "solo";
+export type GameCategory =
+  | "competitive"
+  | "cooperative"
+  | "social"
+  | "solo"
+  | "puzzle"
+  | "arcade"
+  | "classic"
+  | "fun";
+
+export type GameHubFilter = "Puzzle" | "Arcade" | "Classic" | "Fun";
 
 export type GameId =
+  | "2048"
   | "memory-match"
+  | "tic-tac-toe"
+  | "snake"
+  | "word-hunt"
+  | "typing-rush"
+  | "color-match"
+  | "math-quiz"
   | "word-scramble"
   | "birthday-quiz"
   | "connect-four"
@@ -34,6 +51,7 @@ export interface GameDefinition {
   icon: string;
   badge: string;
   category: GameCategory;
+  hubFilter: GameHubFilter;
   isMultiplayerSupported?: boolean;
   estimatedTime: string;
   washiColor: "gold" | "rose" | "sage";
@@ -42,28 +60,108 @@ export interface GameDefinition {
 
 export const GAME_DEFINITIONS: readonly GameDefinition[] = [
   {
+    id: "2048",
+    title: "2048 Bloom",
+    urduTitle: "اعداد کا کھیل",
+    description: "Slide and merge numbers to bloom Meerah's milestone 2048 celebration flower tile.",
+    icon: "🔢",
+    badge: "Puzzle · Numbers",
+    category: "solo",
+    hubFilter: "Puzzle",
+    isMultiplayerSupported: false,
+    estimatedTime: "2-4 mins",
+    washiColor: "gold",
+  },
+  {
     id: "memory-match",
     title: "Memory Match",
-    urduTitle: "یادوں کا کھیل",
-    description: "Match pairs of sweet birthday symbols to reveal hidden memories and celebrations.",
+    urduTitle: "یادوں اور اشعار کا کھیل",
+    description: "Flip and match sweet couplet cards to reveal romantic Urdu poetry and memories.",
     icon: "🌸",
-    badge: "Relaxing · Pairs",
+    badge: "Brain · Couplet Cards",
     category: "solo",
+    hubFilter: "Puzzle",
+    isMultiplayerSupported: false,
+    estimatedTime: "2-3 mins",
+    washiColor: "rose",
+  },
+  {
+    id: "tic-tac-toe",
+    title: "Tic Tac Toe",
+    urduTitle: "کاٹا صفر",
+    description: "Classic grid duel: Meerah's rose petal blooms (✿) against golden sunbeams (☀️).",
+    icon: "⭕",
+    badge: "Classic · Blossom",
+    category: "solo",
+    hubFilter: "Classic",
+    isMultiplayerSupported: true,
+    estimatedTime: "1-2 mins",
+    washiColor: "sage",
+  },
+  {
+    id: "snake",
+    title: "Birthday Snake",
+    urduTitle: "سانپ کا کھیل",
+    description: "Retro arcade snake chasing sweet cupcakes, sunflowers, and birthday treats.",
+    icon: "🐍",
+    badge: "Arcade · Retro",
+    category: "solo",
+    hubFilter: "Arcade",
     isMultiplayerSupported: false,
     estimatedTime: "2-3 mins",
     washiColor: "gold",
   },
   {
-    id: "word-scramble",
-    title: "Sweet Word Scramble",
-    urduTitle: "الفاظ کا کھیل",
-    description: "Unscramble heartfelt words celebrating Meerah's warmth, laughter, and birthday joy.",
+    id: "word-hunt",
+    title: "Word Hunt",
+    urduTitle: "الفاظ کا معمہ",
+    description: "Hunt and unscramble heartfelt words celebrating Meerah's warmth and laughter.",
     icon: "✨",
-    badge: "Anagrams · Clues",
-    category: "competitive",
+    badge: "Words · Anagrams",
+    category: "solo",
+    hubFilter: "Puzzle",
     isMultiplayerSupported: false,
     estimatedTime: "3-5 mins",
     washiColor: "rose",
+  },
+  {
+    id: "typing-rush",
+    title: "Typing Rush",
+    urduTitle: "ٹائپنگ رش",
+    description: "Speed challenge typing heartfelt quotes and birthday wishes in 30 swift seconds.",
+    icon: "⚡",
+    badge: "Skill · Speed",
+    category: "solo",
+    hubFilter: "Arcade",
+    isMultiplayerSupported: false,
+    estimatedTime: "1 min",
+    washiColor: "gold",
+  },
+  {
+    id: "color-match",
+    title: "Color Match",
+    urduTitle: "رنگوں کا معمہ",
+    description: "Test quick reflexes matching pastel color names with Meerah's romantic ink hues.",
+    icon: "🎨",
+    badge: "Puzzle · Focus",
+    category: "solo",
+    hubFilter: "Puzzle",
+    isMultiplayerSupported: false,
+    estimatedTime: "1-2 mins",
+    washiColor: "rose",
+  },
+  {
+    id: "math-quiz",
+    title: "Math Quiz",
+    urduTitle: "حساب کا چیلنج",
+    description: "Quick mental arithmetic challenge unlocking Meerah's golden celebration numbers.",
+    icon: "🧮",
+    badge: "Challenge · Numbers",
+    category: "solo",
+    hubFilter: "Fun",
+    isMultiplayerSupported: false,
+    estimatedTime: "2 mins",
+    washiColor: "sage",
   },
   {
     id: "birthday-quiz",
@@ -73,6 +171,7 @@ export const GAME_DEFINITIONS: readonly GameDefinition[] = [
     icon: "🎂",
     badge: "5 Questions · Fun",
     category: "solo",
+    hubFilter: "Fun",
     isMultiplayerSupported: false,
     estimatedTime: "2 mins",
     washiColor: "sage",
@@ -85,6 +184,7 @@ export const GAME_DEFINITIONS: readonly GameDefinition[] = [
     icon: "🔴",
     badge: "Competitive · Strategy",
     category: "competitive",
+    hubFilter: "Classic",
     isMultiplayerSupported: true,
     estimatedTime: "3-5 mins",
     washiColor: "gold",
@@ -97,6 +197,7 @@ export const GAME_DEFINITIONS: readonly GameDefinition[] = [
     icon: "⚡",
     badge: "Competitive · Timed",
     category: "competitive",
+    hubFilter: "Fun",
     isMultiplayerSupported: true,
     estimatedTime: "2-3 mins",
     washiColor: "rose",
@@ -109,6 +210,7 @@ export const GAME_DEFINITIONS: readonly GameDefinition[] = [
     icon: "🗝️",
     badge: "Cooperative · Puzzles",
     category: "cooperative",
+    hubFilter: "Puzzle",
     isMultiplayerSupported: true,
     estimatedTime: "4-6 mins",
     washiColor: "sage",
@@ -121,6 +223,7 @@ export const GAME_DEFINITIONS: readonly GameDefinition[] = [
     icon: "💖",
     badge: "Social · Party",
     category: "social",
+    hubFilter: "Fun",
     isMultiplayerSupported: true,
     estimatedTime: "2-4 mins",
     washiColor: "rose",
@@ -133,9 +236,23 @@ export const GAME_DEFINITIONS: readonly GameDefinition[] = [
     icon: "🔤",
     badge: "Solo · Daily",
     category: "solo",
+    hubFilter: "Puzzle",
     isMultiplayerSupported: false,
     estimatedTime: "2-3 mins",
     washiColor: "gold",
+  },
+  {
+    id: "word-scramble",
+    title: "Sweet Word Scramble",
+    urduTitle: "الفاظ کا کھیل",
+    description: "Unscramble heartfelt words celebrating Meerah's warmth, laughter, and birthday joy.",
+    icon: "✨",
+    badge: "Anagrams · Clues",
+    category: "competitive",
+    hubFilter: "Puzzle",
+    isMultiplayerSupported: false,
+    estimatedTime: "3-5 mins",
+    washiColor: "rose",
   },
 ] as const;
 
@@ -724,7 +841,14 @@ export function createGamesHubState(): GamesHubState {
   return {
     activeGameId: null,
     completedGames: {
+      "2048": false,
       "memory-match": false,
+      "tic-tac-toe": false,
+      "snake": false,
+      "word-hunt": false,
+      "typing-rush": false,
+      "color-match": false,
+      "math-quiz": false,
       "word-scramble": false,
       "birthday-quiz": false,
       "connect-four": false,

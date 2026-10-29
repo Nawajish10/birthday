@@ -40,6 +40,7 @@ export interface CameraPanelProps {
   onCaptureAdded?: (postOrPhoto: PhotoAsset) => void;
   onNavigateToProfile?: () => void;
   onOpenGallery?: () => void;
+  onOpenOnThisDay?: () => void;
   onError?: (error: string) => void;
   onClose?: () => void;
   isModal?: boolean;
@@ -51,6 +52,7 @@ export function CameraPanel({
   onCaptureAdded,
   onNavigateToProfile,
   onOpenGallery,
+  onOpenOnThisDay,
   onError,
   onClose,
   isModal = false,
@@ -72,8 +74,22 @@ export function CameraPanel({
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string; time: string; read: boolean }>>([
     { id: "notif-1", text: "Camera ready · Love Theme active ✿", time: "Just now", read: false },
-    { id: "notif-2", text: "Filters & gallery shortcut enabled ✨", time: "1m ago", read: true },
+    { id: "notif-2", text: "Snap filters & live timer ready ✨", time: "1m ago", read: true },
   ]);
+
+  // Timer & countdown states: 0 (off), 3s, 5s, 10s
+  const [timerSeconds, setTimerSeconds] = useState<0 | 3 | 5 | 10>(0);
+  const [countdownRemaining, setCountdownRemaining] = useState<number | null>(null);
+  const [showFiltersTray, setShowFiltersTray] = useState<boolean>(true);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearTimerInterval = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setCountdownRemaining(null);
+  }, []);
 
   const [galleryThumbnail, setGalleryThumbnail] = useState<string | null>(() => {
     if (latestPhotoUrl) return latestPhotoUrl;
@@ -89,6 +105,8 @@ export function CameraPanel({
     }
     return null;
   });
+
+  const featuredPhotoUrl = latestPhotoUrl || galleryThumbnail || "/images/sample-meerah-1.jpg";
 
   // Capture & preview states
   const [capture, setCapture] = useState<string | null>(null);
@@ -110,6 +128,7 @@ export function CameraPanel({
 
   // Safely stop stream tracks and release camera hardware
   const stopStream = useCallback(() => {
+    clearTimerInterval();
     if (streamRef.current) {
       stopMediaTracks(streamRef.current);
       streamRef.current = null;
@@ -119,14 +138,15 @@ export function CameraPanel({
     }
     setCameraActive(false);
     setIsInitializing(false);
-  }, []);
+  }, [clearTimerInterval]);
 
   // Cleanup on unmount — ensures NO leaked camera streams or hardware indicators
   useEffect(() => {
     return () => {
       stopStream();
+      clearTimerInterval();
     };
-  }, [stopStream]);
+  }, [stopStream, clearTimerInterval]);
 
   // Request camera access with current facingMode
   const openCamera = async (overrideFacing?: CameraFacingMode) => {
@@ -292,6 +312,36 @@ export function CameraPanel({
       const msg = "Could not capture image. Please try again or select a file.";
       setErrorMessage(msg);
       onError?.(msg);
+    }
+  };
+
+  // Shutter action handler with timer countdown support
+  const handleShutterClick = () => {
+    if (!cameraActive) {
+      openCamera();
+      return;
+    }
+
+    if (countdownRemaining !== null) {
+      // User tapped during active countdown to cancel it
+      clearTimerInterval();
+      return;
+    }
+
+    if (timerSeconds > 0) {
+      setCountdownRemaining(timerSeconds);
+      let rem = timerSeconds;
+      timerIntervalRef.current = setInterval(() => {
+        rem -= 1;
+        if (rem <= 0) {
+          clearTimerInterval();
+          takePhoto();
+        } else {
+          setCountdownRemaining(rem);
+        }
+      }, 1000);
+    } else {
+      takePhoto();
     }
   };
 
@@ -773,7 +823,7 @@ export function CameraPanel({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
-                {/* Top Floating Bar: Flash, Flip, Notifications, Close */}
+                {/* Top Floating Bar: Flash, Flip, Timer, Filters, Notifications, Close */}
                 <div className="cameraTopFloatingBar" role="toolbar" aria-label="Camera controls">
                   <div className="cameraTopFloatingLeft">
                     <button
@@ -783,7 +833,7 @@ export function CameraPanel({
                       aria-label="Toggle flash/torch"
                       title="Toggle flash/torch"
                     >
-                      {isFlashOn ? "⚡ On" : "⚡ Off"}
+                      {isFlashOn ? "⚡ On" : "⚡ Flash"}
                     </button>
                     <button
                       type="button"
@@ -794,6 +844,28 @@ export function CameraPanel({
                     >
                       <span>🔄</span>
                       <span>{facingMode === "user" ? "Rear" : "Front"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`cameraTopActionBtn cameraTimerBtn ${timerSeconds > 0 ? "isActive" : ""}`}
+                      onClick={() => {
+                        setTimerSeconds((prev) => (prev === 0 ? 3 : prev === 3 ? 5 : prev === 5 ? 10 : 0));
+                      }}
+                      aria-label={`Timer: ${timerSeconds === 0 ? "Off" : `${timerSeconds}s`}`}
+                      title={`Timer: ${timerSeconds === 0 ? "Off" : `${timerSeconds}s`}`}
+                    >
+                      <span>⏱️</span>
+                      <span>{timerSeconds === 0 ? "Timer" : `${timerSeconds}s`}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`cameraTopActionBtn cameraFilterToggleBtn ${showFiltersTray ? "isActive" : ""}`}
+                      onClick={() => setShowFiltersTray((prev) => !prev)}
+                      aria-label="Toggle filters tray"
+                      title="Toggle filters tray"
+                    >
+                      <span>✨</span>
+                      <span>Filters</span>
                     </button>
                   </div>
 
@@ -858,6 +930,7 @@ export function CameraPanel({
                   </div>
                 )}
 
+                {/* Live Camera Feed */}
                 <video
                   ref={videoRef}
                   id="capture"
@@ -868,9 +941,26 @@ export function CameraPanel({
                   autoPlay
                 />
 
+                {/* Countdown Timer Overlay */}
+                {countdownRemaining !== null && (
+                  <div className="cameraCountdownOverlay" aria-live="assertive" role="alert">
+                    <span className="cameraCountdownNumber">{countdownRemaining}</span>
+                    <span className="cameraCountdownLabel">Hold steady... ✿</span>
+                    <button
+                      type="button"
+                      className="cameraCountdownCancelBtn"
+                      onClick={clearTimerInterval}
+                      aria-label="Cancel timer"
+                    >
+                      ✕ Cancel
+                    </button>
+                  </div>
+                )}
+
+                {/* Camera Viewport with Featured Photo Framing when Idle */}
                 {!cameraActive && (
                   <div
-                    className="cameraIdlePlaceholder"
+                    className="cameraFeaturedFraming"
                     onClick={() => openCamera()}
                     role="button"
                     tabIndex={0}
@@ -880,13 +970,34 @@ export function CameraPanel({
                         openCamera();
                       }
                     }}
-                    aria-label="Tap to open camera"
+                    aria-label="Tap to open live camera"
                   >
-                    <div className="cameraIdleIcon" aria-hidden="true">
-                      📷
-                    </div>
-                    <h4>Tap shutter to snap ✿</h4>
-                    <p>Open your camera to make a sweet memory, or drag a photo here.</p>
+                    {featuredPhotoUrl ? (
+                      <div className="cameraFeaturedPhotoBackdrop">
+                        <img src={featuredPhotoUrl} alt="" className="cameraFeaturedBlur" aria-hidden="true" />
+                        <div className="cameraFeaturedCard">
+                          <img src={featuredPhotoUrl} alt="Featured Memory" className="cameraFeaturedImage" />
+                          <div className="cameraViewfinderOverlay" aria-hidden="true">
+                            <span className="viewfinderCorner tl" />
+                            <span className="viewfinderCorner tr" />
+                            <span className="viewfinderCorner bl" />
+                            <span className="viewfinderCorner br" />
+                            <div className="cameraViewfinderTag">Meerah ✿ Memories</div>
+                          </div>
+                        </div>
+                        <div className="cameraFeaturedPrompt">
+                          <span className="cameraShutterHintIcon" aria-hidden="true">📷</span>
+                          <span className="cameraFeaturedPromptTitle">Tap shutter to snap live ✿</span>
+                          <span className="cameraFeaturedPromptSub">or drop a photo here to preview</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="cameraIdlePlaceholder">
+                        <div className="cameraIdleIcon" aria-hidden="true">📷</div>
+                        <h4>Tap shutter to snap ✿</h4>
+                        <p>Open your camera to make a sweet memory, or drag a photo here.</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -897,30 +1008,47 @@ export function CameraPanel({
                   </div>
                 )}
 
-                {/* Bottom Floating Overlay: Filter Carousel + Shutter & Gallery Controls */}
+                {/* Bottom Floating Overlay: Filter Carousel + Bottom Action Bar */}
                 <div className="cameraBottomOverlay">
                   {/* Snapchat-Style Live Filter Carousel */}
-                  <div className="cameraFilterCarousel" role="radiogroup" aria-label="Camera Filters">
-                    {CAMERA_FILTERS.map((f) => (
-                      <button
-                        type="button"
-                        key={f.id}
-                        className={`cameraFilterChip ${selectedFilter.id === f.id ? "isActive" : ""}`}
-                        onClick={() => setSelectedFilter(f)}
-                        role="radio"
-                        aria-checked={selectedFilter.id === f.id}
-                        title={f.name}
-                      >
-                        <span className="cameraFilterIcon">{f.icon}</span>
-                        <span className="cameraFilterName">{f.name}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {showFiltersTray && (
+                    <div className="cameraFilterCarousel" role="radiogroup" aria-label="Camera Filters">
+                      {CAMERA_FILTERS.map((f) => (
+                        <button
+                          type="button"
+                          key={f.id}
+                          className={`cameraFilterChip ${selectedFilter.id === f.id ? "isActive" : ""}`}
+                          onClick={() => setSelectedFilter(f)}
+                          role="radio"
+                          aria-checked={selectedFilter.id === f.id}
+                          title={f.name}
+                        >
+                          <span className="cameraFilterIcon">{f.icon}</span>
+                          <span className="cameraFilterName">{f.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
-                  {/* Centered 72px Shutter + Left Gallery Shortcut + Right Upload */}
-                  <div className="cameraBottomControls actions cameraActions">
-                    {/* Left-edge gallery shortcut button */}
-                    <div className="cameraGalleryShortcutWrap">
+                  {/* Snapchat-Inspired Bottom Action Bar: Upload Button, Shutter Capture Button, On This Day Button */}
+                  <div className="cameraBottomControls actions cameraActions" role="toolbar" aria-label="Camera shutter and actions">
+                    {/* Left: Upload Button & Gallery Shortcut */}
+                    <div className="cameraBottomActionSlot leftSlot">
+                      <label
+                        className="button secondary cameraBtn cameraUploadActionBtn"
+                        title="Choose photo from device or camera roll"
+                        aria-label="Upload photo"
+                      >
+                        <span aria-hidden="true">📁</span>
+                        <span>Upload</span>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/avif,image/*"
+                          className="cameraFileInput"
+                          onChange={handleFileChange}
+                        />
+                      </label>
                       {onOpenGallery && (
                         <button
                           type="button"
@@ -941,41 +1069,53 @@ export function CameraPanel({
                       )}
                     </div>
 
-                    {/* Centered 72px prominent shutter button with Love Theme pulse ring */}
+                    {/* Center: Large 76px Circular Shutter Capture Button with Pulse Ring */}
                     <div className="cameraShutterSlot">
                       <div className="cameraShutterContainer">
                         <span className="cameraPulseRing" aria-hidden="true" />
                         <button
                           type="button"
                           className={`cameraShutterBtn ${cameraActive ? "cameraCaptureBtn" : "cameraPrimaryAction"}`}
-                          onClick={() => {
-                            if (cameraActive) {
-                              takePhoto();
-                            } else {
-                              openCamera();
-                            }
-                          }}
+                          onClick={handleShutterClick}
                           disabled={isInitializing}
-                          aria-label={cameraActive ? "Snap photo" : "Open camera"}
-                          title={cameraActive ? "Snap photo" : "Open camera"}
+                          aria-label={
+                            cameraActive
+                              ? countdownRemaining !== null
+                                ? "Cancel countdown"
+                                : "Snap photo"
+                              : "Open camera"
+                          }
+                          title={
+                            cameraActive
+                              ? countdownRemaining !== null
+                                ? "Cancel countdown"
+                                : "Snap photo"
+                              : "Open camera"
+                          }
                         >
                           <span className="cameraShutterInner" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Right-edge upload photo file shortcut */}
-                    <div className="cameraRightActionWrap">
-                      <label className="button secondary filepick cameraBtn cameraFilePickLabel" title="Choose photo from device">
-                        <span>📁 Choose file</span>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp,image/avif,image/*"
-                          className="cameraFileInput"
-                          onChange={handleFileChange}
-                        />
-                      </label>
+                    {/* Right: On This Day Button */}
+                    <div className="cameraBottomActionSlot rightSlot">
+                      <button
+                        type="button"
+                        className="button secondary cameraBtn cameraOnThisDayActionBtn"
+                        onClick={() => {
+                          if (onOpenOnThisDay) {
+                            onOpenOnThisDay();
+                          } else if (onOpenGallery) {
+                            onOpenGallery();
+                          }
+                        }}
+                        title="View On This Day memories"
+                        aria-label="View On This Day memories"
+                      >
+                        <span aria-hidden="true">🗓️</span>
+                        <span>On This Day</span>
+                      </button>
                     </div>
                   </div>
                 </div>

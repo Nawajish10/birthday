@@ -18,10 +18,10 @@ export function parseDateSafe(input: string | Date | null | undefined): Date | n
 
 /**
  * Authoritative recipient birthday constants.
- * Recipient birth date: 28 October 2002.
+ * Recipient birth date: 30 October 2001 (30/10/2001).
  */
-export const AUTHORITATIVE_BIRTH_DATE = "2002-10-28";
-export const DEFAULT_BIRTH_DATE = "2002-10-28";
+export const AUTHORITATIVE_BIRTH_DATE = "2001-10-30";
+export const DEFAULT_BIRTH_DATE = "2001-10-30";
 
 /**
  * Authoritative Age Calculation.

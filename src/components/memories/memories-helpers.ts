@@ -8,7 +8,15 @@ import { toCompactDerivativeUrl } from "../../lib/media-service.ts";
 
 export { formatEffectiveDate, toCompactDerivativeUrl };
 
-export type MemoriesTab = "camera" | "photos" | "all-photos" | "on-this-day" | "albums" | "stories";
+export type MemoriesTab =
+  | "snaps"
+  | "camera-roll"
+  | "stories"
+  | "albums"
+  | "on-this-day"
+  | "camera"
+  | "photos"
+  | "all-photos";
 
 export type PhotoCategory = "all" | "recent" | "favorites" | "dated" | "cherished";
 

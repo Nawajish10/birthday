@@ -68,6 +68,73 @@
 }
 
 /* --------------------------------------------------------------------------
+   00. Top Header Navigation Bar & Wordmark
+   -------------------------------------------------------------------------- */
+.profileTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 4px 10px;
+  border-bottom: 1px solid var(--profile-border);
+}
+
+.profileTopBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profileWordmark {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(20px, 3.5vw, 24px);
+  font-weight: 700;
+  color: var(--profile-ink);
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profileWordmarkFlower {
+  color: var(--profile-rose);
+  font-size: 0.9em;
+  font-weight: normal;
+}
+
+.profileTopBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--profile-rose);
+  background: rgba(182, 83, 95, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(182, 83, 95, 0.2);
+}
+
+[data-theme="love"] .profileTopBadge {
+  background: rgba(233, 185, 188, 0.15);
+  border-color: rgba(233, 185, 188, 0.3);
+  color: var(--profile-pink);
+}
+
+.profileBirthdayHeaderLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profileBirthdayDateTag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--profile-muted);
+  letter-spacing: 0.02em;
+}
+
+/* --------------------------------------------------------------------------
    0. Dynamic Birthday Card & Live Countdown Banner
    -------------------------------------------------------------------------- */
 .profileBirthdayCard {

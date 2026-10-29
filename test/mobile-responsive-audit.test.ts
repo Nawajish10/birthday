@@ -57,4 +57,65 @@ describe("Mobile Responsiveness & Viewport Audit", () => {
 
     assert.ok(gamesCssSrc.includes("@media (max-width: 640px)"), "GamesPanel must declare mobile responsive breakpoints");
   });
+
+  it("verifies authoritative BottomNav component implementation and destination tabs", () => {
+    const bottomNavTsxPath = path.resolve(process.cwd(), "src/components/shared/BottomNav.tsx");
+    const bottomNavTsxSrc = fs.readFileSync(bottomNavTsxPath, "utf-8");
+
+    assert.ok(bottomNavTsxSrc.includes("bottom-nav-container"), "BottomNav must render container");
+    assert.ok(bottomNavTsxSrc.includes("role=\"navigation\"") || bottomNavTsxSrc.includes("aria-label=\"Application Navigation\""), "BottomNav must have accessible role and label");
+    assert.ok(bottomNavTsxSrc.includes("DESTINATIONS"), "BottomNav must export canonical navigation destinations");
+  });
+
+  it("verifies BottomNav fixed positioning, safe-area-inset, touch targets, and reduced motion", () => {
+    const bottomNavCssPath = path.resolve(process.cwd(), "src/components/shared/bottom-nav.css");
+    const bottomNavCssSrc = fs.readFileSync(bottomNavCssPath, "utf-8");
+
+    // Fixed positioning & zero horizontal overflow
+    assert.ok(bottomNavCssSrc.includes("position: fixed"), "Bottom nav must be fixed to bottom");
+    assert.ok(bottomNavCssSrc.includes("bottom: 0"), "Bottom nav must anchor at 0");
+    assert.ok(bottomNavCssSrc.includes("env(safe-area-inset-bottom)"), "Bottom nav must handle safe area insets");
+    
+    // Touch targets >= 44px
+    assert.ok(bottomNavCssSrc.includes("min-height: 48px") || bottomNavCssSrc.includes("min-height: 44px"), "Touch targets must be >= 44px");
+
+    // Focus visible styling
+    assert.ok(bottomNavCssSrc.includes(":focus-visible"), "Touch targets must have high contrast focus indicator");
+
+    // Reduced motion support
+    assert.ok(bottomNavCssSrc.includes("@media (prefers-reduced-motion: reduce)"), "BottomNav must honor prefers-reduced-motion");
+
+    // Viewport handling down to 320px
+    assert.ok(bottomNavCssSrc.includes("@media (max-width: 380px)") || bottomNavCssSrc.includes("@media (max-width: 340px)"), "Must support narrow mobile viewports");
+  });
+
+  it("verifies bottom clearance padding (.shell-content-with-bottom-nav) in RouteShell and Experience", () => {
+    const routeShellPath = path.resolve(process.cwd(), "src/components/shared/RouteShell.tsx");
+    const experiencePath = path.resolve(process.cwd(), "src/components/Experience.tsx");
+    const bottomNavCssPath = path.resolve(process.cwd(), "src/components/shared/bottom-nav.css");
+
+    const routeShellSrc = fs.readFileSync(routeShellPath, "utf-8");
+    const experienceSrc = fs.readFileSync(experiencePath, "utf-8");
+    const bottomNavCssSrc = fs.readFileSync(bottomNavCssPath, "utf-8");
+
+    // Content containers must use clearance class
+    assert.ok(
+      routeShellSrc.includes("shell-content-with-bottom-nav"),
+      "RouteShell must include shell-content-with-bottom-nav clearance class"
+    );
+    assert.ok(
+      experienceSrc.includes("shell-content-with-bottom-nav"),
+      "Experience must include shell-content-with-bottom-nav clearance class"
+    );
+
+    // CSS must define clearance padding with clamp and safe area
+    assert.ok(
+      bottomNavCssSrc.includes(".shell-content-with-bottom-nav"),
+      "bottom-nav.css must style .shell-content-with-bottom-nav"
+    );
+    assert.ok(
+      bottomNavCssSrc.includes("padding-bottom:"),
+      ".shell-content-with-bottom-nav must declare padding-bottom"
+    );
+  });
 });

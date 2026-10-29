@@ -183,7 +183,7 @@ export function resolvePhotoWashiColor(
  */
 export function SwipeablePhotoCards({
   photos = DEFAULT_PHOTOS as SwipeablePhotoItem[],
-  title = "Photographs from the Journey",
+  title = "Sweet Birthday Memories",
   subtitle = "Genuine snapshots, warm memories, and sunlit moments pinned into your keepsake.",
   onSelectPhoto,
   loading = false,

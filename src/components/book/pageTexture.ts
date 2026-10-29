@@ -10,14 +10,25 @@ export interface PageContent {
   pageNumber: number;
 }
 
+export const DEFAULT_BOOK_PAGE: PageContent = {
+  id: "default-page",
+  type: "note",
+  title: "Happy birthday,",
+  accent: "Meerah",
+  body: "May your day be full of love, laughter, and everything you deserve.",
+  urdu: "سالگرہ مبارک، میرا پیار۔",
+  pageNumber: 1,
+};
+
 /**
  * Creates a crisp high-res 1024x1440 canvas texture for a book page.
  * Warm ivory paper texture with gold ornamental borders and typography.
  */
 export function createPageTexture(
-  content: PageContent,
+  content?: PageContent,
   isLeft: boolean = false
 ): THREE.CanvasTexture {
+  const safeContent = content || DEFAULT_BOOK_PAGE;
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
   canvas.height = 1440;
@@ -69,18 +80,18 @@ export function createPageTexture(
   ctx.font = "600 24px 'DM Sans', sans-serif";
   ctx.fillStyle = "#376e58";
   ctx.textAlign = "center";
-  const kicker = isLeft ? "A MOMENT WITH YOU" : `${content.type.toUpperCase()} · A LITTLE GIFT`;
+  const kicker = isLeft ? "A MOMENT WITH YOU" : `${safeContent.type.toUpperCase()} · A LITTLE GIFT`;
   ctx.fillText(kicker, 512, 160);
 
   // 5. Title & Accent
   ctx.font = "italic 500 68px 'Playfair Display', Georgia, serif";
   ctx.fillStyle = "#302c21";
-  ctx.fillText(content.title || "Happy birthday,", 512, 270);
+  ctx.fillText(safeContent.title || "Happy birthday,", 512, 270);
 
-  if (content.accent) {
+  if (safeContent.accent) {
     ctx.font = "italic 400 60px 'Playfair Display', Georgia, serif";
     ctx.fillStyle = "#b6535f";
-    ctx.fillText(content.accent, 512, 350);
+    ctx.fillText(safeContent.accent, 512, 350);
   }
 
   // Decorative divider
@@ -91,21 +102,21 @@ export function createPageTexture(
   // 6. English Body Text
   ctx.font = "400 34px/1.7 'Playfair Display', Georgia, serif";
   ctx.fillStyle = "#4a3c31";
-  wrapText(ctx, content.body, 512, 530, 720, 56);
+  wrapText(ctx, safeContent.body, 512, 530, 720, 56);
 
   // 7. Urdu Calligraphy Section
-  if (content.urdu) {
+  if (safeContent.urdu) {
     ctx.font = "38px 'Noto Naskh Arabic', Tahoma, serif";
     ctx.fillStyle = "#6e4b3b";
     ctx.direction = "rtl";
-    wrapText(ctx, content.urdu, 512, 850, 740, 60);
+    wrapText(ctx, safeContent.urdu, 512, 850, 740, 60);
     ctx.direction = "ltr";
   }
 
   // 8. Page Number
   ctx.font = "500 24px 'DM Sans', sans-serif";
   ctx.fillStyle = "#9c8574";
-  ctx.fillText(String(content.pageNumber).padStart(2, "0"), 512, 1330);
+  ctx.fillText(String(safeContent.pageNumber || 1).padStart(2, "0"), 512, 1330);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -117,12 +128,13 @@ export function createPageTexture(
 
 function wrapText(
   ctx: CanvasRenderingContext2D,
-  text: string,
+  text: string = "",
   x: number,
   y: number,
   maxWidth: number,
   lineHeight: number
 ) {
+  if (!text) return;
   const words = text.split(" ");
   let line = "";
   let currentY = y;

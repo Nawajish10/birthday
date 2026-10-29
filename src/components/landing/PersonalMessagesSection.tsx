@@ -265,7 +265,7 @@ export function PersonalMessagesSection({
     return (
       <section
         className={`personal-messages-section is-empty ${className}`}
-        aria-label="Personal Messages and Poetry"
+        aria-label="Personal Notes — No Notes Available"
       >
         <div className="personal-messages-header">
           <span className="personal-messages-kicker">HEARTFELT NOTES · دلی پیغامات</span>
@@ -314,12 +314,12 @@ export function PersonalMessagesSection({
         <div className="deck-card-ghost deck-card-back" aria-hidden="true" />
         <div className="deck-card-ghost deck-card-middle" aria-hidden="true" />
 
-        {/* Primary Interactive Message Card (English only) */}
+        {/* Primary Interactive Message Card */}
         <article
           key={activeCard.id}
           className="message-card-active"
           aria-roledescription="card"
-          aria-label={`Note ${activeIndex + 1} of ${totalCards}: ${activeCard.title}`}
+          aria-label={`Message ${activeIndex + 1} of ${totalCards}: ${activeCard.title}`}
         >
           {/* Washi Tape Accent */}
           <div

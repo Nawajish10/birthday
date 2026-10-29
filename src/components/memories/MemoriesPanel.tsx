@@ -52,7 +52,7 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
   storage,
   onNavigateToProfile,
 }) => {
-  const [activeTab, setActiveTab] = useState<MemoriesTab>("photos"); // useState<MemoriesTab>("camera")
+  const [activeTab, setActiveTab] = useState<MemoriesTab>("camera"); // useState<MemoriesTab>("photos")
   const [photos, setPhotos] = useState<PhotoAsset[]>(() => {
     if (propPhotos && propPhotos.length > 0) return propPhotos;
     return loadPhotos(storage);
@@ -63,6 +63,12 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<PhotoCategory>("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Search & Header controls
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
+  const [isOnThisDayModalOpen, setIsOnThisDayModalOpen] = useState<boolean>(false);
 
   // Sync when propPhotos updates
   useEffect(() => {
@@ -245,87 +251,169 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
     setDeleteConfirmId(null);
   };
 
-  const filteredPhotos = filterPhotosByCategory(photos, activeCategory, favorites);
+  const searchedPhotos = searchQuery.trim()
+    ? photos.filter((p) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          (p.caption && p.caption.toLowerCase().includes(q)) ||
+          (p.effectiveCaptureDate && p.effectiveCaptureDate.includes(q)) ||
+          (p.altText && p.altText.toLowerCase().includes(q))
+        );
+      })
+    : photos;
+  const filteredPhotos = filterPhotosByCategory(searchedPhotos, activeCategory, favorites);
   const chronologicalGroups = groupPhotosChronologically(filteredPhotos);
   const onThisDayGroups = groupPhotosOnThisDay(photos);
   const recentMemories = getRecentMemories(photos, 8);
 
   return (
     <div className="memoriesContainer" ref={containerRef} data-theme="love">
-      {/* 1. Header & Actions */}
-      <header className="memoriesHeader">
-        <h2 className="memoriesHeaderTitle">
-          Memories & <span>Moments</span> ✿
-        </h2>
-        <p className="memoriesSubtitle">
-          A treasured collection of smiles, milestones, and celebration days
-        </p>
+      {/* 1. Snapchat-Inspired Header: Wordmark "Meerah ✿", Search Icon, Notifications/Profile Icon */}
+      <header className="memoriesSnapHeader">
+        <div className="memoriesHeaderLeft">
+          <span className="memoriesWordmark">
+            Meerah <i>✿</i>
+          </span>
+          <span className="memoriesHeaderTagline">Memories &amp; Moments</span>
+        </div>
 
-        {/* Global Action Button: Take / Add Photo */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+        <div className="memoriesHeaderRight">
+          {/* Search Toggle Icon */}
           <button
             type="button"
-            className="memoriesTabButton"
-            style={{
-              background: "linear-gradient(135deg, var(--memories-rose), var(--memories-red))",
-              color: "#ffffff",
-              border: "none",
-              fontWeight: 700,
-            }}
-            onClick={() => setIsPhotoUploadOpen(true)}
-            aria-label="Add or Take a Photo"
+            className={`memoriesHeaderIconBtn ${isSearchOpen ? "isActive" : ""}`}
+            onClick={() => setIsSearchOpen((prev) => !prev)}
+            aria-label="Search memories"
+            title="Search photos & memories"
           >
-            <span>📷</span>
-            <span>Add / Take Photo</span>
+            <span aria-hidden="true">🔍</span>
           </button>
+
+          {/* Notifications / Profile Icon */}
+          <div className="memoriesNotifWrap">
+            <button
+              type="button"
+              className="memoriesHeaderIconBtn memoriesProfileNotifBtn"
+              onClick={() => setIsNotifOpen((prev) => !prev)}
+              aria-label="Notifications and Profile"
+              title="Notifications and Profile"
+            >
+              <span aria-hidden="true">🔔</span>
+              <span className="memoriesNotifDot" aria-hidden="true" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isNotifOpen && (
+              <div className="memoriesDropdownMenu" role="menu" aria-label="Memories notifications and shortcuts">
+                <div className="memoriesDropdownHeader">
+                  <h4>Activity &amp; Profile ✿</h4>
+                  <button
+                    type="button"
+                    className="memoriesDropdownClose"
+                    onClick={() => setIsNotifOpen(false)}
+                    aria-label="Close menu"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="memoriesDropdownList">
+                  <div className="memoriesDropdownItem">
+                    <span className="dropdownItemIcon">✨</span>
+                    <div>
+                      <p><strong>Snapchat Memories</strong> active</p>
+                      <small>Snaps, Camera Roll &amp; Albums</small>
+                    </div>
+                  </div>
+                  <div className="memoriesDropdownItem">
+                    <span className="dropdownItemIcon">📸</span>
+                    <div>
+                      <p><strong>{photos.length}</strong> moments in your world</p>
+                      <small>Cherished captures &amp; celebration days</small>
+                    </div>
+                  </div>
+                </div>
+                {onNavigateToProfile && (
+                  <button
+                    type="button"
+                    className="memoriesProfileLinkBtn"
+                    onClick={() => {
+                      setIsNotifOpen(false);
+                      onNavigateToProfile();
+                    }}
+                  >
+                    <span>View Meerah&rsquo;s Profile 👤</span>
+                    <span>→</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* 2. Top Navigation Tabs */}
+      {/* Expandable Search Input Bar */}
+      {isSearchOpen && (
+        <div className="memoriesSearchBar" role="search">
+          <span className="memoriesSearchIcon" aria-hidden="true">🔍</span>
+          <input
+            type="text"
+            className="memoriesSearchInput"
+            placeholder="Search by caption, date, or moment…"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (activeTab === "snaps" || activeTab === "camera") {
+                setActiveTab("camera-roll");
+              }
+            }}
+            autoFocus
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="memoriesSearchClearBtn"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 2. Snapchat-Style Top Navigation Tabs: Snaps, Camera Roll, Stories, Albums */}
       <nav className="memoriesTabs" role="tablist" aria-label="Memories navigation">
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === "camera"}
-          className={`memoriesTabButton ${activeTab === "camera" ? "active" : ""}`}
-          onClick={() => setActiveTab("camera")}
+          aria-selected={activeTab === "snaps" || activeTab === "camera"}
+          className={`memoriesTabButton ${activeTab === "snaps" || activeTab === "camera" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("camera");
+            setActiveTab("snaps");
+          }}
         >
-          <span>📸 Snap Camera</span>
+          <span>📸 Snaps</span>
         </button>
 
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === "photos" || activeTab === "all-photos"}
-          className={`memoriesTabButton ${activeTab === "photos" || activeTab === "all-photos" ? "active" : ""}`}
-          onClick={() => setActiveTab("photos")}
+          aria-selected={
+            activeTab === "camera-roll" || activeTab === "photos" || activeTab === "all-photos"
+          }
+          className={`memoriesTabButton ${
+            activeTab === "camera-roll" || activeTab === "photos" || activeTab === "all-photos"
+              ? "active"
+              : ""
+          }`}
+          onClick={() => {
+            setActiveTab("photos");
+            setActiveTab("camera-roll");
+          }}
         >
-          <span>All Photos</span>
+          <span>🖼️ Camera Roll</span>
           <span className="memoriesTabCount">{photos.length}</span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "on-this-day"}
-          className={`memoriesTabButton ${activeTab === "on-this-day" ? "active" : ""}`}
-          onClick={() => setActiveTab("on-this-day")}
-        >
-          <span>On This Day</span>
-          <span className="memoriesTabCount">
-            {onThisDayGroups.reduce((acc, g) => acc + g.photos.length, 0)}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "albums"}
-          className={`memoriesTabButton ${activeTab === "albums" ? "active" : ""}`}
-          onClick={() => setActiveTab("albums")}
-        >
-          <span>Albums</span>
-          <span className="memoriesTabCount">{albums.length}</span>
         </button>
 
         <button
@@ -335,8 +423,19 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
           className={`memoriesTabButton ${activeTab === "stories" ? "active" : ""}`}
           onClick={() => setActiveTab("stories")}
         >
-          <span>Stories</span>
+          <span>✿ Stories</span>
           <span className="memoriesTabCount">{stories.length}</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "albums"}
+          className={`memoriesTabButton ${activeTab === "albums" ? "active" : ""}`}
+          onClick={() => setActiveTab("albums")}
+        >
+          <span>📁 Albums</span>
+          <span className="memoriesTabCount">{albums.length}</span>
         </button>
       </nav>
 
@@ -405,23 +504,73 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
 
       {/* 3. Tab Contents */}
 
-      {/* TAB 0: SNAPCHAT CAMERA DEFAULT EXPERIENCE */}
-      {activeTab === "camera" && (
-        <section className="memoriesCameraSection" aria-label="Live Camera and Capture Experience">
-          <CameraPanel
-            onCaptureAdded={(photo) => {
-              setPhotos((prev) => [photo, ...prev.filter((p) => p.id !== photo.id)]);
-              setActiveTab("photos");
-            }}
-            onOpenGallery={() => setActiveTab("photos")}
-            onNavigateToProfile={onNavigateToProfile}
-            latestPhotoUrl={photos[0]?.url}
-          />
-        </section>
+      {/* TAB 0: SNAPCHAT CAMERA & RECENT MEMORIES */}
+      {(activeTab === "snaps" || activeTab === "camera") && (
+        <div className="memoriesSnapsWrapper">
+          <section className="memoriesCameraSection" aria-label="Snapchat Camera Experience">
+            <CameraPanel
+              onCaptureAdded={(photo) => {
+                setPhotos((prev) => [photo, ...prev.filter((p) => p.id !== photo.id)]);
+              }}
+              onOpenGallery={() => setActiveTab("camera-roll")}
+              onOpenOnThisDay={() => {
+                setIsOnThisDayModalOpen(true);
+                setActiveTab("on-this-day");
+              }}
+              onNavigateToProfile={onNavigateToProfile}
+              latestPhotoUrl={photos[0]?.url}
+            />
+          </section>
+
+          {/* Recent Memories Section with Thumbnail Grid and "See All →" button */}
+          <section className="memoriesRecentSection" aria-label="Recent Memories">
+            <div className="memoriesRecentHeader">
+              <div className="memoriesRecentTitleWrap">
+                <span className="memoriesRecentSparkle" aria-hidden="true">✨</span>
+                <h3 className="memoriesRecentTitle">Recent Memories</h3>
+              </div>
+              <button
+                type="button"
+                className="memoriesSeeAllBtn"
+                onClick={() => setActiveTab("camera-roll")}
+                aria-label="See all photos in Camera Roll"
+              >
+                <span>See All</span>
+                <span className="seeAllArrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+
+            <div className="memoriesRecentGrid">
+              {recentMemories.map((photo) => (
+                <button
+                  type="button"
+                  key={photo.id}
+                  className="memoriesRecentCard"
+                  onClick={() => handlePhotoClick(photo)}
+                  aria-label={`View photo: ${photo.caption || "Birthday Memory"}`}
+                >
+                  <div className="recentCardThumbWrap">
+                    <img
+                      src={toCompactDerivativeUrl(photo.thumbnailUrl || photo.url)}
+                      alt={photo.altText || photo.caption || "Recent memory"}
+                      loading="lazy"
+                    />
+                    <div className="recentCardOverlay" aria-hidden="true">
+                      <span>✿</span>
+                    </div>
+                  </div>
+                  <span className="recentCardCaption">
+                    {photo.caption || formatEffectiveDate(photo.effectiveCaptureDate)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
       )}
 
-      {/* TAB 1: ALL PHOTOS (Chronological Timeline) */}
-      {(activeTab === "photos" || activeTab === "all-photos") && (
+      {/* TAB 1: CAMERA ROLL (Chronological Timeline) */}
+      {(activeTab === "camera-roll" || activeTab === "photos" || activeTab === "all-photos") && (
         <section className="memoriesTimeline" aria-label="Chronological photo timeline">
           {/* Category Filters Bar */}
           <div className="memoriesCategoryFilters" role="radiogroup" aria-label="Photo Category Filters">
@@ -1237,6 +1386,87 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
         availablePhotos={photos}
         storage={storage}
       />
+
+      {/* 7. On This Day Modal Tray */}
+      {isOnThisDayModalOpen && (
+        <div
+          className="memoriesModalBackdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="On This Day Memories"
+          onClick={() => setIsOnThisDayModalOpen(false)}
+        >
+          <div className="memoriesOnThisDayCard" onClick={(e) => e.stopPropagation()}>
+            <div className="memoriesModalHeader">
+              <div className="memoriesModalTitleWrap">
+                <span className="memoriesModalBadge">🗓️ Special Milestones</span>
+                <h3 className="memoriesModalTitle">On This Day ✿</h3>
+                <p className="memoriesModalSubtitle">Moments captured on this calendar day across the years</p>
+              </div>
+              <button
+                type="button"
+                className="memoriesModalCloseBtn"
+                onClick={() => setIsOnThisDayModalOpen(false)}
+                aria-label="Close On This Day"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="memoriesOnThisDayBody">
+              {onThisDayGroups.length > 0 ? (
+                onThisDayGroups.map((group) => (
+                  <div key={group.year} className="onThisDayYearSection">
+                    <div className="onThisDayYearHeader">
+                      <span className="onThisDayYearBadge">{group.label}</span>
+                      <span className="onThisDayYearDate">{group.year}</span>
+                    </div>
+                    <div className="onThisDayGrid">
+                      {group.photos.map((photo) => (
+                        <button
+                          type="button"
+                          key={photo.id}
+                          className="onThisDayPhotoCard"
+                          onClick={() => {
+                            setIsOnThisDayModalOpen(false);
+                            handlePhotoClick(photo);
+                          }}
+                          aria-label={`View photo: ${photo.caption || "Birthday Memory"}`}
+                        >
+                          <img
+                            src={toCompactDerivativeUrl(photo.thumbnailUrl || photo.url)}
+                            alt={photo.caption || "Birthday Memory"}
+                            loading="lazy"
+                          />
+                          <span className="onThisDayPhotoCaption">
+                            {photo.caption || formatEffectiveDate(photo.effectiveCaptureDate)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="onThisDayEmptyState">
+                  <span className="onThisDayEmptyIcon" aria-hidden="true">✿</span>
+                  <h4>More moments blooming soon!</h4>
+                  <p>Every photo you capture today will bloom here on your future birthdays.</p>
+                  <button
+                    type="button"
+                    className="button rose memoriesBtn"
+                    onClick={() => {
+                      setIsOnThisDayModalOpen(false);
+                      setActiveTab("snaps");
+                    }}
+                  >
+                    Take a Snap Now ✿
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeStory && (
         <StoryViewer
