@@ -348,6 +348,20 @@ export function MusicRoom({
       } catch {
         if (!cancelled) {
           setCatalogueMode("fallback");
+          try {
+            if (typeof window !== "undefined") {
+              const storedLikes = localStorage.getItem("birthday_music_liked_ids");
+              if (storedLikes) {
+                const ids = JSON.parse(storedLikes);
+                if (Array.isArray(ids)) {
+                  const set = new Set(ids);
+                  setSeedTracks((prev) =>
+                    prev.map((t) => ({ ...t, isFavorite: set.has(t.id) }))
+                  );
+                }
+              }
+            }
+          } catch {}
         }
       }
     }
@@ -879,11 +893,20 @@ export function MusicRoom({
       if (!track.isLocal && catalogueMode === "loaded") {
         store.toggleLike(trackId).catch(() => undefined);
       } else {
-        setSeedTracks((prev) =>
-          prev.map((t) =>
+        setSeedTracks((prev) => {
+          const updated = prev.map((t) =>
             t.id === trackId ? { ...t, isFavorite: !t.isFavorite } : t
-          )
-        );
+          );
+          try {
+            if (typeof window !== "undefined") {
+              const favIds = updated.filter((t) => t.isFavorite).map((t) => t.id);
+              localStorage.setItem("birthday_music_liked_ids", JSON.stringify(favIds));
+            }
+          } catch {
+            // Ignore
+          }
+          return updated;
+        });
       }
     },
     [tracks, catalogueMode, store]
@@ -1809,7 +1832,7 @@ export function MusicRoom({
               <p className="music-empty-desc">
                 {searchQuery
                   ? `We couldn't find anything matching "${searchQuery}". Try another artist or song title.`
-                  : activeFilter === "favorites"
+                  : activeFilter === "favorites" || activeFilter === "liked"
                   ? "You haven't marked any favorites yet. Click the heart icon ♡ on any song to save it here!"
                   : isCustomPlaylistSelected
                   ? "This playlist has no songs yet. Browse the catalogue and click ＋ to add your favorites!"

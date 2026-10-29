@@ -333,6 +333,7 @@ export async function fetchGooglePhotosAlbum(
 
       const asset: PhotoAsset = {
         id: stableId,
+        galleryCategory: "main",
         contentHash: computeStableHash(baseUrl),
         mediaKind: "image",
         url: derivatives.url,

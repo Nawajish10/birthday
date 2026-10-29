@@ -1,6 +1,7 @@
 import type { PhotoAsset } from "../types/media-contracts.ts";
 
 export const SPECIAL_POPUP_PHOTO: PhotoAsset = {
+  galleryCategory: "main",
   "id": "gphoto_special_birthday_popup",
   "contentHash": "special_birthday_popup_vnaqyefkumm2goqx7",
   "mediaKind": "image",
@@ -26,7 +27,7 @@ export const SPECIAL_POPUP_PHOTO: PhotoAsset = {
   }
 };
 
-export const GOOGLE_PHOTOS_DATA: PhotoAsset[] = [
+const RAW_GOOGLE_PHOTOS_DATA: PhotoAsset[] = [
   {
     "id": "gphoto_special_birthday_popup",
     "contentHash": "special_birthday_popup_vnaqyefkumm2goqx7",
@@ -3221,5 +3222,10 @@ export const GOOGLE_PHOTOS_DATA: PhotoAsset[] = [
     }
   }
 ];
+
+export const GOOGLE_PHOTOS_DATA: PhotoAsset[] = RAW_GOOGLE_PHOTOS_DATA.map((p) => ({
+  ...p,
+  galleryCategory: "main" as const,
+}));
 
 export const FIRST_GOOGLE_PHOTO: PhotoAsset = SPECIAL_POPUP_PHOTO;

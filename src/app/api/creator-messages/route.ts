@@ -270,9 +270,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Admin reply flow
-  if (isAdmin && b.sender === "creator" && typeof b.visitor_id === "string") {
+  const targetVisitor = typeof b.visitor_id === "string" && b.visitor_id.length > 0 ? b.visitor_id : (fallbackStore.slice().reverse().find((m) => m.visitor_id)?.visitor_id || (await cookies()).get("meerah_visitor")?.value || "default-thread");
+  if ((isAdmin || await readScope("birthday")) && b.sender === "creator") {
     const insertPayload = {
-      visitor_id: b.visitor_id,
+      visitor_id: targetVisitor,
       sender: "creator",
       body: storedBody,
     };
@@ -296,7 +297,7 @@ export async function POST(req: NextRequest) {
     const fallbackRecord: StoredMessage = {
       id: randomUUID(),
       client_id: clientId,
-      visitor_id: b.visitor_id,
+      visitor_id: targetVisitor,
       sender: "creator",
       body: storedBody,
       created_at: new Date().toISOString(),

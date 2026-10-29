@@ -2050,3 +2050,115 @@
     padding: 0.5rem 0.65rem;
   }
 }
+
+/* ==========================================================================
+   Enhanced Message Bubbles, Timestamps, Composer & Scroll-to-Latest
+   ========================================================================== */
+
+/* Floating Scroll to Latest Button */
+.chatScrollBottomFloatingBtn {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(38, 19, 43, 0.92);
+  border: 1px solid rgba(247, 168, 184, 0.45);
+  border-radius: var(--chat-radius-pill);
+  color: var(--chat-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 10px rgba(247, 168, 184, 0.2);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: floatingBounce 0.25s ease-out;
+}
+
+@keyframes floatingBounce {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.chatScrollBottomFloatingBtn:hover {
+  background: rgba(58, 31, 59, 0.98);
+  border-color: var(--chat-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(247, 168, 184, 0.35);
+}
+
+.scrollBottomArrow {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.scrollBottomLabel {
+  letter-spacing: 0.02em;
+}
+
+/* Refined Message Bubbles & Romantic Contrast */
+.chatBubble {
+  max-width: 82%;
+  position: relative;
+  word-break: break-word;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.bubbleIncoming {
+  background: linear-gradient(145deg, rgba(46, 23, 52, 0.92) 0%, rgba(35, 17, 40, 0.96) 100%);
+  border: 1px solid rgba(255, 214, 230, 0.14);
+  border-radius: 18px 18px 18px 4px;
+  color: var(--chat-text);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.32);
+}
+
+.bubbleOutgoing {
+  background: linear-gradient(145deg, rgba(74, 38, 77, 0.88) 0%, rgba(58, 29, 61, 0.95) 100%);
+  border: 1px solid rgba(247, 168, 184, 0.38);
+  border-radius: 18px 18px 4px 18px;
+  color: var(--chat-text);
+  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.35), 0 0 14px rgba(247, 168, 184, 0.09);
+}
+
+/* Crisp Timestamps & Delivery Status Alignment */
+.chatBubbleFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.chatMessageTime {
+  color: var(--chat-text-subtle);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
+/* Mobile Virtual Keyboard & Viewport Fixes */
+@media (max-width: 768px) {
+  .chatTextInput {
+    font-size: 16px !important; /* Prevents auto-zoom in iOS Safari */
+    line-height: 1.4;
+  }
+
+  .chatTimelineContainer {
+    overflow-anchor: auto;
+    padding: 0.85rem 0.75rem;
+  }
+
+  .chatBubble {
+    max-width: 88%;
+  }
+
+  .chatScrollBottomFloatingBtn {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
