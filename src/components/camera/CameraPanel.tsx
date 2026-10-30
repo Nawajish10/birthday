@@ -46,6 +46,7 @@ export interface CameraPanelProps {
   isModal?: boolean;
   className?: string;
   latestPhotoUrl?: string;
+  autoStart?: boolean;
 }
 
 export function CameraPanel({
@@ -58,6 +59,7 @@ export function CameraPanel({
   isModal = false,
   className = "",
   latestPhotoUrl,
+  autoStart = true,
 }: CameraPanelProps) {
   // Modes: "camera" | "upload"
   const [ingestionMode, setIngestionMode] = useState<"camera" | "upload">("camera");
@@ -233,6 +235,17 @@ export function CameraPanel({
       onError?.(friendlyMessage);
     }
   };
+
+  // Auto-start live camera stream when mounted in camera mode
+  useEffect(() => {
+    let mounted = true;
+    if (autoStart && ingestionMode === "camera" && !cameraActive && !capture && !isCameraBlocked) {
+      openCamera().catch(() => {});
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [autoStart]);
 
   // Flip camera between front ("user") and rear ("environment")
   const toggleFacingMode = () => {
@@ -598,6 +611,8 @@ export function CameraPanel({
             onClick={() => {
               setIngestionMode("camera");
               setErrorMessage(null);
+              setIsCameraBlocked(false);
+              openCamera().catch(() => {});
             }}
           >
             <span aria-hidden="true">📷</span> Live Camera
@@ -957,48 +972,84 @@ export function CameraPanel({
                   </div>
                 )}
 
-                {/* Camera Viewport with Featured Photo Framing when Idle */}
+                {/* Camera Viewport with Featured Photo Framing when Idle or Fallback UI */}
                 {!cameraActive && (
-                  <div
-                    className="cameraFeaturedFraming"
-                    onClick={() => openCamera()}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        openCamera();
-                      }
-                    }}
-                    aria-label="Tap to open live camera"
-                  >
-                    {featuredPhotoUrl ? (
-                      <div className="cameraFeaturedPhotoBackdrop">
-                        <img src={featuredPhotoUrl} alt="" className="cameraFeaturedBlur" aria-hidden="true" />
-                        <div className="cameraFeaturedCard">
-                          <img src={featuredPhotoUrl} alt="Featured Memory" className="cameraFeaturedImage" />
-                          <div className="cameraViewfinderOverlay" aria-hidden="true">
-                            <span className="viewfinderCorner tl" />
-                            <span className="viewfinderCorner tr" />
-                            <span className="viewfinderCorner bl" />
-                            <span className="viewfinderCorner br" />
-                            <div className="cameraViewfinderTag">Meerah ✿ Memories</div>
+                  isCameraBlocked ? (
+                    <div className="cameraPermissionFallback" role="alert" aria-label="Camera permission or fallback">
+                      <div className="cameraFallbackCard">
+                        <span className="cameraFallbackIcon" aria-hidden="true">🔒</span>
+                        <h4 className="cameraFallbackTitle">Camera Access Needed</h4>
+                        <p className="cameraFallbackMsg">
+                          {errorMessage || "Camera permission is denied or unavailable on this device. You can choose a photo from your device instead."}
+                        </p>
+                        <div className="cameraFallbackActions">
+                          <button
+                            type="button"
+                            className="cameraInlineActionBtn fallbackRetryBtn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsCameraBlocked(false);
+                              openCamera().catch(() => {});
+                            }}
+                          >
+                            🔄 Try Again
+                          </button>
+                          <button
+                            type="button"
+                            className="cameraInlineActionBtn fallbackUploadBtn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIngestionMode("upload");
+                              fileInputRef.current?.click();
+                            }}
+                          >
+                            📁 Choose Photo from Device →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="cameraFeaturedFraming"
+                      onClick={() => openCamera()}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openCamera();
+                        }
+                      }}
+                      aria-label="Tap to open live camera"
+                    >
+                      {featuredPhotoUrl ? (
+                        <div className="cameraFeaturedPhotoBackdrop">
+                          <img src={featuredPhotoUrl} alt="" className="cameraFeaturedBlur" aria-hidden="true" />
+                          <div className="cameraFeaturedCard">
+                            <img src={featuredPhotoUrl} alt="Featured Memory" className="cameraFeaturedImage" />
+                            <div className="cameraViewfinderOverlay" aria-hidden="true">
+                              <span className="viewfinderCorner tl" />
+                              <span className="viewfinderCorner tr" />
+                              <span className="viewfinderCorner bl" />
+                              <span className="viewfinderCorner br" />
+                              <div className="cameraViewfinderTag">Meerah ✿ Memories</div>
+                            </div>
+                          </div>
+                          <div className="cameraFeaturedPrompt">
+                            <span className="cameraShutterHintIcon" aria-hidden="true">📷</span>
+                            <span className="cameraFeaturedPromptTitle">Tap shutter to snap live ✿</span>
+                            <span className="cameraFeaturedPromptSub">or drop a photo here to preview</span>
                           </div>
                         </div>
-                        <div className="cameraFeaturedPrompt">
-                          <span className="cameraShutterHintIcon" aria-hidden="true">📷</span>
-                          <span className="cameraFeaturedPromptTitle">Tap shutter to snap live ✿</span>
-                          <span className="cameraFeaturedPromptSub">or drop a photo here to preview</span>
+                      ) : (
+                        <div className="cameraIdlePlaceholder">
+                          <div className="cameraIdleIcon" aria-hidden="true">📷</div>
+                          <h4>Tap shutter to snap ✿</h4>
+                          <p>Open your camera to make a sweet memory, or drag a photo here.</p>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="cameraIdlePlaceholder">
-                        <div className="cameraIdleIcon" aria-hidden="true">📷</div>
-                        <h4>Tap shutter to snap ✿</h4>
-                        <p>Open your camera to make a sweet memory, or drag a photo here.</p>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )
                 )}
 
                 {isInitializing && (

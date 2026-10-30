@@ -139,6 +139,36 @@
   transform: scale(1.04);
 }
 
+/* Fallback Polaroid Placeholder for Missing / Broken Assets */
+.memories-photo-fallback {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #FFF9EF 0%, #F5E8D3 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+  text-align: center;
+  color: var(--scrapbook-plum-dark, #624752);
+  gap: 6px;
+}
+
+.memories-fallback-icon {
+  font-size: 1.8rem;
+  color: var(--scrapbook-rose-deep, #D4798D);
+  line-height: 1;
+}
+
+.memories-fallback-title {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--scrapbook-plum-dark, #624752);
+  line-height: 1.2;
+}
+
 /* Video Badge */
 .memories-video-badge {
   position: absolute;

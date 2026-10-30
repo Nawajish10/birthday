@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function StudyError({
   error,
@@ -10,12 +11,23 @@ export default function StudyError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   useEffect(() => {
     console.error("Study Page Error:", error);
   }, [error]);
 
+  const handleRetry = () => {
+    startTransition(() => {
+      router.refresh();
+      reset();
+    });
+  };
+
   return (
     <div
+      className="study-error-container"
       style={{
         minHeight: "70vh",
         display: "flex",
@@ -56,7 +68,10 @@ export default function StudyError({
       <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
         <button
           type="button"
-          onClick={() => reset()}
+          onClick={handleRetry}
+          disabled={isPending}
+          className="study-retry-btn"
+          aria-label="Try Again"
           style={{
             background: "linear-gradient(135deg, #B6536F, #8F3A53)",
             color: "#FFFFFF",
@@ -65,14 +80,18 @@ export default function StudyError({
             padding: "10px 24px",
             fontSize: "14px",
             fontWeight: 600,
-            cursor: "pointer",
+            cursor: isPending ? "wait" : "pointer",
             boxShadow: "0 4px 12px rgba(182, 83, 111, 0.25)",
+            opacity: isPending ? 0.75 : 1,
+            transition: "all 0.2s ease",
           }}
         >
-          Try Again ✿
+          {isPending ? "Retrying..." : "Try Again ✿"}
         </button>
         <Link
           href="/"
+          className="study-home-btn"
+          aria-label="Return Home"
           style={{
             background: "#F5EBE6",
             color: "#523742",
@@ -82,9 +101,12 @@ export default function StudyError({
             fontSize: "14px",
             fontWeight: 600,
             textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
           }}
         >
-          Back to Home &rarr;
+          Return Home &rarr;
         </Link>
       </div>
     </div>

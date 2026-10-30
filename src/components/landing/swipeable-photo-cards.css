@@ -131,6 +131,15 @@
   display: block;
 }
 
+.peek-thumbnail-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FBF4E6;
+  color: var(--scrapbook-rose-deep, #D4798D);
+  font-size: 1.25rem;
+}
+
 @media (min-width: 768px) {
   .photo-card-peek {
     display: block;

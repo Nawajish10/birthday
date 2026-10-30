@@ -534,6 +534,15 @@ export async function runImport(options: ImportOptions): Promise<ImportReport> {
     // SHA-256 Checksum
     const checksum = crypto.createHash("sha256").update(fileBuffer).digest("hex");
 
+    // Dry Run check - validate formats, sizes, durations, and checksums without live DB/storage calls
+    if (dryRun) {
+      console.log(
+        `${prefix} [VALIDATED] "${item.title}" (${mimeType}, ${(stats.size / 1024 / 1024).toFixed(2)} MB, sha256:${checksum.slice(0, 10)}...)`
+      );
+      report.validated++;
+      continue;
+    }
+
     // Deduplication check
     let isDuplicate = false;
     if (adminDb) {
@@ -581,15 +590,6 @@ export async function runImport(options: ImportOptions): Promise<ImportReport> {
 
     if (isDuplicate) {
       report.skipped++;
-      continue;
-    }
-
-    // Dry Run check
-    if (dryRun) {
-      console.log(
-        `${prefix} [VALIDATED] "${item.title}" (${mimeType}, ${(stats.size / 1024 / 1024).toFixed(2)} MB, sha256:${checksum.slice(0, 10)}...)`
-      );
-      report.validated++;
       continue;
     }
 

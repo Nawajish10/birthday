@@ -179,4 +179,78 @@ describe("Mobile Responsiveness & Viewport Audit", () => {
     const experienceFooters = (experienceSrc.match(/<footer/g) || []).length;
     assert.strictEqual(experienceFooters, 1, "Experience must contain exactly one <footer>");
   });
+
+  it("verifies all 7 core routes mount authoritative navigation and RouteShell / Experience", () => {
+    const routesConfig = [
+      { route: "src/app/page.tsx", expectedComponent: "Experience" },
+      { route: "src/app/memories/page.tsx", expectedComponent: "MemoriesClient" },
+      { route: "src/app/profile/page.tsx", expectedComponent: "ProfileClient" },
+      { route: "src/app/music/page.tsx", expectedComponent: "MusicClient" },
+      { route: "src/app/study/page.tsx", expectedComponent: "StudyClient" },
+      { route: "src/app/games/page.tsx", expectedComponent: "GamesClient" },
+      { route: "src/app/chat/page.tsx", expectedComponent: "ChatClient" },
+    ];
+
+    for (const { route, expectedComponent } of routesConfig) {
+      const fullPath = path.resolve(process.cwd(), route);
+      assert.ok(fs.existsSync(fullPath), `Route file ${route} must exist`);
+      const src = fs.readFileSync(fullPath, "utf-8");
+      assert.ok(src.includes(expectedComponent), `${route} must render ${expectedComponent}`);
+    }
+
+    // Verify all 6 route clients wrap with RouteShell
+    const clientWrappers = [
+      "src/app/memories/MemoriesClient.tsx",
+      "src/app/profile/ProfileClient.tsx",
+      "src/app/music/MusicClient.tsx",
+      "src/app/study/StudyClient.tsx",
+      "src/app/games/GamesClient.tsx",
+      "src/app/chat/ChatClient.tsx",
+    ];
+
+    for (const clientPath of clientWrappers) {
+      const fullPath = path.resolve(process.cwd(), clientPath);
+      assert.ok(fs.existsSync(fullPath), `Client file ${clientPath} must exist`);
+      const src = fs.readFileSync(fullPath, "utf-8");
+      assert.ok(src.includes("<RouteShell"), `${clientPath} must wrap content inside <RouteShell>`);
+    }
+  });
+
+  it("verifies responsive viewports down to 320px (iPhone SE) and up to 430px (iPhone 16 Pro Max)", () => {
+    const bottomNavCssPath = path.resolve(process.cwd(), "src/components/shared/bottom-nav.css");
+    const bottomNavCss = fs.readFileSync(bottomNavCssPath, "utf-8");
+
+    // 320px - 340px narrow viewport support
+    assert.ok(bottomNavCss.includes("@media (max-width: 340px)"), "Must support 320px iPhone SE");
+    // 360px - 380px compact mobile support
+    assert.ok(bottomNavCss.includes("@media (max-width: 380px)"), "Must support 360px Android devices");
+
+    // Touch targets >= 44px even on smallest 320px viewport
+    assert.ok(bottomNavCss.includes("min-height: 44px"), "Smallest viewport button min-height must be >= 44px");
+
+    // Safe area inset bottom
+    assert.ok(bottomNavCss.includes("env(safe-area-inset-bottom)"), "Must observe safe-area-inset-bottom for home indicator");
+  });
+
+  it("verifies prefers-reduced-motion across all 7 route panels", () => {
+    const panelsCss = [
+      "src/components/shared/bottom-nav.css",
+      "src/components/memories/memories.css",
+      "src/components/profile/profile.css",
+      "src/components/music/music-room.css",
+      "src/components/study/study.css",
+      "src/components/games/games.css",
+      "src/components/chat/chat.css",
+    ];
+
+    for (const cssRelPath of panelsCss) {
+      const fullPath = path.resolve(process.cwd(), cssRelPath);
+      assert.ok(fs.existsSync(fullPath), `${cssRelPath} must exist`);
+      const css = fs.readFileSync(fullPath, "utf-8");
+      assert.ok(
+        css.includes("@media (prefers-reduced-motion: reduce)"),
+        `${cssRelPath} must support @media (prefers-reduced-motion: reduce)`
+      );
+    }
+  });
 });

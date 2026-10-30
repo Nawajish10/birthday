@@ -99,3 +99,56 @@ test("Snapchat Camera UI: CSS enforces 72px shutter button, pulse ring, and 80-9
   assert.ok(css.includes(".cameraTopFloatingBar"), "Must style .cameraTopFloatingBar");
   assert.ok(css.includes(".cameraGalleryThumbWrap"), "Must style .cameraGalleryThumbWrap");
 });
+
+test("Snapchat Camera UI: MemoriesCamera component provides full-screen camera integration and clean unmount", () => {
+  const cameraCompPath = path.resolve(process.cwd(), "src/components/memories/MemoriesCamera.tsx");
+  assert.ok(fs.existsSync(cameraCompPath), "MemoriesCamera.tsx must exist");
+  const content = fs.readFileSync(cameraCompPath, "utf-8");
+
+  assert.ok(content.includes("CameraPanel"), "MemoriesCamera must render CameraPanel");
+  assert.ok(content.includes("stopMediaTracks"), "MemoriesCamera must export stopMediaTracks");
+  assert.ok(content.includes('data-theme="love"'), "MemoriesCamera must enforce Love Theme styling");
+});
+
+test("Snapchat Camera UI: MemoriesPanel timeline provides clear Back to Camera button returning to camera view", () => {
+  const panelPath = path.resolve(process.cwd(), "src/components/memories/MemoriesPanel.tsx");
+  const content = fs.readFileSync(panelPath, "utf-8");
+
+  assert.ok(
+    content.includes("memoriesBackToCameraBtn"),
+    "MemoriesPanel must render memoriesBackToCameraBtn in saved memories library"
+  );
+  assert.ok(
+    content.includes('setActiveTab("camera")'),
+    "Back to Camera button must invoke setActiveTab('camera')"
+  );
+
+  const cssPath = path.resolve(process.cwd(), "src/components/memories/memories.css");
+  const css = fs.readFileSync(cssPath, "utf-8");
+  assert.ok(
+    css.includes(".memoriesBackToCameraBtn"),
+    "memories.css must define .memoriesBackToCameraBtn styles"
+  );
+  assert.ok(
+    css.includes("min-height: 44px"),
+    "memories.css must ensure accessible min 44px touch targets"
+  );
+});
+
+test("Snapchat Camera UI: CameraPanel provides autoStart live camera capability and permission fallback UI", () => {
+  const cameraPath = path.resolve(process.cwd(), "src/components/camera/CameraPanel.tsx");
+  const content = fs.readFileSync(cameraPath, "utf-8");
+
+  assert.ok(
+    content.includes("autoStart = true"),
+    "CameraPanel must default autoStart to true for direct camera opening"
+  );
+  assert.ok(
+    content.includes("cameraPermissionFallback"),
+    "CameraPanel must provide cameraPermissionFallback UI for permission denied or unavailable camera"
+  );
+  assert.ok(
+    content.includes("stopStream"),
+    "CameraPanel must stop streams and clear tracks cleanly"
+  );
+});

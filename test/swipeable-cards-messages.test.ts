@@ -156,7 +156,10 @@ describe("Section 3: Swipeable Photo Cards — Component & Helper Contracts", ()
     assert.ok(html.includes('tabindex="0"'), "Is keyboard focusable");
 
     // Assert visible position indicator
-    assert.ok(html.includes("2 of 6"), "Displays 2 of 6 position indicator");
+    assert.ok(
+      html.includes(`2 of ${DEFAULT_PHOTOS.length}`),
+      `Displays 2 of ${DEFAULT_PHOTOS.length} position indicator`
+    );
 
     // Assert polaroid card framing
     assert.ok(html.includes("polaroid-card"), "Has polaroid-card class");

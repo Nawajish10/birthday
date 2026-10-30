@@ -1528,3 +1528,92 @@
 .cameraOnThisDayActionBtn:active {
   transform: scale(0.96);
 }
+
+/* Permission Fallback Viewport */
+.cameraPermissionFallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(26, 15, 31, 0.96);
+  backdrop-filter: blur(14px);
+  z-index: 2;
+  text-align: center;
+}
+
+.cameraFallbackCard {
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.cameraFallbackIcon {
+  font-size: 38px;
+  display: inline-block;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+}
+
+.cameraFallbackTitle {
+  font-family: var(--cam-font-display);
+  font-size: 20px;
+  margin: 0;
+  color: var(--cam-text);
+}
+
+.cameraFallbackMsg {
+  font-size: 13px;
+  color: var(--cam-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.cameraFallbackActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.cameraFallbackActions .cameraInlineActionBtn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0 18px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cameraFallbackActions .fallbackRetryBtn {
+  background: var(--cam-primary);
+  color: #1a0f1f;
+  box-shadow: 0 4px 14px rgba(247, 168, 184, 0.3);
+}
+
+.cameraFallbackActions .fallbackRetryBtn:hover {
+  background: var(--cam-primary-strong);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.cameraFallbackActions .fallbackUploadBtn {
+  background: rgba(58, 31, 59, 0.85);
+  border: 1px solid var(--cam-border);
+  color: var(--cam-secondary);
+}
+
+.cameraFallbackActions .fallbackUploadBtn:hover {
+  border-color: var(--cam-primary);
+  color: #fff;
+  transform: translateY(-1px);
+}
+

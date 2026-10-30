@@ -222,9 +222,7 @@ export function ChatTimeline({
                 {/* Sender badge for context */}
                 <div className="chatSenderHeader">
                   <span className="chatSenderName">
-                    {msg.sender === "creator"
-    ? (currentUserRole === "creator" ? "BABA (You)" : "BABA ♡")
-    : (currentUserRole === "recipient" ? "him (You)" : "him")}
+                    {msg.sender === currentUserRole ? "You" : "him"}
                   </span>
                   <time className="chatMessageTime" dateTime={msg.createdAt}>
                     {formatMessageTime(msg.createdAt)}
@@ -395,7 +393,7 @@ export function ChatTimeline({
                         {msg.status === "sent" && (
                           <span
                             className="chatCheckmark"
-                            title="Delivered"
+                            title="Sent"
                             aria-label="Delivered"
                           >
                             ✓

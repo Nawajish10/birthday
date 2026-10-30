@@ -827,9 +827,7 @@ export function ChatPanel({
           isSending={isSending}
           currentUserRole={activeRole}
           placeholder={
-            activeRole === "recipient"
-              ? "Type a message to BABA... ♡"
-              : `Type a message to ${activeConversation.id === "meerah" ? "him" : activeConversation.name}... ♡`
+            activeRole === "recipient" ? "Type a message to him... ♡" : "Type a message to him... ♡"
           }
         />
       </main>

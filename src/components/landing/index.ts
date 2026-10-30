@@ -30,6 +30,9 @@ export {
   DEFAULT_PHOTOS,
   SWIPE_THRESHOLD_PX,
   calculateSwipeDirection,
+  isValidMediaUrl,
+  isExcludedPhotoEntry,
+  selectDynamicPhotos,
   type SwipeablePhotoItem,
   type SwipeablePhotoCardsProps,
 } from "./SwipeablePhotoCards";
@@ -73,6 +76,7 @@ export {
   DEFAULT_MEMORIES_MAX_COUNT,
   EMPTY_MEMORIES_TITLE,
   EMPTY_MEMORIES_TEXT,
+  selectDynamicMemories,
   type MemoryPreviewItem,
   type MemoriesPreviewSectionProps,
   getMemoryAltText,
@@ -98,6 +102,33 @@ export {
   DEFAULT_CLOSING_SIGNOFF,
   type ClosingMessageSectionProps,
 } from "./ClosingMessageSection";
+
+// Everyday Sanctuary — Daily Reflections & Personal Reminders
+export {
+  DailyReflections,
+  AUTHENTIC_QURANIC_REFLECTIONS,
+  getReflectionForDate,
+  getReflectionByIndex,
+  type DailyReflectionItem,
+  type DailyReflectionsProps,
+} from "./DailyReflections";
+
+export {
+  PersonalReminders,
+  DEFAULT_STORAGE_KEY as DEFAULT_REMINDERS_STORAGE_KEY,
+  DEFAULT_STARTER_REMINDERS,
+  formatReminderBadge,
+  createReminder,
+  updateReminder,
+  deleteReminder,
+  toggleReminder,
+  sortRemindersByDate,
+  loadStoredReminders,
+  saveStoredReminders,
+  type PersonalReminderItem,
+  type ReminderCategory,
+  type PersonalRemindersProps,
+} from "./PersonalReminders";
 
 // Legacy components preserved for existing test suites
 export {

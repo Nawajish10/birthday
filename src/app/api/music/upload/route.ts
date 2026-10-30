@@ -289,10 +289,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-      // Clean up uploaded audio on error
-      await adminDb.storage.from("birthday-audio").remove([storageKey]);
-      return NextResponse.json({ error: trackError.message }, { status: 500 });
-    }
 
     // 8. If playlist_id provided and valid, add to music_playlist_tracks or user_playlist_tracks
     if (playlist_id) {

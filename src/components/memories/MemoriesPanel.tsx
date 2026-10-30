@@ -513,7 +513,10 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
               onCaptureAdded={(photo) => {
                 setPhotos((prev) => [photo, ...prev.filter((p) => p.id !== photo.id)]);
               }}
-              onOpenGallery={() => setActiveTab("camera-roll")}
+              onOpenGallery={() => {
+                setActiveTab("photos");
+                setActiveTab("camera-roll");
+              }}
               onOpenOnThisDay={() => {
                 setIsOnThisDayModalOpen(true);
                 setActiveTab("on-this-day");
@@ -573,6 +576,33 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
       {/* TAB 1: CAMERA ROLL (Chronological Timeline) */}
       {(activeTab === "camera-roll" || activeTab === "photos" || activeTab === "all-photos") && (
         <section className="memoriesTimeline" aria-label="Chronological photo timeline">
+          {/* Back to Camera Shortcut Header */}
+          <div className="memoriesTimelineHeader">
+            <button
+              type="button"
+              className="memoriesBackToCameraBtn"
+              onClick={() => setActiveTab("camera")}
+              aria-label="Back to Camera"
+              title="Return to Camera view"
+            >
+              <span className="backArrow" aria-hidden="true">‹</span>
+              <span className="cameraIcon" aria-hidden="true">📷</span>
+              <span>Back to Camera</span>
+            </button>
+            <div className="memoriesTimelineHeaderMeta">
+              <span className="memoriesCountPill">{photos.length} Memories</span>
+            </div>
+            <button
+              type="button"
+              className="memoriesAddPhotoBtn"
+              onClick={() => setIsPhotoUploadOpen(true)}
+              aria-label="Add new photo memory"
+              title="Add a photo"
+            >
+              <span>+ Add Photo</span>
+            </button>
+          </div>
+
           {/* Category Filters Bar */}
           <div className="memoriesCategoryFilters" role="radiogroup" aria-label="Photo Category Filters">
             {CATEGORY_FILTERS.map((cat) => {
@@ -718,6 +748,19 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
       {/* TAB 2: ON THIS DAY */}
       {activeTab === "on-this-day" && (
         <section className="onThisDayContainer" aria-label="On this day memories">
+          <div className="memoriesTimelineHeader">
+            <button
+              type="button"
+              className="memoriesBackToCameraBtn"
+              onClick={() => setActiveTab("camera")}
+              aria-label="Back to Camera"
+              title="Return to Camera view"
+            >
+              <span className="backArrow" aria-hidden="true">‹</span>
+              <span className="cameraIcon" aria-hidden="true">📷</span>
+              <span>Back to Camera</span>
+            </button>
+          </div>
           {onThisDayGroups.length === 0 ? (
             <div style={{ textAlign: "center", padding: "48px 16px", color: "var(--memories-muted)" }}>
               <span style={{ fontSize: "36px", display: "block", marginBottom: "8px" }}>✿</span>

@@ -89,29 +89,100 @@ export const DEFAULT_PHOTOS: readonly SwipeablePhotoItem[] = [
     washiTapeColor: "gold",
     rotation: 1.6,
   },
-  {
-    id: "photo-5",
-    url: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=900&q=82",
-    heading: "Vintage Melodies & Strings",
-    title: "Vintage Melodies & Strings",
-    caption: "Spinning old vinyl records while humming familiar refrains. The chords that bring back whole seasons in a single strum.",
-    date: "January 2026",
-    alt: "Vintage vinyl record and acoustic guitar surrounded by warm afternoon sunlight",
-    washiTapeColor: "pink",
-    rotation: -1.3,
-  },
-  {
-    id: "photo-6",
-    url: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=900&q=82",
-    heading: "A Tapestry of Moments",
-    title: "A Tapestry of Moments",
-    caption: "A full year of courage, warmth, and shared smiles behind us, with an even brighter chapter opening today. Happy Birthday, Meerah.",
-    date: "March 2026",
-    alt: "Joyful birthday memories under fairy string lights and celebratory garlands",
-    washiTapeColor: "sage",
-    rotation: 0.9,
-  },
 ] as const;
+
+/**
+ * Validates whether a media URL is a valid, loadable path or URL.
+ */
+export function isValidMediaUrl(url?: unknown): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === "null" || trimmed === "undefined") return false;
+  return (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("./") ||
+    trimmed.startsWith("../") ||
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("blob:")
+  );
+}
+
+/**
+ * Evaluates whether an image entry is numbered 5, 6, or 7.
+ * Excludes entries by ID (e.g. photo-5, photo-6, photo-7, 5, 6, 7),
+ * metadata albumIndex/entryNumber, or numbered headings/titles.
+ */
+export function isExcludedPhotoEntry(item?: SwipeablePhotoItem | null): boolean {
+  if (!item || typeof item !== "object") return true;
+
+  // 1. Check ID for 5, 6, 7 designations
+  if (item.id !== undefined && item.id !== null) {
+    const idStr = String(item.id).trim().toLowerCase();
+    if (["5", "6", "7", "photo-5", "photo-6", "photo-7", "photo_5", "photo_6", "photo_7"].includes(idStr)) {
+      return true;
+    }
+    if (/(?:photo|image|img|item|memory|card|entry|pic)[-_]?(?:5|6|7)(?:$|[^0-9])/i.test(idStr)) {
+      return true;
+    }
+    if (/^(?:photo|image|img|item|memory|entry)0?[567]$/i.test(idStr)) {
+      return true;
+    }
+    if (/^(?:5|6|7)$/.test(idStr)) {
+      return true;
+    }
+  }
+
+  // 2. Check metadata albumIndex or entryNumber if present
+  const meta = (item as Record<string, unknown>).metadata;
+  if (meta && typeof meta === "object") {
+    const m = meta as Record<string, unknown>;
+    if (m.albumIndex === 5 || m.albumIndex === 6 || m.albumIndex === 7) return true;
+    if (m.entryNumber === 5 || m.entryNumber === 6 || m.entryNumber === 7) return true;
+    if (m.photoIndex === 5 || m.photoIndex === 6 || m.photoIndex === 7) return true;
+  }
+
+  // 3. Check heading / title labels
+  const headingText = [item.heading, item.title].filter(Boolean).join(" ").trim().toLowerCase();
+  if (/\b(?:memory|photo|entry|no\.?)\s*0?[567]\b/i.test(headingText)) {
+    return true;
+  }
+
+  return false;
+}
+
+export interface DynamicPhotoSelectionOptions {
+  maxCount?: number;
+  requireValidUrl?: boolean;
+}
+
+/**
+ * Dynamically selects photos from available configured image records:
+ * - Excludes entries numbered 5, 6, and 7
+ * - Eliminates hardcoded index dependencies
+ * - Preserves captions, dates, notes, and proper ordering
+ * - Supports optional dynamic limit or full configured list
+ */
+export function selectDynamicPhotos<T extends SwipeablePhotoItem>(
+  photos?: readonly T[] | T[] | null,
+  options?: DynamicPhotoSelectionOptions
+): T[] {
+  if (!Array.isArray(photos)) return [];
+
+  const filtered = photos.filter((photo) => {
+    if (!photo) return false;
+    if (isExcludedPhotoEntry(photo)) return false;
+    if (options?.requireValidUrl && !isValidMediaUrl(photo.url)) return false;
+    return true;
+  });
+
+  if (typeof options?.maxCount === "number" && options.maxCount > 0) {
+    return filtered.slice(0, options.maxCount);
+  }
+
+  return filtered;
+}
 
 /**
  * Pure Domain & Boundary Calculation Helpers
@@ -191,13 +262,20 @@ export function SwipeablePhotoCards({
   initialIndex = 0,
   wrap = false,
 }: SwipeablePhotoCardsProps): JSX.Element {
-  const photoList = Array.isArray(photos) ? photos : [];
+  const photoList = React.useMemo(() => {
+    const raw = Array.isArray(photos) ? photos : [];
+    return selectDynamicPhotos(raw);
+  }, [photos]);
   const totalPhotos = photoList.length;
 
   const [currentIndex, setCurrentIndex] = useState<number>(() =>
     clampPhotoIndex(initialIndex, totalPhotos)
   );
-  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  const getPhotoKey = useCallback((photo: SwipeablePhotoItem, index: number): string => {
+    return photo.id || photo.url || `photo-${index}`;
+  }, []);
 
   // Touch gesture state
   const touchStartXRef = useRef<number | null>(null);
@@ -273,9 +351,9 @@ export function SwipeablePhotoCards({
     }
   };
 
-  const handleImageError = (index: number) => {
-    setImageErrors((prev) => ({ ...prev, [index]: true }));
-  };
+  const handleImageError = useCallback((photoKey: string) => {
+    setImageErrors((prev) => ({ ...prev, [photoKey]: true }));
+  }, []);
 
   // Loading skeleton state
   if (loading) {
@@ -338,7 +416,8 @@ export function SwipeablePhotoCards({
   const washiColor = resolvePhotoWashiColor(currentPhoto.washiTapeColor, currentIndex);
   const altText = resolvePhotoAltText(currentPhoto, currentIndex);
   const headingText = resolvePhotoHeading(currentPhoto, currentIndex);
-  const hasError = imageErrors[currentIndex] === true;
+  const currentKey = getPhotoKey(currentPhoto, currentIndex);
+  const hasError = imageErrors[currentKey] === true || !isValidMediaUrl(currentPhoto.url);
 
   return (
     <section
@@ -366,20 +445,30 @@ export function SwipeablePhotoCards({
       {/* Main carousel viewport */}
       <div className="photos-carousel-viewport">
         {/* Previous peek card (desktop context hint) */}
-        {currentIndex > 0 && (
-          <div
-            className="photo-card-peek photo-card-peek-prev"
-            onClick={goPrev}
-            aria-hidden="true"
-          >
-            <img
-              src={photoList[currentIndex - 1].url}
-              alt=""
-              className="peek-thumbnail"
-              loading="lazy"
-            />
-          </div>
-        )}
+        {currentIndex > 0 && (() => {
+          const prevPhoto = photoList[currentIndex - 1];
+          const prevKey = getPhotoKey(prevPhoto, currentIndex - 1);
+          const prevValid = isValidMediaUrl(prevPhoto.url) && !imageErrors[prevKey];
+          return (
+            <div
+              className="photo-card-peek photo-card-peek-prev"
+              onClick={goPrev}
+              aria-hidden="true"
+            >
+              {prevValid ? (
+                <img
+                  src={prevPhoto.url}
+                  alt=""
+                  className="peek-thumbnail"
+                  loading="lazy"
+                  onError={() => handleImageError(prevKey)}
+                />
+              ) : (
+                <div className="peek-thumbnail peek-thumbnail-fallback">✿</div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Active Polaroid Scrapbook Frame */}
         <div
@@ -418,7 +507,7 @@ export function SwipeablePhotoCards({
                   src={currentPhoto.url}
                   alt={altText}
                   className="polaroid-image"
-                  onError={() => handleImageError(currentIndex)}
+                  onError={() => handleImageError(currentKey)}
                   loading="eager"
                 />
               ) : (
@@ -467,20 +556,30 @@ export function SwipeablePhotoCards({
         </div>
 
         {/* Next peek card (desktop context hint) */}
-        {currentIndex < totalPhotos - 1 && (
-          <div
-            className="photo-card-peek photo-card-peek-next"
-            onClick={goNext}
-            aria-hidden="true"
-          >
-            <img
-              src={photoList[currentIndex + 1].url}
-              alt=""
-              className="peek-thumbnail"
-              loading="lazy"
-            />
-          </div>
-        )}
+        {currentIndex < totalPhotos - 1 && (() => {
+          const nextPhoto = photoList[currentIndex + 1];
+          const nextKey = getPhotoKey(nextPhoto, currentIndex + 1);
+          const nextValid = isValidMediaUrl(nextPhoto.url) && !imageErrors[nextKey];
+          return (
+            <div
+              className="photo-card-peek photo-card-peek-next"
+              onClick={goNext}
+              aria-hidden="true"
+            >
+              {nextValid ? (
+                <img
+                  src={nextPhoto.url}
+                  alt=""
+                  className="peek-thumbnail"
+                  loading="lazy"
+                  onError={() => handleImageError(nextKey)}
+                />
+              ) : (
+                <div className="peek-thumbnail peek-thumbnail-fallback">✿</div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Navigation Controls Row */}

@@ -39,6 +39,7 @@ export function ChatComposer({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [gifSearchQuery, setGifSearchQuery] = useState("");
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   // Voice note recorder state
   const [isRecording, setIsRecording] = useState(false);
@@ -277,6 +278,7 @@ export function ChatComposer({
         if (textareaRef.current) {
           textareaRef.current.style.height = "auto";
         }
+        setShowAttachMenu(false);
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Failed to send message. Please retry.";

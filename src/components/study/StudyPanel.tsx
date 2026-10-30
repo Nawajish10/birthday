@@ -67,12 +67,7 @@ export function StudyPanel({
   // ==========================================================================
   // Today's Plan Tasks State
   // ==========================================================================
-  const [tasks, setTasks] = useState<StudyTask[]>(() => {
-    if (typeof window !== "undefined") {
-      return loadSavedTasks();
-    }
-    return INITIAL_STUDY_TASKS;
-  });
+  const [tasks, setTasks] = useState<StudyTask[]>(INITIAL_STUDY_TASKS);
 
   const [newTaskInput, setNewTaskInput] = useState<string>("");
   const [showAddTaskInput, setShowAddTaskInput] = useState<boolean>(false);
@@ -127,12 +122,7 @@ export function StudyPanel({
   // Quick Actions & Notes Reel State
   // ==========================================================================
   const [activeQuickModal, setActiveQuickModal] = useState<QuickModalType>(null);
-  const [notes, setNotes] = useState<StudyNote[]>(() => {
-    if (typeof window !== "undefined") {
-      return loadSavedNotes();
-    }
-    return INITIAL_STUDY_NOTES;
-  });
+  const [notes, setNotes] = useState<StudyNote[]>(INITIAL_STUDY_NOTES);
   const [activeNoteDetail, setActiveNoteDetail] = useState<StudyNote | null>(null);
   const [newNoteFormOpen, setNewNoteFormOpen] = useState<boolean>(false);
   const [newNoteTitle, setNewNoteTitle] = useState<string>("");
@@ -201,6 +191,30 @@ export function StudyPanel({
     "romantic-journal"
   );
   const [readerFontSize, setReaderFontSize] = useState<"sm" | "md" | "lg">("md");
+  const [readerTheme, setReaderTheme] = useState<"ivory" | "sepia" | "night">("ivory");
+
+  const handleThemeChange = useCallback((theme: "ivory" | "sepia" | "night") => {
+    setReaderTheme(theme);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("birthday-reading-theme", theme);
+      } catch {}
+    }
+  }, []);
+
+  const handleFontSizeChange = useCallback((size: "sm" | "md" | "lg") => {
+    setReaderFontSize(size);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("birthday-reader-font-size", size);
+      } catch {}
+    }
+  }, []);
+
+  const isUrduText = useCallback((text?: string): boolean => {
+    if (!text) return false;
+    return /[\u0600-\u06FF]/.test(text);
+  }, []);
 
   // Reader progression state for active book
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
@@ -255,10 +269,35 @@ export function StudyPanel({
   const [recentProgress, setRecentProgress] = useState<{
     book: Book;
     progress: ReadingProgressRecord;
-  } | null>(() => getMostRecentProgress());
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    // Load persisted state safely on mount to prevent SSR hydration mismatch
+    setTasks(loadSavedTasks());
+    setNotes(loadSavedNotes());
+    setRecentProgress(getMostRecentProgress());
+
+    try {
+      const savedTheme = window.localStorage.getItem("birthday-reading-theme") as
+        | "ivory"
+        | "sepia"
+        | "night"
+        | null;
+      if (savedTheme && ["ivory", "sepia", "night"].includes(savedTheme)) {
+        setReaderTheme(savedTheme);
+      }
+      const savedSize = window.localStorage.getItem("birthday-reader-font-size") as
+        | "sm"
+        | "md"
+        | "lg"
+        | null;
+      if (savedSize && ["sm", "md", "lg"].includes(savedSize)) {
+        setReaderFontSize(savedSize);
+      }
+    } catch {}
+
     const onStorage = () => {
       setRecentProgress(getMostRecentProgress());
     };
@@ -416,6 +455,11 @@ export function StudyPanel({
       {/* Header with Greeting & Daily Intent */}
       {/* ================================================================== */}
       <header className="study-header">
+        <div className="study-nav-bar">
+          <a href="/" className="study-return-home-btn" aria-label="Return Home">
+            <span aria-hidden="true">&larr;</span> Return Home
+          </a>
+        </div>
         <div className="study-kicker">
           <span aria-hidden="true">🌸</span>
           <span>Curated Bookshelf · مطالعہ اور سکون</span>
@@ -944,16 +988,21 @@ export function StudyPanel({
             <p className="study-empty-desc">
               We couldn&apos;t find any books matching &ldquo;{searchQuery}&rdquo; in this genre.
             </p>
-            <button
-              type="button"
-              className="study-empty-btn"
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedGenre("all");
-              }}
-            >
-              Clear Filters &amp; Reset
-            </button>
+            <div className="study-empty-actions">
+              <button
+                type="button"
+                className="study-empty-btn"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedGenre("all");
+                }}
+              >
+                Clear Filters &amp; Reset
+              </button>
+              <a href="/" className="study-empty-home-link" aria-label="Return Home">
+                Return Home &rarr;
+              </a>
+            </div>
           </div>
         )}
       </section>
@@ -1207,7 +1256,7 @@ export function StudyPanel({
                         <button
                           type="button"
                           className={`study-font-btn ${readerFontSize === "sm" ? "is-active" : ""}`}
-                          onClick={() => setReaderFontSize("sm")}
+                          onClick={() => handleFontSizeChange("sm")}
                           aria-label="Small font size"
                           title="Small text size"
                         >
@@ -1216,7 +1265,7 @@ export function StudyPanel({
                         <button
                           type="button"
                           className={`study-font-btn ${readerFontSize === "md" ? "is-active" : ""}`}
-                          onClick={() => setReaderFontSize("md")}
+                          onClick={() => handleFontSizeChange("md")}
                           aria-label="Medium font size"
                           title="Medium text size"
                         >
@@ -1225,11 +1274,43 @@ export function StudyPanel({
                         <button
                           type="button"
                           className={`study-font-btn ${readerFontSize === "lg" ? "is-active" : ""}`}
-                          onClick={() => setReaderFontSize("lg")}
+                          onClick={() => handleFontSizeChange("lg")}
                           aria-label="Large font size"
                           title="Large text size"
                         >
                           A+
+                        </button>
+                      </div>
+
+                      {/* Reading Theme & Contrast Controls */}
+                      <div className="study-theme-controls" role="group" aria-label="Reader theme and contrast">
+                        <span className="study-font-label">Theme:</span>
+                        <button
+                          type="button"
+                          className={`study-theme-btn ${readerTheme === "ivory" ? "is-active" : ""}`}
+                          onClick={() => handleThemeChange("ivory")}
+                          aria-label="Ivory theme (Soft warm paper)"
+                          title="Warm Ivory Paper"
+                        >
+                          Ivory
+                        </button>
+                        <button
+                          type="button"
+                          className={`study-theme-btn ${readerTheme === "sepia" ? "is-active" : ""}`}
+                          onClick={() => handleThemeChange("sepia")}
+                          aria-label="Sepia theme (Parchment contrast)"
+                          title="Sepia Parchment"
+                        >
+                          Sepia
+                        </button>
+                        <button
+                          type="button"
+                          className={`study-theme-btn ${readerTheme === "night" ? "is-active" : ""}`}
+                          onClick={() => handleThemeChange("night")}
+                          aria-label="Night theme (Dark reading contrast)"
+                          title="Night Reading Contrast"
+                        >
+                          Night
                         </button>
                       </div>
                     </div>
@@ -1238,9 +1319,12 @@ export function StudyPanel({
                     {/* Render Selected Reading Presentation Template */}
                     {/* ============================================================== */}
                     <div
-                      className={`study-template-viewport template-${selectedTemplate} reader-font-${readerFontSize}`}
+                      className={`study-template-viewport template-${selectedTemplate} reader-font-${readerFontSize} reader-theme-${readerTheme} ${isUrduText(activeChapter.content) ? "is-urdu urdu-reading-text" : ""}`}
                       data-template={selectedTemplate}
                       data-font-size={readerFontSize}
+                      data-theme={readerTheme}
+                      dir={isUrduText(activeChapter.content) ? "rtl" : "ltr"}
+                      lang={isUrduText(activeChapter.content) ? "ur" : "en"}
                     >
                       {/* 1. Minimal Template */}
                       {selectedTemplate === "minimal" && (

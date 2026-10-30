@@ -372,3 +372,158 @@ test("CSS verification: does not contain tacky neon glows or harsh cyberpunk art
   // Check for restrained literary colors
   assert.ok(css.includes("--sb-bookcloth-plum"), "Must include literary bookcloth plum token");
 });
+
+// ============================================================================
+// Test Suite 9: 13 Curated Books Across 12 Genres & Literary Depth
+// ============================================================================
+
+test("Curated Library: catalog contains 13 curated books across 12 distinct genres", () => {
+  assert.equal(STUDY_BOOKS.length, 13, "Catalog must contain exactly 13 curated books");
+  const genreSet = new Set(STUDY_BOOKS.map((b) => b.genreId));
+  assert.equal(genreSet.size, 12, "Curated books must span 12 distinct genres");
+
+  for (const book of STUDY_BOOKS) {
+    assert.ok(book.title && book.title.length > 0, `Book ${book.id} must have title`);
+    assert.ok(book.author && book.author.length > 0, `Book ${book.id} must have author`);
+    assert.ok(book.description && book.description.length > 10, `Book ${book.id} must have detailed description`);
+    assert.ok(Array.isArray(book.chapters) && book.chapters.length >= 2, `Book ${book.id} must have at least 2 chapters`);
+    for (const ch of book.chapters!) {
+      assert.ok(ch.title && ch.title.length > 0, `Chapter ${ch.id} in ${book.id} must have title`);
+      assert.ok(ch.content && ch.content.length > 20, `Chapter ${ch.id} in ${book.id} must have content`);
+    }
+  }
+});
+
+test("Curated Library: Urdu literature and poetry books contain authentic scripts and couplets", () => {
+  const urduBooks = STUDY_BOOKS.filter((b) => b.titleUrdu || /[\u0600-\u06FF]/.test(b.title));
+  assert.ok(urduBooks.length >= 2, "Must contain at least 2 Urdu literature/poetry works");
+
+  const faiz = STUDY_BOOKS.find((b) => b.id === "book-dast-e-saba");
+  assert.ok(faiz, "Must include Dast-e-Saba by Faiz Ahmed Faiz");
+  assert.ok(faiz.titleUrdu && faiz.titleUrdu.includes("دستِ صبا"));
+  assert.ok(faiz.chapters && faiz.chapters.some((ch) => /[\u0600-\u06FF]/.test(ch.content)));
+
+  const iqbal = STUDY_BOOKS.find((b) => b.id === "book-kulliyat-iqbal");
+  assert.ok(iqbal, "Must include Kulliyat-e-Iqbal by Allama Iqbal");
+  assert.ok(iqbal.titleUrdu && iqbal.titleUrdu.includes("کلیات اقبال"));
+  assert.ok(iqbal.chapters && iqbal.chapters.some((ch) => /[\u0600-\u06FF]/.test(ch.content)));
+});
+
+// ============================================================================
+// Test Suite 10: Chapter Picker, Typography & Theme Contrast Controls
+// ============================================================================
+
+test("Typography Controls: StudyPanel implements Chapter Picker, Font Sizing and Theme Contrast", () => {
+  const source = fs.readFileSync(studyPanelPath, "utf-8");
+  assert.ok(source.includes("study-chapter-select"), "Must include Chapter Picker select element");
+  assert.ok(source.includes("study-font-controls"), "Must include Font Sizing controls");
+  assert.ok(source.includes("study-theme-controls"), "Must include Reading Theme & Contrast controls");
+  assert.ok(source.includes("readerTheme"), "Must maintain readerTheme state");
+  assert.ok(source.includes("reader-theme-"), "Must apply theme contrast class");
+  assert.ok(source.includes("isUrduText"), "Must support authentic Urdu script detection");
+});
+
+test("CSS verification: includes theme contrast styles and authentic Urdu typography", () => {
+  const css = fs.readFileSync(studyCssPath, "utf-8");
+  assert.ok(css.includes(".reader-theme-ivory"), "Must declare .reader-theme-ivory");
+  assert.ok(css.includes(".reader-theme-sepia"), "Must declare .reader-theme-sepia");
+  assert.ok(css.includes(".reader-theme-night"), "Must declare .reader-theme-night");
+  assert.ok(css.includes(".urdu-reading-text"), "Must style .urdu-reading-text");
+  assert.ok(css.includes("Noto Nastaliq Urdu"), "Must include Noto Nastaliq Urdu font stack");
+});
+
+// ============================================================================
+// Test Suite 11: Reading Progress Persistence
+// ============================================================================
+
+test("Reading Progress: saves and retrieves progress from storage", () => {
+  const store: Record<string, string> = {};
+  const mockLocalStorage = {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, val: string) => {
+      store[key] = val;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      for (const k in store) delete store[k];
+    },
+  };
+
+  (globalThis as unknown as { window?: { localStorage: typeof mockLocalStorage } }).window = {
+    localStorage: mockLocalStorage,
+  };
+
+  const bookId = "book-the-little-prince";
+  const updated = saveReadingProgressForBook(bookId, {
+    chapterIndex: 1,
+    percentRead: 75,
+    isBookmarked: true,
+    notes: ["Cherished chapter with the fox"],
+  });
+
+  assert.equal(updated.bookId, bookId);
+  assert.equal(updated.chapterIndex, 1);
+  assert.equal(updated.percentRead, 75);
+  assert.equal(updated.isBookmarked, true);
+  assert.equal(updated.notes.length, 1);
+
+  const retrieved = getReadingProgressForBook(bookId);
+  assert.equal(retrieved.chapterIndex, 1);
+  assert.equal(retrieved.percentRead, 75);
+  assert.equal(retrieved.isBookmarked, true);
+  assert.equal(retrieved.notes[0], "Cherished chapter with the fox");
+
+  const all = loadAllReadingProgress();
+  assert.ok(all[bookId]);
+  assert.equal(all[bookId].chapterIndex, 1);
+
+  delete (globalThis as unknown as { window?: unknown }).window;
+});
+
+// ============================================================================
+// Test Suite 12: Error Recovery & Safe Routing (Try Again & Return Home)
+// ============================================================================
+
+const errorPagePath = path.resolve(process.cwd(), "src/app/study/error.tsx");
+const studyPagePath = path.resolve(process.cwd(), "src/app/study/page.tsx");
+const studyClientPath = path.resolve(process.cwd(), "src/app/study/StudyClient.tsx");
+
+test("Error Recovery: Study error boundary implements Try Again and Return Home actions", () => {
+  assert.ok(fs.existsSync(errorPagePath), "src/app/study/error.tsx must exist");
+  const source = fs.readFileSync(errorPagePath, "utf-8");
+
+  assert.ok(source.includes("useRouter"), "Must import and use useRouter from next/navigation");
+  assert.ok(source.includes("useTransition"), "Must import and use useTransition for data re-fetching");
+  assert.ok(source.includes("router.refresh()"), "Must call router.refresh() to re-execute server data fetching");
+  assert.ok(source.includes("reset()"), "Must invoke reset() boundary retry");
+  assert.ok(source.includes("Try Again"), "Must have Try Again button");
+  assert.ok(source.includes("Return Home"), "Must have Return Home link");
+  assert.ok(source.includes('href="/"'), "Return Home link must navigate to '/'");
+});
+
+test("Study Page: page.tsx handles session errors safely without unhandled crashes", () => {
+  assert.ok(fs.existsSync(studyPagePath), "src/app/study/page.tsx must exist");
+  const source = fs.readFileSync(studyPagePath, "utf-8");
+
+  assert.ok(source.includes("try"), "Must wrap readScope in try/catch block");
+  assert.ok(source.includes("catch"), "Must catch session lookup errors gracefully");
+  assert.ok(source.includes("<StudyClient"), "Must render StudyClient");
+});
+
+test("Study Routing: StudyClient allows modal reading without redirecting to '/'", () => {
+  assert.ok(fs.existsSync(studyClientPath), "src/app/study/StudyClient.tsx must exist");
+  const source = fs.readFileSync(studyClientPath, "utf-8");
+
+  assert.ok(!source.includes('onOpenBook={() => router.push("/")}'), "Must not kick users to '/' on book open");
+  assert.ok(source.includes("<StudyPanel"), "Must render StudyPanel component");
+});
+
+test("Study Navigation: StudyPanel includes Return Home navigation controls", () => {
+  const source = fs.readFileSync(studyPanelPath, "utf-8");
+  assert.ok(source.includes("study-return-home-btn"), "Header must include study-return-home-btn");
+  assert.ok(source.includes('href="/"'), "Return Home must link directly to '/'");
+  assert.ok(source.includes('aria-label="Return Home"'), "Must have Return Home aria-label");
+});
+

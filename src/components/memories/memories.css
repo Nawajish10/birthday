@@ -176,6 +176,96 @@
 /* --------------------------------------------------------------------------
    3. Chronological Timeline & Gallery View (All Photos)
    -------------------------------------------------------------------------- */
+/* Gallery Shortcut Header Bar returning to Camera */
+.memoriesTimelineHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 4px 14px;
+  border-bottom: 1px solid var(--memories-line);
+  margin-bottom: 4px;
+}
+
+.memoriesBackToCameraBtn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--memories-paper-card);
+  border: 1px solid var(--memories-line);
+  border-radius: 999px;
+  color: var(--memories-rose);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.memoriesBackToCameraBtn:hover {
+  background: var(--memories-pink-soft);
+  border-color: var(--memories-rose);
+  transform: translateX(-2px);
+}
+
+.memoriesBackToCameraBtn:active {
+  transform: scale(0.97);
+}
+
+.memoriesBackToCameraBtn .backArrow {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.memoriesBackToCameraBtn .cameraIcon {
+  font-size: 15px;
+}
+
+.memoriesTimelineHeaderMeta {
+  display: flex;
+  align-items: center;
+}
+
+.memoriesCountPill {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--memories-muted);
+  background: rgba(182, 83, 95, 0.08);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.memoriesAddPhotoBtn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: var(--memories-rose);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(182, 83, 95, 0.25);
+}
+
+.memoriesAddPhotoBtn:hover {
+  background: var(--memories-ink);
+  transform: translateY(-1px);
+}
+
+.memoriesAddPhotoBtn:active {
+  transform: scale(0.97);
+}
+
 .memoriesTimeline {
   display: flex;
   flex-direction: column;

@@ -592,7 +592,53 @@
 }
 
 /* Reduced Motion Support */
+
+/* Everyday Sanctuary Navigation Shortcuts */
+.hero-sanctuary-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.hero-sanctuary-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--scrapbook-muted);
+}
+
+.hero-sanctuary-pill {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--scrapbook-border);
+  color: var(--scrapbook-plum);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  min-height: 36px;
+}
+
+.hero-sanctuary-pill:hover {
+  background: var(--scrapbook-rose);
+  color: var(--scrapbook-rose-deep);
+  border-color: var(--scrapbook-rose-deep);
+}
+
+.hero-sanctuary-pill:focus-visible {
+  outline: 2px solid var(--scrapbook-rose-deep);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .hero-sanctuary-pill,
   .hero-floating-petal,
   .hero-sparkle,
   .hero-cta-arrow,

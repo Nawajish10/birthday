@@ -69,6 +69,35 @@
   position: relative;
 }
 
+.study-nav-bar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.study-return-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--sb-bookcloth-plum);
+  background: var(--sb-paper-cream);
+  border: 1px solid var(--sb-border-warm);
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: var(--sb-shadow-subtle);
+}
+
+.study-return-home-btn:hover {
+  background: var(--sb-accent-rose);
+  border-color: var(--sb-accent-rose-deep);
+  color: var(--sb-accent-rose-deep);
+  transform: translateX(-2px);
+}
+
 .study-kicker {
   display: inline-flex;
   align-items: center;
@@ -776,6 +805,35 @@
   color: #FFFFFF;
 }
 
+.study-empty-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.study-empty-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--sb-bookcloth-plum);
+  background: var(--sb-paper-cream);
+  border: 1px solid var(--sb-border-warm);
+  padding: 0.55rem 1.35rem;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.study-empty-home-link:hover {
+  background: var(--sb-accent-rose);
+  border-color: var(--sb-accent-rose-deep);
+}
+
 /* ============================================================================
    Book Detail Modal
    ============================================================================ */
@@ -1278,6 +1336,36 @@
   color: #FFFFFF;
 }
 
+/* Reading Theme & Contrast Controls */
+.study-theme-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.study-theme-btn {
+  background: var(--sb-card-white);
+  border: 1px solid var(--sb-border-warm);
+  color: var(--sb-text-primary);
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.study-theme-btn:hover {
+  background: var(--sb-accent-rose);
+  border-color: var(--sb-accent-rose-deep);
+}
+
+.study-theme-btn.is-active {
+  background: var(--sb-accent-rose-deep);
+  border-color: var(--sb-accent-rose-deep);
+  color: #FFFFFF;
+}
+
 /* Font Size Scales */
 .study-template-viewport.reader-font-sm {
   font-size: 0.92rem;
@@ -1314,6 +1402,73 @@
   position: relative;
   overflow: hidden;
   transition: all 0.25s ease;
+}
+
+/* Reading Theme & Contrast Modes */
+.study-template-viewport.reader-theme-ivory {
+  background: var(--sb-card-white);
+  color: var(--sb-text-primary);
+  border-color: var(--sb-border-warm);
+}
+
+.study-template-viewport.reader-theme-sepia {
+  background: #F4ECD8 !important;
+  color: #433020 !important;
+  border-color: #D9C8A9 !important;
+}
+
+.study-template-viewport.reader-theme-sepia .reader-minimal-title,
+.study-template-viewport.reader-theme-sepia .romantic-journal-title,
+.study-template-viewport.reader-theme-sepia .anime-scene-title,
+.study-template-viewport.reader-theme-sepia .graphic-frame-title {
+  color: #5C3D2E !important;
+}
+
+.study-template-viewport.reader-theme-night {
+  background: #181419 !important;
+  color: #EDE4EB !important;
+  border-color: #362A32 !important;
+}
+
+.study-template-viewport.reader-theme-night .reader-minimal-title,
+.study-template-viewport.reader-theme-night .romantic-journal-title,
+.study-template-viewport.reader-theme-night .anime-scene-title,
+.study-template-viewport.reader-theme-night .graphic-frame-title {
+  color: #F8CAD4 !important;
+}
+
+.study-template-viewport.reader-theme-night .reader-minimal-body,
+.study-template-viewport.reader-theme-night .romantic-journal-body,
+.study-template-viewport.reader-theme-night .anime-dialogue-text,
+.study-template-viewport.reader-theme-night .manga-bubble-text,
+.study-template-viewport.reader-theme-night .graphic-frame-text {
+  color: #EDE4EB !important;
+}
+
+.study-template-viewport.reader-theme-night .manga-speech-bubble,
+.study-template-viewport.reader-theme-night .anime-dialogue-card,
+.study-template-viewport.reader-theme-night .graphic-novel-frame {
+  background: #231C24 !important;
+  border-color: #42323D !important;
+  color: #EDE4EB !important;
+}
+
+/* Authentic Urdu Typography */
+.study-template-viewport.is-urdu,
+.urdu-reading-text {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', 'Scheherazade New', 'Traditional Arabic', serif;
+  line-height: 2.2 !important;
+  direction: rtl;
+  text-align: right;
+}
+
+.study-template-viewport.is-urdu .reader-minimal-body,
+.study-template-viewport.is-urdu .romantic-journal-body,
+.study-template-viewport.is-urdu .anime-dialogue-text,
+.study-template-viewport.is-urdu .manga-bubble-text {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', 'Scheherazade New', serif;
+  line-height: 2.3 !important;
+  font-size: 1.18em !important;
 }
 
 /* ============================================================================

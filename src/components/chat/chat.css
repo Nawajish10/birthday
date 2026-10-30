@@ -7,6 +7,8 @@
   --chat-surface: var(--color-surface, #26132B);
   --chat-surface-alt: var(--color-surface-alt, #3A1F3B);
   --chat-surface-raised: var(--color-surface-raised, #2A1A32);
+  --chat-bubble-incoming: #2E1734;
+  --chat-bubble-outgoing: #4A264D;
   --chat-border: var(--color-border, rgba(255, 214, 230, 0.16));
   --chat-primary: var(--color-primary, #F7A8B8);
   --chat-primary-strong: var(--color-primary-strong, #F27A98);
@@ -602,7 +604,9 @@
   border-top: 1px solid var(--chat-border);
   background: linear-gradient(180deg, rgba(38, 19, 43, 0.92) 0%, rgba(26, 15, 31, 0.98) 100%);
   padding: 0.75rem 1rem;
-  position: relative;
+  position: sticky;
+  bottom: 0;
+  flex-shrink: 0;
   z-index: 10;
 }
 
@@ -953,7 +957,7 @@
   border: none;
   color: var(--chat-text);
   font-family: inherit;
-  font-size: 0.92rem;
+  font-size: 16px; /* 16px prevents iOS Safari auto-zoom */
   line-height: 1.45;
   outline: none;
   resize: none;
@@ -1547,7 +1551,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 0.95rem;
+  padding: 0.9rem 1.15rem;
   border-bottom: 1px solid rgba(255, 214, 230, 0.05);
   cursor: pointer;
   transition: background 0.15s ease;

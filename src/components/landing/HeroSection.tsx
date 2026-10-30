@@ -13,6 +13,9 @@ export interface HeroSectionProps {
   birthdayDate?: string; // Default: "October 30"
   onOpenWorld: () => void;
   avatarUrl?: string; // Optional future real avatar photo
+  onOpenReflections?: () => void;
+  onOpenReminders?: () => void;
+  onOpenBook?: () => void;
 }
 
 /**
@@ -23,12 +26,18 @@ export function resolveHeroProps(props: Partial<HeroSectionProps> = {}): {
   birthdayDate: string;
   onOpenWorld?: () => void;
   avatarUrl?: string;
+  onOpenReflections?: () => void;
+  onOpenReminders?: () => void;
+  onOpenBook?: () => void;
 } {
   return {
     recipientName: props.recipientName?.trim() || DEFAULT_RECIPIENT_NAME,
     birthdayDate: props.birthdayDate?.trim() || DEFAULT_BIRTHDAY_DATE,
     onOpenWorld: props.onOpenWorld,
     avatarUrl: props.avatarUrl,
+    onOpenReflections: props.onOpenReflections,
+    onOpenReminders: props.onOpenReminders,
+    onOpenBook: props.onOpenBook,
   };
 }
 
@@ -47,6 +56,9 @@ export function HeroSection({
   birthdayDate = DEFAULT_BIRTHDAY_DATE,
   onOpenWorld,
   avatarUrl,
+  onOpenReflections,
+  onOpenReminders,
+  onOpenBook,
 }: HeroSectionProps): JSX.Element {
   const [avatarError, setAvatarError] = useState(false);
   const activeRecipient = recipientName?.trim() || DEFAULT_RECIPIENT_NAME;
@@ -359,6 +371,47 @@ export function HeroSection({
                 </span>
               </button>
               <p className="hero-cta-hint">Let&apos;s begin — turn the page to enter your birthday scrapbook world</p>
+            </div>
+
+            {/* Everyday Sanctuary Navigation Shortcuts */}
+            <div className="hero-sanctuary-shortcuts" aria-label="Everyday sanctuary shortcuts">
+              <span className="hero-sanctuary-label">Everyday Sanctuary:</span>
+              <button
+                type="button"
+                className="hero-sanctuary-pill"
+                onClick={onOpenReflections || (() => {
+                  if (typeof document !== "undefined") {
+                    const el = document.getElementById("section-daily-reflections");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }
+                })}
+                aria-label="Jump to Daily Reflections"
+              >
+                <span>📖 Daily Reflections</span>
+              </button>
+              <button
+                type="button"
+                className="hero-sanctuary-pill"
+                onClick={onOpenReminders || (() => {
+                  if (typeof document !== "undefined") {
+                    const el = document.getElementById("section-personal-reminders");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }
+                })}
+                aria-label="Jump to Personal Reminders"
+              >
+                <span>🕒 Personal Reminders</span>
+              </button>
+              {onOpenBook && (
+                <button
+                  type="button"
+                  className="hero-sanctuary-pill"
+                  onClick={onOpenBook}
+                  aria-label="Open Keepsake Birthday Book"
+                >
+                  <span>✨ Birthday Book</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
