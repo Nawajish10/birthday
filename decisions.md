@@ -491,3 +491,52 @@
   - Production build (`npm run build`) generates all 11 static and dynamic pages with 0 errors.
   - Dedicated architecture test suite (`test/routes-architecture.test.ts`) passes 6/6.
   - Full test suites pass cleanly across audio, profile, study, games, chat, and mobile performance.
+
+
+---
+
+### ADR-018: Multi-Agent Production Orchestration — Everyday Sanctuary, Full-Screen Camera Memories, Study Recovery, and Dynamic Photos
+
+- **Date:** 31 October 2026
+- **Status:** Accepted & Implemented
+- **Context:**
+  Following the conclusion of the initial birthday celebration milestone, the application required transformation from an expired countdown into an Everyday Personal Sanctuary for Meerah. Specific user-identified production requirements included:
+  1. Full-screen mobile-first Snapchat-inspired camera view as the default entry point for `/memories` with bottom-center shutter button and bottom-left gallery shortcut.
+  2. Permanent diagnosis and elimination of the Study room loading crash, with resilient error recovery and typography controls.
+  3. Transformation of the homepage into a daily lifestyle sanctuary featuring authentic Quranic reflections and personal reminders with full CRUD and persistence.
+  4. Removal of legacy photo entries 5, 6, and 7, replacing hardcoded indices with dynamic photo selection and graceful polaroid placeholders.
+  5. Refined WhatsApp-inspired private chat with dedicated incoming/outgoing bubbles, mobile keyboard handling, and owner message routing.
+  6. Verification of the 20-30 song music catalog, single shared audio singleton, and schema-resilient batch upload.
+  7. Cross-route mobile responsiveness audit across 320px–430px viewports with a single authoritative BottomNav.
+
+- **Decisions & Implementation:**
+  1. **Memories & Snapchat Camera Experience (`src/components/memories/`):**
+     - `/memories` defaults directly to `activeTab = "camera"` on mount.
+     - `CameraPanel.tsx` and new `MemoriesCamera.tsx` support automatic `getUserMedia` stream startup, torch/flash controls, 7-filter carousel, and Love Theme pulse shutter button.
+     - Bottom-left gallery shortcut switches seamlessly to saved memories library.
+     - Top bar provides prominent "Back to Camera" navigation.
+     - Permission-denied fallback with device photo picker.
+     - Hardware tracks cleanly stopped via `stopMediaTracks` on component unmount.
+  2. **Everyday Sanctuary & Daily Reflections (`src/components/landing/`):**
+     - Created `DailyReflections.tsx`: 8 verified Quranic verses directly from the Mushaf with authentic Arabic calligraphy, standard English translation, exact Surah names, chapter:verse citations, and gentle reflections. Strictly zero synthetic text attributed to Quran.
+     - Created `PersonalReminders.tsx`: Full CRUD (create, edit, delete, toggle active) with date/time picker, context-aware badges ("Today · 10:00 AM", "Tomorrow"), and persistent client/localStorage sync.
+  3. **Study Room Diagnosis & Resilient Recovery (`src/app/study/` & `src/components/study/`):**
+     - Wrapped session reading in `try/catch` to eliminate unhandled cookie/session crashes on direct URL access.
+     - Re-implemented `src/app/study/error.tsx` with functional "Try Again" (`startTransition(() => { router.refresh(); reset(); })`) and "Return Home" navigation.
+     - Added reading theme contrast palettes (Ivory, Sepia, Night), font sizing (sm, md, lg), and authentic Urdu Nastaliq typography for Iqbal and Faiz poetry.
+  4. **Dynamic Photo Selection & Elimination of Hardcoded Indices (`src/lib/photo-selection.ts`):**
+     - Removed photo entries 5, 6, and 7 from `DEFAULT_PHOTOS` and implemented `isExcludedPhotoEntry` to prevent them from appearing anywhere in the display.
+     - Extracted dynamic selection utilities: `selectDynamicPhotos` and `selectDynamicMemories`.
+     - Built graceful polaroid card placeholders (`.polaroid-image-fallback` and `.memories-photo-fallback`) for broken/missing media URLs.
+  5. **WhatsApp-Inspired Chat Refinement (`src/components/chat/`):**
+     - Incoming bubbles (`#2E1734`) and outgoing bubbles (`#4A264D`) with WhatsApp soft-corner radius.
+     - Fixed sticky bottom composer bar with 16px font to prevent mobile iOS zoom.
+     - E2EE encryption, delivery status checkmarks, and owner routing preserved.
+  6. **Mobile-First Responsiveness & BottomNav Deduplication:**
+     - Unified `/chat` into `RouteShell` and authoritative `BottomNav`.
+     - Touch targets enforced to >= 44x44px.
+     - Verified zero horizontal overflow across 320px–430px viewports.
+
+- **Consequences:**
+  - Automated test suite passes 100%: **934 tests passing across 132 test suites (0 failures)**.
+  - Next.js Turbopack production build (`npm run build`) builds 20 static and dynamic routes cleanly in ~7.5s.
