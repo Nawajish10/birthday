@@ -150,11 +150,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Deduplication check: if track with identical content checksum already exists, return it
-    const { data: existingTrack } = await adminDb
-      .from("music_tracks")
-      .select("*")
-      .eq("checksum", checksum)
-      .maybeSingle();
+    let existingTrack: Record<string, unknown> | null = null;
+    try {
+      const { data, error: chkErr } = await adminDb
+        .from("music_tracks")
+        .select("*")
+        .eq("checksum", checksum)
+        .maybeSingle();
+      if (!chkErr) {
+        existingTrack = data;
+      }
+    } catch {
+      // checksum column might not exist yet on base schema
+    }
 
     if (existingTrack) {
       // If playlist_id provided, link existing track to playlist if not already linked
@@ -235,28 +243,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 8. Insert record into music_tracks
-    const { data: track, error: trackError } = await adminDb
+    // 8. Insert record into music_tracks (with automatic fallback to base schema if extended columns don't exist yet)
+    const baseRecord: Record<string, unknown> = {
+      id: track_id,
+      title,
+      artist: artist || "",
+      media_path: storageKey,
+      duration_seconds,
+      is_published: true,
+      created_by: user.id,
+    };
+
+    const extendedRecord: Record<string, unknown> = {
+      ...baseRecord,
+      album: album || null,
+      mime_type: mimeType,
+      file_size_bytes: file.size,
+      source_type: "imported",
+      availability_status: "available",
+      checksum,
+    };
+
+    let { data: track, error: trackError } = await adminDb
       .from("music_tracks")
-      .insert({
-        id: track_id,
-        title,
-        artist: artist || "",
-        album: album || null,
-        media_path: storageKey,
-        mime_type: mimeType,
-        file_size_bytes: file.size,
-        source_type: "imported",
-        availability_status: "available",
-        duration_seconds,
-        checksum,
-        is_published: true,
-        created_by: user.id,
-      })
+      .insert(extendedRecord)
       .select()
-      .single();
+      .maybeSingle();
+
+    if (trackError && (trackError.message?.toLowerCase().includes("schema cache") || trackError.message?.toLowerCase().includes("column") || trackError.code === "PGRST204")) {
+      // Remote database hasn't applied the additive migration yet - insert base fields cleanly
+      const baseResult = await adminDb
+        .from("music_tracks")
+        .insert(baseRecord)
+        .select()
+        .maybeSingle();
+      track = baseResult.data;
+      trackError = baseResult.error;
+    }
 
     if (trackError) {
+      // Clean up uploaded audio on error
+      await adminDb.storage.from("birthday-audio").remove([storageKey]);
+      return NextResponse.json(
+        { error: `Database insert failed: ${trackError.message}` },
+        { status: 500 }
+      );
+    }
       // Clean up uploaded audio on error
       await adminDb.storage.from("birthday-audio").remove([storageKey]);
       return NextResponse.json({ error: trackError.message }, { status: 500 });
