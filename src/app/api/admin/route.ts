@@ -1,10 +1,122 @@
-import {NextRequest,NextResponse} from "next/server";
-import {getSupabaseServer} from "@/lib/supabase/server";
-import {getAdminClient} from "@/lib/supabase/admin";
-const tables=["birthday_cards","profile_posts","eternalus_assets","story_items","music_tracks","games","noah_knowledge","birthday_gifts"] as const;
-async function guard(){const sb=await getSupabaseServer();const {data:{user}}=await sb.auth.getUser();if(!user)return null;const {data}=await sb.from("admin_users").select("role").eq("user_id",user.id).maybeSingle();return data?user:null;}
-export async function GET(req:NextRequest){const user=await guard();if(!user)return NextResponse.json({error:"Admin sign-in required."},{status:401});const table=req.nextUrl.searchParams.get("table") as typeof tables[number];if(!tables.includes(table))return NextResponse.json({error:"Unknown content section."},{status:400});const orderCol = table === "birthday_gifts" ? "slot_number" : table === "noah_knowledge" ? "created_at" : "sort_order";const {data,error}=await getAdminClient().from(table).select("*").order(orderCol,{ascending:true});if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json({data});}
-export async function POST(req:NextRequest){const user=await guard();if(!user)return NextResponse.json({error:"Admin sign-in required."},{status:401});const body=await req.json().catch(()=>null);if(!body||!tables.includes(body.table))return NextResponse.json({error:"Invalid content request."},{status:400});const {table,record}=body;if(!record||typeof record!=="object")return NextResponse.json({error:"Missing content record."},{status:400});const allowed=table==="birthday_cards"?["title","body_en","body_ur","sort_order","is_published"]:table==="profile_posts"||table==="story_items"?["media_path","media_kind","caption","alt_text","sort_order","is_published"]:table==="eternalus_assets"?["media_path","caption","alt_text","sort_order","is_published"]:table==="music_tracks"?["title","artist","media_path","duration_seconds","sort_order","is_published"]:table==="games"?["title","instructions","reward_text","sort_order","is_published"]:table==="birthday_gifts"?["slot_number","title","hint","reward_type","reward_content","media_path","is_published"]:["topic","approved_text","is_enabled"];
- const clean=Object.fromEntries(Object.entries(record).filter(([k])=>allowed.includes(k)));const db=getAdminClient();const id=record.id;
- const q=id?db.from(table).update(clean).eq("id",id).select().single():db.from(table).insert({...clean,created_by:user.id}).select().single();const {data,error}=await q;if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json({data});}
-export async function DELETE(req:NextRequest){const user=await guard();if(!user)return NextResponse.json({error:"Admin sign-in required."},{status:401});const {table,id}=await req.json().catch(()=>({}));if(!tables.includes(table)||typeof id!=="string")return NextResponse.json({error:"Invalid delete request."},{status:400});const {error}=await getAdminClient().from(table).delete().eq("id",id);if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json({ok:true});}
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/supabase/admin";
+
+const tables = [
+  "birthday_cards",
+  "profile_posts",
+  "eternalus_assets",
+  "story_items",
+  "music_tracks",
+  "games",
+  "noah_knowledge",
+  "birthday_gifts",
+] as const;
+
+async function guard() {
+  const sb = await getSupabaseServer();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data } = await sb.from("admin_users").select("role").eq("user_id", user.id).maybeSingle();
+  return data ? user : null;
+}
+
+export async function GET(req: NextRequest) {
+  const user = await guard();
+  if (!user) return NextResponse.json({ error: "Admin sign-in required." }, { status: 401 });
+
+  const table = req.nextUrl.searchParams.get("table") as typeof tables[number];
+  if (!tables.includes(table)) return NextResponse.json({ error: "Unknown content section." }, { status: 400 });
+
+  const orderCol =
+    table === "birthday_gifts"
+      ? "slot_number"
+      : table === "noah_knowledge"
+      ? "created_at"
+      : "sort_order";
+
+  const { data, error } = await getAdminClient().from(table).select("*").order(orderCol, { ascending: true });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ data });
+}
+
+export async function POST(req: NextRequest) {
+  const user = await guard();
+  if (!user) return NextResponse.json({ error: "Admin sign-in required." }, { status: 401 });
+
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid content request." }, { status: 400 });
+
+  const db = getAdminClient();
+
+  // Support Bulk Classification Actions
+  if (body.action === "bulk_classify" && Array.isArray(body.ids)) {
+    const targetTable = (body.table && tables.includes(body.table) ? body.table : "profile_posts") as typeof tables[number];
+    const category = body.category === "private" ? "private" : "main";
+
+    // Attempt updating gallery_category column
+    const { data, error } = await db
+      .from(targetTable)
+      .update({ gallery_category: category })
+      .in("id", body.ids)
+      .select();
+
+    if (error) {
+      // Fallback: update is_published or return error
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, count: data?.length ?? body.ids.length, category });
+  }
+
+  // Bulk Delete
+  if (body.action === "bulk_delete" && Array.isArray(body.ids)) {
+    const targetTable = (body.table && tables.includes(body.table) ? body.table : "profile_posts") as typeof tables[number];
+    const { error } = await db.from(targetTable).delete().in("id", body.ids);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, count: body.ids.length });
+  }
+
+  if (!tables.includes(body.table)) return NextResponse.json({ error: "Invalid content request." }, { status: 400 });
+  const { table, record } = body;
+  if (!record || typeof record !== "object") return NextResponse.json({ error: "Missing content record." }, { status: 400 });
+
+  const allowed =
+    table === "birthday_cards"
+      ? ["title", "body_en", "body_ur", "sort_order", "is_published"]
+      : table === "profile_posts" || table === "story_items"
+      ? ["media_path", "media_kind", "caption", "alt_text", "sort_order", "is_published", "gallery_category"]
+      : table === "eternalus_assets"
+      ? ["media_path", "caption", "alt_text", "sort_order", "is_published", "gallery_category"]
+      : table === "music_tracks"
+      ? ["title", "artist", "media_path", "duration_seconds", "sort_order", "is_published"]
+      : table === "games"
+      ? ["title", "instructions", "reward_text", "sort_order", "is_published"]
+      : table === "birthday_gifts"
+      ? ["slot_number", "title", "hint", "reward_type", "reward_content", "media_path", "is_published"]
+      : ["topic", "approved_text", "is_enabled"];
+
+  const clean = Object.fromEntries(Object.entries(record).filter(([k]) => allowed.includes(k)));
+  const id = record.id;
+
+  const q = id
+    ? db.from(table).update(clean).eq("id", id).select().single()
+    : db.from(table).insert({ ...clean, created_by: user.id }).select().single();
+
+  const { data, error } = await q;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ data });
+}
+
+export async function DELETE(req: NextRequest) {
+  const user = await guard();
+  if (!user) return NextResponse.json({ error: "Admin sign-in required." }, { status: 401 });
+
+  const { table, id } = await req.json().catch(() => ({}));
+  if (!tables.includes(table) || typeof id !== "string") {
+    return NextResponse.json({ error: "Invalid delete request." }, { status: 400 });
+  }
+
+  const { error } = await getAdminClient().from(table).delete().eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}

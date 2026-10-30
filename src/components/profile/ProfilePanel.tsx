@@ -275,19 +275,26 @@ export function ProfilePanel({
   const isActuallyLoading = loading ?? isLoading ?? false;
 
   // Authoritative shared photo integration: resolve posts prop, photos prop, or loadPhotos()
+  // Enforces that Main Gallery strictly displays photos classified for Main Gallery
   const effectivePosts: ProfilePostItem[] = useMemo(() => {
     const assetList = photos && photos.length > 0 ? photos : loadPhotos();
-    const photoPosts = assetList.map((photo) => photoAssetToProfilePostItem(photo));
+    const mainAssets = assetList.filter(
+      (photo) => (photo.galleryCategory === "main" || (!photo.galleryCategory && !photo.isPrivate)) && !photo.isPrivate
+    );
+    const photoPosts = mainAssets.map((photo) => photoAssetToProfilePostItem(photo));
 
     if (!posts || posts.length === 0) {
       return photoPosts;
     }
 
-    const formattedPosts = posts.map((p) => ({
-      ...p,
-      fullDisplayUrl: p.fullDisplayUrl || p.url,
-      thumbnailUrl: p.thumbnailUrl || p.thumbnail_url || p.thumbnailPath || p.url,
-    }));
+    const formattedPosts = posts
+      .filter((p) => (p.galleryCategory === "main" || (!p.galleryCategory && !(p as any).is_private)) && !(p as any).is_private)
+      .map((p) => ({
+        ...p,
+        fullDisplayUrl: p.fullDisplayUrl || p.url,
+        thumbnailUrl: p.thumbnailUrl || p.thumbnail_url || p.thumbnailPath || p.url,
+        galleryCategory: p.galleryCategory || "main",
+      }));
 
     // Merge: include formattedPosts, and seamlessly merge photoPosts so all 145 Google Photos remain visible
     const seenIds = new Set(formattedPosts.map((p) => p.id));
@@ -301,7 +308,7 @@ export function ProfilePanel({
         merged.push(item);
       }
     }
-    return merged;
+    return merged.filter((item) => (item.galleryCategory === "main" || (!item.galleryCategory && !(item as any).is_private)) && !(item as any).is_private);
   }, [posts, photos]);
 
   // 1. Profile State & Persistence (authoritative birth date: 30 October 2001)

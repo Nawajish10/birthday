@@ -54,8 +54,8 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<MemoriesTab>("camera"); // useState<MemoriesTab>("photos")
   const [photos, setPhotos] = useState<PhotoAsset[]>(() => {
-    if (propPhotos && propPhotos.length > 0) return propPhotos;
-    return loadPhotos(storage);
+    const raw = propPhotos && propPhotos.length > 0 ? propPhotos : loadPhotos(storage);
+    return raw.filter((p) => (p.galleryCategory === "main" || (!p.galleryCategory && !p.isPrivate)) && !p.isPrivate);
   });
   const [stories, setStories] = useState<StoryItem[]>(() => loadStories(storage));
   const [albums, setAlbums] = useState<AlbumCollection[]>(() => loadAlbums(storage));
@@ -70,10 +70,10 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
   const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
   const [isOnThisDayModalOpen, setIsOnThisDayModalOpen] = useState<boolean>(false);
 
-  // Sync when propPhotos updates
+  // Sync when propPhotos updates (main gallery only)
   useEffect(() => {
     if (propPhotos && propPhotos.length > 0) {
-      setPhotos(propPhotos);
+      setPhotos(propPhotos.filter((p) => (p.galleryCategory === "main" || (!p.galleryCategory && !p.isPrivate)) && !p.isPrivate));
     }
   }, [propPhotos]);
 
@@ -98,7 +98,8 @@ export const MemoriesPanel: React.FC<MemoriesPanelProps> = ({
   // Sync data on external storage events
   useEffect(() => {
     const handleStorageChange = () => {
-      setPhotos(loadPhotos(storage));
+      const all = loadPhotos(storage);
+      setPhotos(all.filter((p) => (p.galleryCategory === "main" || (!p.galleryCategory && !p.isPrivate)) && !p.isPrivate));
       setStories(loadStories(storage));
       setAlbums(loadAlbums(storage));
       setFavorites(loadFavorites(storage));

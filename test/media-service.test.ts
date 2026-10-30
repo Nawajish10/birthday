@@ -18,9 +18,14 @@ import {
   createStory,
   deleteStory,
   removePhotoFromCollection,
+  classifyPhoto,
+  bulkClassifyPhotos,
+  filterMainGallery,
+  filterPrivateGallery,
+  filterMainGalleryPosts,
   DEFAULT_PROFILE,
 } from "../src/lib/media-service.ts";
-import type { PhotoAsset } from "../src/types/media-contracts.ts";
+import type { PhotoAsset, ProfilePostItem } from "../src/types/media-contracts.ts";
 
 // Simple in-memory Storage mock
 class MockStorage implements Storage {
@@ -192,3 +197,61 @@ test("Media Service: Story creation with music and deletion", () => {
   assert.ok(loadPhotos(storage).length >= 2);
 });
 
+test("Media Service: Individual and Bulk Gallery Classification", () => {
+  const storage = new MockStorage();
+  const photo1: PhotoAsset = {
+    id: "cls-photo-1",
+    storagePath: "photos/1.jpg",
+    url: "https://example.com/1.jpg",
+    mediaKind: "image",
+    effectiveCaptureDate: "2024-10-29",
+    hasKnownCaptureDate: true,
+    uploadTimestamp: new Date().toISOString(),
+    galleryCategory: "main",
+    isPrivate: false,
+  };
+  const photo2: PhotoAsset = {
+    id: "cls-photo-2",
+    storagePath: "photos/2.jpg",
+    url: "https://example.com/2.jpg",
+    mediaKind: "image",
+    effectiveCaptureDate: "2024-10-29",
+    hasKnownCaptureDate: true,
+    uploadTimestamp: new Date().toISOString(),
+    galleryCategory: "main",
+    isPrivate: false,
+  };
+
+  addPhotoAsset(photo1, storage);
+  addPhotoAsset(photo2, storage);
+
+  // 1. Individual classification: classify photo1 as private
+  const classified = classifyPhoto("cls-photo-1", "private", storage);
+  assert.ok(classified);
+  assert.equal(classified?.galleryCategory, "private");
+  assert.equal(classified?.isPrivate, true);
+
+  // 2. Main Gallery filtering: strictly excludes private photos
+  const allPhotos = loadPhotos(storage);
+  const mainGallery = filterMainGallery(allPhotos);
+  assert.ok(!mainGallery.some((p) => p.id === "cls-photo-1"), "Private photo must NOT be in Main Gallery");
+  assert.ok(mainGallery.some((p) => p.id === "cls-photo-2"), "Main photo must be in Main Gallery");
+
+  // 3. Private Gallery filtering: includes private photo
+  const privateGallery = filterPrivateGallery(allPhotos);
+  assert.ok(privateGallery.some((p) => p.id === "cls-photo-1"), "Private photo must be in Private Gallery");
+  assert.ok(!privateGallery.some((p) => p.id === "cls-photo-2"), "Main photo must NOT be in Private Gallery");
+
+  // 4. Bulk classification: classify both as main
+  const bulkUpdated = bulkClassifyPhotos(["cls-photo-1", "cls-photo-2"], "main", storage);
+  assert.ok(bulkUpdated.every((p) => (p.id === "cls-photo-1" || p.id === "cls-photo-2" ? p.galleryCategory === "main" && !p.isPrivate : true)));
+
+  // 5. Post filtering
+  const samplePosts: ProfilePostItem[] = [
+    { id: "post-pub", url: "/1.jpg", media_kind: "image", galleryCategory: "main" },
+    { id: "post-priv", url: "/2.jpg", media_kind: "image", galleryCategory: "private" },
+  ];
+  const filteredPosts = filterMainGalleryPosts(samplePosts);
+  assert.equal(filteredPosts.length, 1);
+  assert.equal(filteredPosts[0].id, "post-pub");
+});
