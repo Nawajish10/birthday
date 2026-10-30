@@ -200,12 +200,33 @@ export async function POST(req: NextRequest) {
     const storageKey = `audio/${track_id}/${sanitizedName}`;
 
     // 7. Upload to birthday-audio bucket using admin client
-    const { error: uploadError } = await adminDb.storage
+    let { error: uploadError } = await adminDb.storage
       .from("birthday-audio")
       .upload(storageKey, fileBuf, {
         contentType: mimeType,
         upsert: false,
       });
+
+    // Resilient self-healing: if bucket does not exist, create it and retry upload
+    if (uploadError && (uploadError.message?.toLowerCase().includes("bucket not found") || (uploadError as { error?: string })?.error === "Bucket not found")) {
+      await adminDb.storage.createBucket("birthday-audio", {
+        public: false,
+        fileSizeLimit: 52428800,
+        allowedMimeTypes: [
+          "audio/mpeg", "audio/mp3", "audio/mp4", "video/mp4",
+          "audio/wav", "audio/aac", "audio/ogg", "audio/webm",
+          "audio/flac", "audio/m4a", "audio/x-m4a"
+        ],
+      }).catch(() => null);
+
+      const retryResult = await adminDb.storage
+        .from("birthday-audio")
+        .upload(storageKey, fileBuf, {
+          contentType: mimeType,
+          upsert: false,
+        });
+      uploadError = retryResult.error;
+    }
 
     if (uploadError) {
       return NextResponse.json(
